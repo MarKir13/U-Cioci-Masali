@@ -1,3 +1,38 @@
+# --- Secrets and local configuration ---
+.env
+.env.*
+!.env.example
+
+# --- Certificates and private keys ---
+deploy/certs/
+*.key
+*.pem
+*.crt
+
+# --- Dependencies ---
 vendor/
 node_modules/
-.env
+
+# --- PrestaShop runtime data ---
+var/cache/
+var/logs/
+upload/
+download/
+img/p/
+img/c/
+img/tmp/
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Backups and archives (images go to GitHub Releases, not git) ---
+backups/
+*.zip
+*.tar.gz
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
