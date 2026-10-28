@@ -1,0 +1,12 @@
+# Child theme of Classic. Everything not defined here is inherited from themes/classic.
+# Do not add top-level keys like "meta" or "global_settings" unless copying them in full:
+# they replace the parent's section instead of merging with it.
+parent: classic
+name: ciocia
+display_name: U Cioci Masali
+version: 1.0.0
+author:
+  name: "U Cioci Masali team"
+
+assets:
+  use_parent_assets: true
