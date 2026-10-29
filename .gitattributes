@@ -4,3 +4,6 @@ Dockerfile text eol=lf
 *.conf    text eol=lf
 *.yaml    text eol=lf
 *.yml     text eol=lf
+
+# Saved source pages for scraper tests: keep them byte-for-byte as downloaded
+scraper/tests/fixtures/** -text
