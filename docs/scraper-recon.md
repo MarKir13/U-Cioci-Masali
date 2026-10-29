@@ -143,3 +143,8 @@ Saved in [`scraper/tests/fixtures/`](../scraper/tests/fixtures/) for parser unit
 | `product_with_family.html` | `/242-olejek-amla-do-wlosow-ciemnych-200ml-dabur.html` | Product family with 2 axes, weight, size/pattern, EAN |
 | `product_discounted.html` | `/5425-bio-amalaki-60-kapsulek-suplement-diety-maharishi-ayurveda.html` | Discount, 8% VAT, no weight |
 | `product_many_images.html` | `/9842-lampa-budda-efekt-stopionej-lawy-owalna-podstawa.html` | 10 images, weight in a different scale |
+| `robots.txt` | `/robots.txt` | Real rules with wildcards (`/*?order=`), used by the HTTP client tests |
+
+Python's built-in `urllib.robotparser` does not understand `*` in paths: with this file it allows `?order=`, `?q=`
+and even `/szukaj`. The scraper uses [Protego](https://github.com/scrapy/protego), the robots.txt parser of Scrapy,
+instead.
