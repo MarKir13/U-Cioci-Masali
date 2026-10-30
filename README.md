@@ -60,7 +60,7 @@ Requirements: [Docker Desktop](https://www.docker.com/products/docker-desktop/) 
 | `shop/` | Dockerfile, PHP config, child theme, own modules | in progress |
 | `deploy/` | `compose.yaml`, `.env.example`; later: init, backup and restore scripts | in progress |
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
-| `scraper/` | Scraper source code and tests | planned |
+| `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | in progress |
 | `scraper-results/` | Scraped data (JSON/CSV) and sample images | planned |
 | `tests/` | Playwright E2E tests | planned |
 
