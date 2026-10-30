@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import requests
 
-from scraper.__main__ import fetch_page
+from scraper.__main__ import fetch_page, main, validate_positive_float
 from scraper.config import MAX_REDIRECTS, MAX_ROBOTS_REDIRECTS
 from scraper.http_client import DisallowedByRobots, HttpClient, OutsideShop
 
@@ -189,8 +189,24 @@ def test_network_error_is_raised_after_max_retries():
         client.get("/a")
 
 
-def test_404_is_not_retried():
-    client, session, _ = make_client({f"{BASE}/a": [404]})
+@pytest.mark.parametrize("status", [429, 500, 501, 503, 599])
+def test_every_5xx_and_429_is_retried(status):
+    client, session, _ = make_client({f"{BASE}/a": [status, (200, "ok")]})
+    assert client.get("/a").text == "ok"
+    assert session.calls.count(f"{BASE}/a") == 2
+
+
+def test_successful_response_is_not_retried():
+    client, session, clock = make_client({f"{BASE}/a": [(200, "ok")]})
+    assert client.get("/a").text == "ok"
+    assert session.calls == [ROBOTS_URL, f"{BASE}/a"]
+    # Only the delay between robots.txt and the page, no backoff.
+    assert clock.sleeps == [1.0]
+
+
+@pytest.mark.parametrize("status", [400, 403, 404, 410])
+def test_4xx_is_not_retried(status):
+    client, session, _ = make_client({f"{BASE}/a": [status]})
     with pytest.raises(requests.HTTPError):
         client.get("/a")
     assert session.calls.count(f"{BASE}/a") == 1
@@ -293,3 +309,22 @@ def test_gives_up_after_max_robots_txt_redirects():
 def test_fetch_of_a_skipped_url_exits_with_1_without_a_traceback(url):
     client, _, _ = make_client({}, robots=(200, "User-agent: *\nDisallow: /koszyk"))
     assert fetch_page(client, url, None) == 1
+
+
+@pytest.mark.parametrize(("value", "expected"), [("0.5", 0.5), ("1", 1.0), ("2.5", 2.5)])
+def test_delay_at_or_above_the_minimum_is_accepted(value, expected):
+    assert validate_positive_float(value) == expected
+
+
+@pytest.mark.parametrize(("value", "message"), [
+    ("0", "at least 0.5"),
+    ("0.49", "at least 0.5"),
+    ("-1", "at least 0.5"),
+    ("abc", "not a real number"),
+])
+def test_delay_below_the_minimum_stops_before_any_request(value, message, capsys):
+    # argparse rejects the value before the client is created, so no request is sent.
+    with pytest.raises(SystemExit) as exit_info:
+        main(["--delay", value, "fetch", "/8-kosmetyki"])
+    assert exit_info.value.code == 2
+    assert message in capsys.readouterr().err
