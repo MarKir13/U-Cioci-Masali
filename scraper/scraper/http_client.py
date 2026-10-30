@@ -3,12 +3,13 @@
 Every request goes through `HttpClient.get`, which:
 - checks robots.txt and skips disallowed URLs,
 - keeps at least `delay` seconds between consecutive requests,
+- manually handles 3xx responses(redirects) for both robots.txt and normal sites
 - retries 5xx responses and network errors with a growing pause.
 """
 
 import logging
 import time
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urldefrag, urljoin, urlsplit
 
 import requests
 from protego import Protego
@@ -19,6 +20,9 @@ log = logging.getLogger(__name__)
 
 # 429 (Too Many Requests) is not a server error, but waiting and retrying is the right reaction to it too.
 RETRY_STATUSES = {429, 500, 502, 503, 504}
+REDIRECT_STATUSES = {301, 302, 303, 307, 308}
+MAX_REDIRECTS = 10
+MAX_ROBOTS_REDIRECTS = 5
 
 
 class DisallowedByRobots(Exception):
@@ -60,15 +64,45 @@ class HttpClient:
         Raises `DisallowedByRobots` if robots.txt blocks it, and `requests.HTTPError` if the final
         response is an error.
         """
-        url = urljoin(self.base_url, url)
-        if not self.allowed(url):
-            log.warning("Skipped, disallowed by robots.txt: %s", url)
-            raise DisallowedByRobots(url)
-        response = self._send(url)
 
-        # raise_for_status() throws an error if last response is an error (4xx/5xx)
-        response.raise_for_status()
-        return response
+        url = urldefrag(urljoin(self.base_url, url)).url
+        history: list[requests.Response] = []
+        seen: set[str] = set()
+
+
+        # Redirects are followed here, not by requests: each hop goes through
+        # allowed() (domain + robots.txt) and _send() (delay + retries) like a new request.
+        for _ in range(MAX_REDIRECTS + 1):
+
+            # Save and check visited urls
+            if url in seen:
+                raise requests.TooManyRedirects(f"Redirect loop at {url}")
+            seen.add(url)
+ 
+            if not self.allowed(url):
+                log.warning("Skipped, disallowed by robots.txt: %s", url)
+                raise DisallowedByRobots(url)
+            response = self._send(url)
+ 
+            location = response.headers.get("Location")
+            if response.status_code not in REDIRECT_STATUSES or not location:
+                response.history = history
+                # raise_for_status() throws an error if last response is an error (4xx/5xx)
+                response.raise_for_status()
+                return response
+ 
+
+            # Only Redirects (3xx) go here
+
+            # Location may be relative; the fragment (#...) is never sent to the server.
+            next_url = urldefrag(urljoin(response.url, location)).url
+            log.info("Redirect %d: %s -> %s", response.status_code, url, next_url)
+            history.append(response)
+            response.close()  # the body of a 30x is not needed
+            url = next_url
+ 
+        raise requests.TooManyRedirects(f"More than {MAX_REDIRECTS} redirects")
+
 
     def allowed(self, url: str) -> bool:
         """Whether robots.txt lets us fetch `url`. Downloads robots.txt on first use."""
@@ -85,24 +119,37 @@ class HttpClient:
     def _load_robots(self) -> Protego:
         # Get robots.txt from source shop
         url = urljoin(self.base_url, "/robots.txt")
-        response = self._send(url)
+        for _ in range(MAX_ROBOTS_REDIRECTS + 1):
+            response = self._send(url)
+            location = response.headers.get("Location")
+            if response.status_code not in REDIRECT_STATUSES or not location:
+                break
+            
+            # Only valid redirects go here and the loop is continueing
+            url = urljoin(response.url, location)
+            log.info("robots.txt redirected to %s", url)
+        else:
+            raise requests.TooManyRedirects(f"robots.txt: more than {MAX_ROBOTS_REDIRECTS} redirects")
+ 
+
         if response.status_code == 404:
             log.info("No robots.txt at %s, every path is allowed", url)
             return Protego.parse("")
-
+ 
         # Any other error stops the run: we must not crawl without knowing the rules.
         response.raise_for_status()
-
+ 
         robots = Protego.parse(response.text)
-
-        # client selects the longer delay of one in config.py and one specified in robots.txt
+ 
+        # Client selects the longer delay of one in config.py and one specified in robots.txt
         crawl_delay = robots.crawl_delay(self.user_agent)
         if crawl_delay and crawl_delay > self.delay:
             log.info("robots.txt asks for Crawl-delay %s s, using it instead of %s s", crawl_delay, self.delay)
             self.delay = crawl_delay
-
+ 
         log.info("Loaded robots.txt from %s", url)
         return robots
+
 
     def _send(self, url: str) -> requests.Response:
         """GET `url` with the delay and retries. Returns the last response, whatever its status."""
@@ -111,7 +158,7 @@ class HttpClient:
             self._wait_for_turn()
 
             try: # Get respone with timeout
-                response = self.session.get(url, timeout=self.timeout)
+                response = self.session.get(url, timeout=self.timeout, allow_redirects=False)
 
             # network exception -> log last attempt or remember the reason and retry after backoff
             except (requests.ConnectionError, requests.Timeout) as exc:

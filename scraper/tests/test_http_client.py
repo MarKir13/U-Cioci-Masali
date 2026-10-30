@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import requests
 
-from scraper.http_client import DisallowedByRobots, HttpClient
+from scraper.http_client import MAX_REDIRECTS, DisallowedByRobots, HttpClient
 
 BASE = "https://shop.test"
 ROBOTS_URL = f"{BASE}/robots.txt"
@@ -14,31 +14,42 @@ REAL_ROBOTS = (Path(__file__).parent / "fixtures" / "robots.txt").read_text(enco
 
 """ ========== HELPER FUNCTIONS =========="""
 
-def make_response(url: str, status: int = 200, body: str = "") -> requests.Response:
+def make_response(url: str, status: int = 200, body: str = "", headers: dict | None = None) -> requests.Response:
     response = requests.Response()
     response.url = url
     response.status_code = status
     response.reason = ""
     response._content = body.encode("utf-8")
     response.encoding = "utf-8"
+    response.headers.update(headers or {})
     return response
 
 
+def redirect(location: str, status: int = 301) -> tuple:
+    """A scripted 3xx response pointing to `location`."""
+    return (status, "", {"Location": location})
+
+
 class FakeSession:
-    """Stands in for requests.Session. `script` maps a URL to the list of results for its next calls."""
+    """Stands in for requests.Session. `script` maps a URL to the list of results for its next calls.
+
+    A result is a status, a (status, body) or (status, body, headers) tuple, or an exception to raise.
+    """
 
     def __init__(self, script: dict[str, list]):
         self.headers = {}
         self.script = {url: list(results) for url, results in script.items()}
         self.calls = []
 
-    def get(self, url, timeout):
+    def get(self, url, timeout, allow_redirects=True):
+        # requests would follow redirects on its own, skipping robots.txt and the delay.
+        assert allow_redirects is False, "the client must handle redirects itself"
         self.calls.append(url)
         result = self.script[url].pop(0)
         if isinstance(result, Exception):
             raise result
-        status, body = result if isinstance(result, tuple) else (result, "")
-        return make_response(url, status, body)
+        status, body, headers = (*result, None)[:3] if isinstance(result, tuple) else (result, "", None)
+        return make_response(url, status, body, headers)
 
 
 class FakeClock:
@@ -181,3 +192,57 @@ def test_404_is_not_retried():
     with pytest.raises(requests.HTTPError):
         client.get("/a")
     assert session.calls.count(f"{BASE}/a") == 1
+
+
+""" ========== REDIRECTS =========="""
+
+def test_redirect_is_followed_with_the_delay_before_each_hop():
+    client, session, clock = make_client({f"{BASE}/a": [redirect("/b")], f"{BASE}/b": [(200, "ok")]})
+    response = client.get("/a")
+    assert response.text == "ok"
+    assert [r.status_code for r in response.history] == [301]
+    assert session.calls == [ROBOTS_URL, f"{BASE}/a", f"{BASE}/b"]
+    assert clock.sleeps == [1.0, 1.0]
+
+
+def test_redirect_to_a_disallowed_url_is_not_requested(caplog):
+    client, session, _ = make_client(
+        {f"{BASE}/a": [redirect("/koszyk", 302)]},
+        robots=(200, "User-agent: *\nDisallow: /koszyk"),
+    )
+    with caplog.at_level(logging.WARNING), pytest.raises(DisallowedByRobots):
+        client.get("/a")
+    assert session.calls == [ROBOTS_URL, f"{BASE}/a"]
+    assert "disallowed by robots.txt" in caplog.text
+
+
+def test_redirect_outside_the_shop_is_not_requested():
+    client, session, _ = make_client({f"{BASE}/a": [redirect("https://other.test/page")]})
+    with pytest.raises(ValueError):
+        client.get("/a")
+    assert session.calls == [ROBOTS_URL, f"{BASE}/a"]
+
+
+def test_redirect_loop_is_stopped():
+    client, session, _ = make_client({f"{BASE}/a": [redirect("/b")], f"{BASE}/b": [redirect("/a")]})
+    with pytest.raises(requests.TooManyRedirects):
+        client.get("/a")
+    assert session.calls == [ROBOTS_URL, f"{BASE}/a", f"{BASE}/b"]
+
+
+def test_gives_up_after_max_redirects():
+    chain = {f"{BASE}/{n}": [redirect(f"/{n + 1}")] for n in range(MAX_REDIRECTS + 1)}
+    client, session, _ = make_client(chain)
+    with pytest.raises(requests.TooManyRedirects):
+        client.get("/0")
+    # The first request and MAX_REDIRECTS hops; the next one is not sent.
+    assert len(session.calls) == 1 + 1 + MAX_REDIRECTS
+
+
+def test_redirected_robots_txt_is_followed():
+    client, session, _ = make_client(
+        {f"{BASE}/new-robots.txt": [(200, "User-agent: *\nDisallow: /koszyk")]},
+        robots=redirect("/new-robots.txt"),
+    )
+    assert client.allowed(f"{BASE}/koszyk") is False
+    assert session.calls == [ROBOTS_URL, f"{BASE}/new-robots.txt"]
