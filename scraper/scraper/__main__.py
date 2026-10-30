@@ -14,6 +14,18 @@ from .logging_config import setup_logging
 log = logging.getLogger("scraper")
 
 
+def validate_positive_float(value):
+    try:
+        float_value = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{value}' is not a real number")
+
+    if float_value < config.MIN_DELAY:
+        raise argparse.ArgumentTypeError(f"Delay option must be at least {config.MIN_DELAY}")
+
+    return float_value
+
+
 def main(argv: list[str] | None = None) -> int:
 
     # Create a parser for running with args from terminal
@@ -25,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     # Delay argument
     parser.add_argument(
         "--delay",
-        type=float,
+        type=validate_positive_float,
         default=config.DEFAULT_DELAY,
         help=f"seconds between requests (default: {config.DEFAULT_DELAY})",
     )

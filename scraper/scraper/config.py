@@ -9,6 +9,8 @@ USER_AGENT = "UCioMasaliScraper/0.1 (university project; +https://github.com/Mar
 
 # Seconds between consecutive requests. robots.txt has no Crawl-delay, so this is our own choice.
 DEFAULT_DELAY = 1.0
+# Minimal delay possible to be set in seconds
+MIN_DELAY = 0.5
 # Seconds to wait for the server to connect and to send data.
 TIMEOUT = 20
 # Extra attempts after a 5xx response or a network error.
