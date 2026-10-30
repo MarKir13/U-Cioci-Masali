@@ -18,8 +18,6 @@ from . import config
 
 log = logging.getLogger(__name__)
 
-# 429 (Too Many Requests) is not a server error, but waiting and retrying is the right reaction to it too.
-RETRY_STATUSES = {429, 500, 502, 503, 504}
 REDIRECT_STATUSES = {301, 302, 303, 307, 308}
 DEFAULT_PORTS = {"http": 80, "https": 443}
 
@@ -55,6 +53,11 @@ def _raise_for_status(response: requests.Response) -> None:
         )
     # raise_for_status() throws an error if the response is an error (4xx/5xx)
     response.raise_for_status()
+
+
+def _should_retry(status: int) -> bool:
+    """Every 5xx, and 429 (Too Many Requests): waiting and retrying is the right reaction to both."""
+    return 500 <= status < 600 or status == 429
 
 
 class HttpClient:
@@ -197,7 +200,7 @@ class HttpClient:
 
             else:
                 # Response that means no retry OR last attempt on code that means retry -> automatically return response
-                if response.status_code not in RETRY_STATUSES or attempt == attempts:
+                if not _should_retry(response.status_code) or attempt == attempts:
                     log.debug("GET %s -> %d (%d bytes)", url, response.status_code, len(response.content))
                     return response
 
