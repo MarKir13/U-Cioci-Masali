@@ -8,7 +8,7 @@ from pathlib import Path
 import requests
 
 from . import config
-from .http_client import DisallowedByRobots, HttpClient
+from .http_client import HttpClient, SkippedURL
 from .logging_config import setup_logging
 
 log = logging.getLogger("scraper")
@@ -32,10 +32,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # Verbosity argument
     parser.add_argument("-v", "--verbose", action="store_true", help="show DEBUG messages in the console")
-    
+
     # Subcommands
     commands = parser.add_subparsers(dest="command", metavar="COMMAND")
-
 
     # Fetch subcommand
     fetch = commands.add_parser("fetch", help="download one page, e.g. to save a test fixture")
@@ -48,7 +47,6 @@ def main(argv: list[str] | None = None) -> int:
         parser.print_help()
         return 0
 
-
     setup_logging(config.LOG_FILE, args.verbose)
     client = HttpClient(delay=args.delay)
     if args.command == "fetch": # start fetching
@@ -59,7 +57,8 @@ def main(argv: list[str] | None = None) -> int:
 def fetch_page(client: HttpClient, url: str, output: Path | None) -> int:
     try:
         response = client.get(url)
-    except DisallowedByRobots:
+    # Already logged by the client (robots.txt or outside the shop)
+    except SkippedURL:
         return 1
     except requests.RequestException as exc:
         log.error("Could not download %s: %s", url, exc)

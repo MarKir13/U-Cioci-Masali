@@ -6,7 +6,9 @@ from pathlib import Path
 import pytest
 import requests
 
-from scraper.http_client import MAX_REDIRECTS, DisallowedByRobots, HttpClient
+from scraper.__main__ import fetch_page
+from scraper.config import MAX_REDIRECTS, MAX_ROBOTS_REDIRECTS
+from scraper.http_client import DisallowedByRobots, HttpClient, OutsideShop
 
 BASE = "https://shop.test"
 ROBOTS_URL = f"{BASE}/robots.txt"
@@ -139,7 +141,7 @@ def test_crawl_delay_from_robots_txt_wins_over_a_shorter_delay():
 
 def test_url_outside_the_shop_is_rejected():
     client, session, _ = make_client({})
-    with pytest.raises(ValueError):
+    with pytest.raises(OutsideShop):
         client.get("https://other.test/page")
     assert session.calls == []
 
@@ -218,9 +220,32 @@ def test_redirect_to_a_disallowed_url_is_not_requested(caplog):
 
 def test_redirect_outside_the_shop_is_not_requested():
     client, session, _ = make_client({f"{BASE}/a": [redirect("https://other.test/page")]})
-    with pytest.raises(ValueError):
+    with pytest.raises(OutsideShop):
         client.get("/a")
     assert session.calls == [ROBOTS_URL, f"{BASE}/a"]
+
+
+@pytest.mark.parametrize(
+    "location",
+    ["http://shop.test/b", "https://shop.test:8443/b", "https://www.shop.test/b"],
+)
+def test_redirect_to_another_scheme_port_or_host_is_not_requested(location):
+    client, session, _ = make_client({f"{BASE}/a": [redirect(location)]})
+    with pytest.raises(OutsideShop):
+        client.get("/a")
+    assert session.calls == [ROBOTS_URL, f"{BASE}/a"]
+
+
+def test_explicit_default_port_is_the_same_shop():
+    client, session, _ = make_client({f"{BASE}/a": [redirect("https://shop.test:443/b")], f"{BASE}:443/b": [200]})
+    assert client.get("/a").status_code == 200
+
+
+@pytest.mark.parametrize("status", [302, 304])
+def test_3xx_without_location_is_an_error(status):
+    client, _, _ = make_client({f"{BASE}/a": [status]})
+    with pytest.raises(requests.HTTPError):
+        client.get("/a")
 
 
 def test_redirect_loop_is_stopped():
@@ -246,3 +271,25 @@ def test_redirected_robots_txt_is_followed():
     )
     assert client.allowed(f"{BASE}/koszyk") is False
     assert session.calls == [ROBOTS_URL, f"{BASE}/new-robots.txt"]
+
+
+def test_robots_txt_3xx_without_location_stops_the_run():
+    """Otherwise the empty body would be parsed as "everything allowed"."""
+    client, _, _ = make_client({}, robots=302)
+    with pytest.raises(requests.HTTPError):
+        client.allowed(f"{BASE}/koszyk")
+
+
+def test_gives_up_after_max_robots_txt_redirects():
+    chain = {f"{BASE}/r{n}.txt": [redirect(f"/r{n + 1}.txt")] for n in range(MAX_ROBOTS_REDIRECTS)}
+    client, _, _ = make_client(chain, robots=redirect("/r0.txt"))
+    with pytest.raises(requests.TooManyRedirects):
+        client.allowed(f"{BASE}/")
+
+
+""" ========== COMMAND LINE =========="""
+
+@pytest.mark.parametrize("url", ["https://other.test/page", "/koszyk"])
+def test_fetch_of_a_skipped_url_exits_with_1_without_a_traceback(url):
+    client, _, _ = make_client({}, robots=(200, "User-agent: *\nDisallow: /koszyk"))
+    assert fetch_page(client, url, None) == 1

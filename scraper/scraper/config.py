@@ -15,6 +15,10 @@ TIMEOUT = 20
 MAX_RETRIES = 3
 # Pause before the first retry, in seconds. It doubles with each next retry.
 BACKOFF = 5.0
+# Redirects followed for one page before giving up.
+MAX_REDIRECTS = 10
+# Redirects followed for robots.txt. RFC 9309 asks crawlers to follow at least five.
+MAX_ROBOTS_REDIRECTS = 5
 
 # Path from pathlib takes the absolute path of file independently from system
 SCRAPER_DIR = Path(__file__).resolve().parent.parent
