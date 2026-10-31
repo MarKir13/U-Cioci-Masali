@@ -301,6 +301,10 @@
   color: var(--ciocia-header-text);
 }
 
+#header .ciocia-topbar-tools #ciocia-current-currency {
+  font-weight: 600;
+}
+
 #header .ciocia-topbar-tools .material-icons {
   font-size: 16px;
 }
@@ -456,6 +460,17 @@
 }
 
 @media (min-width: 768px) {
+  /* Fill the navigation row so each hover target touches its submenu. */
+  #header .header-top #_desktop_top_menu {
+    display: flex;
+    align-self: stretch;
+  }
+
+  #header #_desktop_top_menu > .top-menu {
+    flex: 1;
+    align-items: stretch;
+  }
+
   #header #_desktop_top_menu .sub-menu.ciocia-submenu {
     top: 100% !important;
     left: 50%;
