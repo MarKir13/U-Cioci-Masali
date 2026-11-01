@@ -89,8 +89,7 @@ Breaking a rule marked **[K]** scores 0 for that requirement, whatever else work
    forbid passing them to AI tools.
 4. **Log AI use in the same PR.** Add a row to `docs/AI_LOG.md` (in Polish), give the PR the `ai-assisted` label, and
    explain in its description how the result was verified. Columns: date and author, tool and model, task (issue or
-   PR), what was received, what was wrong, verification. Report mistakes honestly; do not leave the "what was wrong"
-   column for an agent to fill with praise.
+   PR), what was received, what was wrong, verification. List real mistakes in "what was wrong".
 5. **No product images in git or Git LFS.** The full set is one archive (zip or tar.gz, up to 1 GB) in GitHub Releases.
    The init script downloads it, or re-downloads from source URLs if it is unavailable.
 6. **Child theme only.** Change the look through `shop/themes/ciocia`, never through Classic files. Read the warning in
@@ -203,8 +202,8 @@ of W1–W4. Total: 40 points.
 ### Additional (20 points, partial credit possible)
 
 **D1. Look (5).** Variant A: layout identical or close to the source shop (the colours need not match). Variant B:
-original design. We are doing **variant A**. In both: at least one working themed banner on the home page, correct at
-360 px, Lighthouse accessibility threshold met, child theme only.
+original design. Issue #5 follows variant A by recreating the source header. In both: at least one working themed
+banner on the home page, correct at 360 px, Lighthouse accessibility threshold met, child theme only.
 
 **D2. API import (4).** A script creates categories, subcategories and products (with images, prices, VAT rates, stock
 and weight) through the PrestaShop Webservice API from the scraped results. Idempotent: a second run updates and does
