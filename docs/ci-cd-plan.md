@@ -1,6 +1,7 @@
 # CI/CD plan
 
-Plan for the GitHub Actions pipeline, with issues ready to paste into GitHub. Measured on 2026-11-01.
+Plan for the GitHub Actions pipeline, with issues ready to paste into GitHub. Measured on 2026-11-01; the pytest and
+ruff rows on 2026-11-02.
 
 ## Where we stand
 
@@ -9,8 +10,8 @@ Results of running the proposed checks on the current code:
 | Check | Result | Consequence |
 |---|---|---|
 | gitleaks, all branches, full history | **12 findings**, all in commit `d81f787` on PR #4 | Fails W1 `[K]` if merged as is. See step 0 |
-| pytest (scraper, PR #4) | 56 passed on Python 3.13 | Ready for CI; CI uses 3.12 as the scraper README requires |
-| ruff with the config below (PR #4) | 1 error (`B904`), 2 files to reformat | Small fix in PR #4 |
+| pytest (scraper, PR #4) | 78 passed on Python 3.13 | Ready for CI; CI uses 3.12 as the scraper README requires |
+| ruff with the config below (PR #4) | 3 errors (2 `B904`, 1 `B018`), 2 files to reformat | Small fix in PR #4 |
 | hadolint on `shop/Dockerfile` | Clean | Can be enforced now |
 | shellcheck on `shop/scripts/` | Clean | Can be enforced now |
 | `docker compose config` | Valid | Can be enforced now |
@@ -136,12 +137,15 @@ Run a linter and the scraper unit tests on every PR (requirement D5).
 - [ ] Add `.github/workflows/ci.yml` (see below)
 - [ ] Remove the `hashFiles` guards once `scraper/` is on `main`
 - [ ] README: add a "Continuous integration" section with the commands to run the checks locally
-- [ ] PR #4: fix `B904` in `scraper/__main__.py` and run `ruff format`
+- [ ] PR #4: fix the ruff errors (`B904`, `B018`) and run `ruff format`
 
 `ruff.toml`:
 
+    # Ruff settings for all Python code in this repository.
+    # `src` marks `scraper` as our own package, so imports sort the same from any directory.
     line-length = 120
     target-version = "py312"
+    src = ["scraper"]
 
     [lint]
     select = ["E", "F", "I", "UP", "B"]
@@ -176,6 +180,7 @@ Run a linter and the scraper unit tests on every PR (requirement D5).
             run: ruff check .
           - name: Check formatting
             run: ruff format --check .
+          # The hashFiles guards can go once scraper/ is on main (issue #14).
           - name: Install scraper dependencies
             if: hashFiles('scraper/requirements.txt') != ''
             run: pip install -r scraper/requirements.txt
