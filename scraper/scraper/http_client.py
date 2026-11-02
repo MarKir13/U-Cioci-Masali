@@ -2,7 +2,7 @@
 
 Every request goes through `HttpClient.get`, which:
 - checks robots.txt and skips disallowed URLs,
-- keeps at least `delay` seconds between consecutive requests,
+- keeps at least `delay` seconds between the end of one request and the start of the next,
 - manually handles 3xx responses (redirects) for both robots.txt and normal sites,
 - retries 5xx responses and network errors with a growing pause.
 """
@@ -207,6 +207,11 @@ class HttpClient:
                 # save the status if retry
                 reason = f"HTTP {response.status_code}"
 
+            # The delay is counted from the end of the previous request (also a failed one),
+            # so a slow server still gets a full `delay` of rest between requests.
+            finally:
+                self._last_request = self.clock()
+
             # Backoff that doubles
             pause = self.backoff * 2 ** (attempt - 1)
             log.warning("%s for %s (attempt %d/%d), retrying in %.0f s", reason, url, attempt, attempts, pause)
@@ -214,9 +219,8 @@ class HttpClient:
         raise AssertionError("unreachable")
 
     def _wait_for_turn(self) -> None:
-        """Sleep until at least `delay` seconds have passed since the previous request."""
+        """Sleep until at least `delay` seconds have passed since the previous request ended."""
         if self._last_request is not None:
             remaining = self.delay - (self.clock() - self._last_request)
             if remaining > 0:
                 self.sleep(remaining)
-        self._last_request = self.clock()
