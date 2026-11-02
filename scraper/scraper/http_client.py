@@ -53,6 +53,21 @@ def check_delay(delay: float) -> float:
     return delay
 
 
+def _join_url(base: str, url: str) -> str:
+    """Absolute `url` (resolved against `base`) without the fragment, which is never sent to the server.
+
+    A malformed URL (`http://[bad/x`, port `:abc` or `:99999`) makes urllib raise ValueError,
+    which is turned into `requests.exceptions.InvalidURL`: a `RequestException`, so callers
+    handle it like any other failed download instead of crashing the whole run.
+    """
+    try:
+        joined = urldefrag(urljoin(base, url)).url
+        urlsplit(joined).port  # the port is only validated when read
+    except ValueError as exc:
+        raise requests.exceptions.InvalidURL(f"Invalid URL {url!r}: {exc}") from exc
+    return joined
+
+
 # Helper function to check if url is inside the shop
 def _origin(url: str) -> tuple[str, str, int | None]:
     """(scheme, host, port) with the default port filled in,
@@ -113,10 +128,11 @@ class HttpClient:
         """Download `url` (absolute, or relative to `base_url`).
 
         Raises `DisallowedByRobots` if robots.txt blocks it, `OutsideShop` if it (or a redirect)
-        leads outside the shop, `TooManyRedirects` when the redirect limit is exceeded, and
-        `requests.HTTPError` if the final response is an error.
+        leads outside the shop, `TooManyRedirects` when the redirect limit is exceeded,
+        `InvalidURL` if it (or a redirect) is malformed, and `requests.HTTPError` if the
+        final response is an error.
         """
-        url = urldefrag(urljoin(self.base_url, url)).url
+        url = _join_url(self.base_url, url)
         history: list[requests.Response] = []
         seen: set[str] = set()
 
@@ -143,12 +159,11 @@ class HttpClient:
                 _raise_for_status(response)
                 return response
 
-            # Only redirects (3xx) go here.
-            # Location may be relative; the fragment (#...) is never sent to the server.
-            next_url = urldefrag(urljoin(response.url, location)).url
+            # Only redirects (3xx) go here. Location may be relative.
+            response.close()  # the body of a 30x is not needed
+            next_url = _join_url(response.url, location)
             log.info("Redirect %d: %s -> %s", response.status_code, url, next_url)
             history.append(response)
-            response.close()  # the body of a 30x is not needed
             url = next_url
 
         raise requests.TooManyRedirects(f"More than {config.MAX_REDIRECTS} redirects")
@@ -171,7 +186,7 @@ class HttpClient:
 
     def _load_robots(self) -> Protego:
         # Get robots.txt from source shop
-        url = urljoin(self.base_url, "/robots.txt")
+        url = _join_url(self.base_url, "/robots.txt")
         for _ in range(config.MAX_ROBOTS_REDIRECTS + 1):
             response = self._send(url)
             location = response.headers.get("Location")
@@ -179,7 +194,7 @@ class HttpClient:
                 break
 
             # Only valid redirects go here and the loop is continuing
-            url = urldefrag(urljoin(response.url, location)).url
+            url = _join_url(response.url, location)
             # Rules from another domain or over http are not the shop's rules.
             if not self._in_shop(url):
                 log.error("robots.txt redirects outside the source shop: %s", url)
