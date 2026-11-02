@@ -23,7 +23,7 @@ python -m scraper fetch /8-kosmetyki                            # download one p
 python -m scraper fetch /8-kosmetyki -o tests/fixtures/x.html   # save it, e.g. as a test fixture
 ```
 
-Options before the command: `--delay SECONDS` (default 1.0), `-v` for DEBUG messages in the console.
+Options before the command: `--delay SECONDS` (default 1.0, minimum 0.5), `-v` for DEBUG messages in the console.
 Everything, including DEBUG messages, is also written to `scraper.log` (not committed).
 
 ## Politeness
@@ -32,8 +32,11 @@ All requests go through `HttpClient` in [scraper/http_client.py](scraper/http_cl
 
 - `User-Agent` names the project and links to this repository.
 - `robots.txt` is downloaded once and checked before every request. Disallowed URLs are skipped and logged.
-  If robots.txt cannot be read (other than 404), the run stops.
-- At least `--delay` seconds between requests, or the robots.txt `Crawl-delay` if it is longer.
+  If robots.txt cannot be read (other than 404) or redirects outside the shop, the run stops.
+- At least `--delay` seconds from the end of one request to the start of the next, or the robots.txt
+  `Crawl-delay` if it is longer.
+- Redirects are followed by the client itself: every hop is checked against the shop's domain and robots.txt
+  and waits for the delay. Malformed URLs are reported as errors instead of crashing the run.
 - 5xx, 429 and network errors are retried 3 times, with pauses of 5, 10 and 20 s. Other 4xx errors are not retried.
 
 ## Tests
