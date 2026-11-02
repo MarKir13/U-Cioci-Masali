@@ -236,6 +236,8 @@ class HttpClient:
                     log.error("Giving up on %s after %d attempts: %s", url, attempts, exc)
                     raise
                 reason = type(exc).__name__
+            except ValueError as exc:
+                raise requests.exceptions.InvalidURL(f"Malformed response from {url}: {exc}") from exc
 
             else:
                 # Response that means no retry OR last attempt on code that means retry -> automatically return response
