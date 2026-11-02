@@ -8,7 +8,7 @@ from pathlib import Path
 import requests
 
 from . import config
-from .http_client import HttpClient, SkippedURL
+from .http_client import HttpClient, SkippedURL, check_delay
 from .logging_config import setup_logging
 
 log = logging.getLogger("scraper")
@@ -20,10 +20,10 @@ def validate_positive_float(value):
     except ValueError:
         raise argparse.ArgumentTypeError(f"'{value}' is not a real number")
 
-    if float_value < config.MIN_DELAY:
-        raise argparse.ArgumentTypeError(f"Delay option must be at least {config.MIN_DELAY}")
-
-    return float_value
+    try:
+        return check_delay(float_value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Delay option must be a finite number of at least {config.MIN_DELAY}")
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -8,6 +8,7 @@ Every request goes through `HttpClient.get`, which:
 """
 
 import logging
+import math
 import time
 from urllib.parse import urldefrag, urljoin, urlsplit
 
@@ -32,6 +33,24 @@ class DisallowedByRobots(SkippedURL):
 
 class OutsideShop(SkippedURL):
     """The URL (or a redirect target) points outside the source shop."""
+
+
+class RobotsOutsideShop(requests.RequestException):
+    """robots.txt redirects outside the source shop, so the shop's rules are unknown.
+
+    Not a `SkippedURL`: skipping would let the crawl go on without the rules. As a
+    `RequestException` it stops the run and is logged like any other download error.
+    """
+
+
+def check_delay(delay: float) -> float:
+    """Return `delay` if it is a finite number of at least MIN_DELAY seconds, else raise ValueError.
+
+    `nan` needs the explicit check: every comparison with it is False, so `nan < 0.5` would pass.
+    """
+    if not math.isfinite(delay) or delay < config.MIN_DELAY:
+        raise ValueError(f"delay must be a finite number of at least {config.MIN_DELAY} s, got {delay}")
+    return delay
 
 
 # Helper function to check if url is inside the shop
@@ -75,7 +94,8 @@ class HttpClient:
     ):
         self.base_url = base_url
         self.user_agent = user_agent
-        self.delay = delay
+        # Checked here too, not only in the CLI, so no caller can turn the delay off.
+        self.delay = check_delay(delay)
         self.timeout = timeout
         self.max_retries = max_retries
         self.backoff = backoff
@@ -160,6 +180,10 @@ class HttpClient:
 
             # Only valid redirects go here and the loop is continuing
             url = urldefrag(urljoin(response.url, location)).url
+            # Rules from another domain or over http are not the shop's rules.
+            if not self._in_shop(url):
+                log.error("robots.txt redirects outside the source shop: %s", url)
+                raise RobotsOutsideShop(f"robots.txt redirects outside the source shop: {url}")
             log.info("robots.txt redirected to %s", url)
         else:
             raise requests.TooManyRedirects(f"robots.txt: more than {config.MAX_ROBOTS_REDIRECTS} redirects")
