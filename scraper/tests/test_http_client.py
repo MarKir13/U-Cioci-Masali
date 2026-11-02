@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 import requests
+from requests.adapters import BaseAdapter
 
 from scraper.__main__ import fetch_page, main, validate_positive_float
 from scraper.config import MAX_REDIRECTS, MAX_ROBOTS_REDIRECTS
@@ -377,6 +378,109 @@ def test_gives_up_after_max_robots_txt_redirects():
     client, _, _ = make_client(chain, robots=redirect("/r0.txt"))
     with pytest.raises(requests.TooManyRedirects):
         client.allowed(f"{BASE}/")
+
+
+""" ========== REAL requests.Session (URL HANDLING DONE BY REQUESTS ITSELF) =========="""
+
+class StubAdapter(BaseAdapter):
+    """Transport for a real requests.Session that answers from `routes` instead of the network.
+
+    FakeSession skips the code of requests that prepares the URL and reads Location,
+    so the cases where requests reads a URL differently than urllib need a real Session.
+    A route is a (status, body) or (status, body, headers) tuple; an unknown URL fails the test.
+    """
+
+    def __init__(self, routes: dict[str, tuple]):
+        super().__init__()
+        self.routes = routes
+        self.sent = []
+
+    def send(self, request, **kwargs):
+        self.sent.append(request.url)
+        status, body, headers = (*self.routes[request.url], None)[:3]
+        response = make_response(request.url, status, body, headers)
+        response.request = request
+        return response
+
+    def close(self):
+        pass
+
+
+def make_real_client(routes, robots=(200, "")):
+    adapter = StubAdapter({ROBOTS_URL: robots, **routes})
+    session = requests.Session()
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    clock = FakeClock()
+    client = HttpClient(base_url=BASE, session=session, sleep=clock.sleep, clock=clock)
+    return client, adapter
+
+
+@pytest.mark.parametrize("location", ["http://[bad/x", "http://x＃.pl/"])
+def test_malformed_location_parsed_by_requests_is_an_invalid_url_error(location, caplog):
+    """requests reads Location inside Session.send even with allow_redirects=False, before _join_url."""
+    client, adapter = make_real_client({f"{BASE}/a": redirect(location)})
+    with pytest.raises(requests.exceptions.InvalidURL):
+        client.get("/a")
+    assert adapter.sent == [ROBOTS_URL, f"{BASE}/a"]
+    with caplog.at_level(logging.ERROR):
+        assert fetch_page(client, "/a", None) == 1
+    assert "Could not download" in caplog.text
+
+
+# urllib sees host shop.test, requests sends the request to evil.test.
+BACKSLASH_URL = "https://evil.test\\@shop.test/x"
+
+
+def test_backslash_url_outside_the_shop_is_not_requested():
+    client, adapter = make_real_client({})
+    with pytest.raises(OutsideShop):
+        client.get(BACKSLASH_URL)
+    assert adapter.sent == []
+
+
+def test_redirect_to_a_backslash_url_outside_the_shop_is_not_requested():
+    client, adapter = make_real_client({f"{BASE}/a": redirect(BACKSLASH_URL)})
+    with pytest.raises(OutsideShop):
+        client.get("/a")
+    assert adapter.sent == [ROBOTS_URL, f"{BASE}/a"]
+
+
+# Every path is /koszyk once the server decodes %2e and removes the dot segments.
+DOT_SEGMENT_PATHS = [
+    "/a/../koszyk",
+    "/a/b/../../koszyk",
+    "/a/%2e%2e/koszyk",
+    "/a/%2E%2E/koszyk",
+    "/a/.%2e/koszyk",
+    "/a/%2e/../koszyk",
+]
+
+
+@pytest.mark.parametrize("path", DOT_SEGMENT_PATHS)
+def test_dot_segments_do_not_bypass_robots_txt(path):
+    client, adapter = make_real_client({}, robots=(200, REAL_ROBOTS))
+    with pytest.raises(DisallowedByRobots):
+        client.get(BASE + path)
+    assert adapter.sent == [ROBOTS_URL]
+
+
+@pytest.mark.parametrize("path", DOT_SEGMENT_PATHS)
+def test_absolute_redirect_with_dot_segments_does_not_bypass_robots_txt(path):
+    """urljoin removes dot segments only from a relative Location, so the absolute one is the risk."""
+    client, adapter = make_real_client({f"{BASE}/a": redirect(BASE + path)}, robots=(200, REAL_ROBOTS))
+    with pytest.raises(DisallowedByRobots):
+        client.get("/a")
+    assert adapter.sent == [ROBOTS_URL, f"{BASE}/a"]
+
+
+@pytest.mark.parametrize("path", ["/x/../8-kosmetyki", "/x/%2e%2e/8-kosmetyki", "/x/%2e/../8-kosmetyki"])
+def test_the_checked_url_is_the_url_that_is_sent(path):
+    client, adapter = make_real_client({f"{BASE}/8-kosmetyki": (200, "ok")}, robots=(200, REAL_ROBOTS))
+    response = client.get(BASE + path)
+    assert response.text == "ok"
+    assert response.url == f"{BASE}/8-kosmetyki"
+    assert adapter.sent == [ROBOTS_URL, f"{BASE}/8-kosmetyki"]
 
 
 """ ========== COMMAND LINE =========="""
