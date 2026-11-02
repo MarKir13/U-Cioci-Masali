@@ -8,7 +8,7 @@ import requests
 
 from scraper.__main__ import fetch_page, main, validate_positive_float
 from scraper.config import MAX_REDIRECTS, MAX_ROBOTS_REDIRECTS
-from scraper.http_client import DisallowedByRobots, HttpClient, OutsideShop
+from scraper.http_client import DisallowedByRobots, HttpClient, OutsideShop, RobotsOutsideShop
 
 BASE = "https://shop.test"
 ROBOTS_URL = f"{BASE}/robots.txt"
@@ -316,6 +316,26 @@ def test_redirected_robots_txt_is_followed():
     assert session.calls == [ROBOTS_URL, f"{BASE}/new-robots.txt"]
 
 
+@pytest.mark.parametrize(
+    "location",
+    ["https://evil.test/robots.txt", "http://shop.test/robots.txt", "https://shop.test:8443/robots.txt"],
+)
+def test_robots_txt_redirect_outside_the_shop_stops_the_run(location, caplog):
+    """A foreign `Allow: /` must not replace the shop's rules, and the run must not go on without rules."""
+    client, session, _ = make_client({location: [(200, "User-agent: *\nAllow: /")]}, robots=redirect(location))
+    with caplog.at_level(logging.ERROR), pytest.raises(RobotsOutsideShop):
+        client.get("/koszyk")
+    assert session.calls == [ROBOTS_URL]
+    assert "robots.txt redirects outside the source shop" in caplog.text
+
+
+def test_fetch_exits_with_1_when_robots_txt_redirects_outside_the_shop(caplog):
+    client, _, _ = make_client({}, robots=redirect("https://evil.test/robots.txt"))
+    with caplog.at_level(logging.ERROR):
+        assert fetch_page(client, "/8-kosmetyki", None) == 1
+    assert "Could not download /8-kosmetyki" in caplog.text
+
+
 def test_robots_txt_3xx_without_location_stops_the_run():
     """Otherwise the empty body would be parsed as "everything allowed"."""
     client, _, _ = make_client({}, robots=302)
@@ -347,6 +367,8 @@ def test_delay_at_or_above_the_minimum_is_accepted(value, expected):
     ("0", "at least 0.5"),
     ("0.49", "at least 0.5"),
     ("-1", "at least 0.5"),
+    ("nan", "finite number"),
+    ("inf", "finite number"),
     ("abc", "not a real number"),
 ])
 def test_delay_below_the_minimum_stops_before_any_request(value, message, capsys):
@@ -355,3 +377,10 @@ def test_delay_below_the_minimum_stops_before_any_request(value, message, capsys
         main(["--delay", value, "fetch", "/8-kosmetyki"])
     assert exit_info.value.code == 2
     assert message in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("delay", [0, 0.49, -1, float("nan"), float("inf")])
+def test_client_rejects_a_delay_below_the_minimum_or_not_finite(delay):
+    """The client checks the delay itself, so code that bypasses the CLI cannot turn it off."""
+    with pytest.raises(ValueError, match="at least 0.5"):
+        HttpClient(base_url=BASE, delay=delay)
