@@ -53,6 +53,24 @@ Requirements: [Docker Desktop](https://www.docker.com/products/docker-desktop/) 
 | Apply changes from `shop/` (theme, modules, config) | `docker compose -f deploy/compose.yaml up -d --build` |
 | Reset everything and reinstall from scratch | `docker compose -f deploy/compose.yaml down -v` |
 
+## Continuous integration
+
+GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on every pull request and on every push to
+`main`. A pull request must have a passing `ci-gate` job before it is merged.
+
+To run the same checks locally, install the tools once:
+
+```sh
+pip install ruff==0.17.3
+pip install -r scraper/requirements.txt
+```
+
+| Check | Command |
+|---|---|
+| Lint | `ruff check .` |
+| Formatting (`ruff format .` fixes it) | `ruff format --check .` |
+| Scraper unit tests (from `scraper/`) | `python -m pytest` |
+
 ## Repository structure
 
 | Path | Contents | Status |
