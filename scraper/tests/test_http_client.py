@@ -38,15 +38,20 @@ class FakeSession:
     A result is a status, a (status, body) or (status, body, headers) tuple, or an exception to raise.
     """
 
-    def __init__(self, script: dict[str, list]):
+    def __init__(self, script: dict[str, list], clock=None, response_time: float = 0.0):
         self.headers = {}
         self.script = {url: list(results) for url, results in script.items()}
         self.calls = []
+        # Optional: every request moves the fake clock forward, like a slow server would.
+        self.clock = clock
+        self.response_time = response_time
 
     def get(self, url, timeout, allow_redirects=True):
         # requests would follow redirects on its own, skipping robots.txt and the delay.
         assert allow_redirects is False, "the client must handle redirects itself"
         self.calls.append(url)
+        if self.clock is not None:
+            self.clock.now += self.response_time
         result = self.script[url].pop(0)
         if isinstance(result, Exception):
             raise result
@@ -69,9 +74,9 @@ class FakeClock:
         self.now += seconds
 
 
-def make_client(script, robots=(200, ""), **kwargs):
+def make_client(script, robots=(200, ""), response_time=0.0, **kwargs):
     clock = FakeClock()
-    session = FakeSession({ROBOTS_URL: [robots], **script})
+    session = FakeSession({ROBOTS_URL: [robots], **script}, clock=clock, response_time=response_time)
     kwargs = {"delay": 1.0, "backoff": 5.0, "max_retries": 3, **kwargs}
     client = HttpClient(base_url=BASE, session=session, sleep=clock.sleep, clock=clock, **kwargs)
     return client, session, clock
@@ -153,6 +158,28 @@ def test_consecutive_requests_are_spaced_by_the_delay():
         client.get(f"/{n}")
     # robots.txt, then 3 pages: a full delay before each page, because the fake clock does not move by itself.
     assert clock.sleeps == [1.5, 1.5, 1.5]
+
+
+def test_slow_responses_still_get_the_full_delay_between_requests():
+    """The delay counts from the end of the previous request, not its start."""
+    pages = {f"{BASE}/{n}": [200] for n in range(2)}
+    client, _, clock = make_client(pages, delay=1.0, response_time=1.5)
+    for n in range(2):
+        client.get(f"/{n}")
+    # robots.txt, then 2 pages; each response takes 1.5 s, longer than the delay.
+    assert clock.sleeps == [1.0, 1.0]
+
+
+def test_delay_counts_from_the_end_of_a_failed_request():
+    client, _, clock = make_client(
+        {f"{BASE}/a": [requests.Timeout("slow")], f"{BASE}/b": [200]},
+        delay=1.0, max_retries=0, response_time=1.5,
+    )
+    with pytest.raises(requests.Timeout):
+        client.get("/a")
+    client.get("/b")
+    # robots.txt -> 1.0 before /a, /a times out after 1.5 s -> still 1.0 before /b.
+    assert clock.sleeps == [1.0, 1.0]
 
 
 def test_no_extra_wait_when_the_delay_has_already_passed():
