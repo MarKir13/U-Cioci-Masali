@@ -9,6 +9,7 @@ Every request goes through `HttpClient.get`, which:
 
 import logging
 import math
+import re
 import time
 from urllib.parse import urldefrag, urljoin, urlsplit
 
@@ -21,6 +22,7 @@ log = logging.getLogger(__name__)
 
 REDIRECT_STATUSES = {301, 302, 303, 307, 308}
 DEFAULT_PORTS = {"http": 80, "https": 443}
+DOT_ESCAPE = re.compile("%2e", re.IGNORECASE)
 
 
 class SkippedURL(Exception):
@@ -56,12 +58,21 @@ def check_delay(delay: float) -> float:
 def _join_url(base: str, url: str) -> str:
     """Absolute `url` (resolved against `base`) without the fragment, which is never sent to the server.
 
+    The result is normalized the way requests prepares it for sending (`/a/../b` -> `/b`,
+    `http://host\\@sklep/` -> host `host`), so the shop and robots.txt checks see exactly
+    the URL that goes out, not one that urllib reads differently.
+
+    `%2e` is decoded to `.` first (the same character, RFC 3986 2.3). requests decodes it only
+    after removing dot segments, so `/a/%2e%2e/b` would be sent as `/a/../b`, which the server
+    reads as `/b` while robots.txt was checked for `/a/../b`.
+
     A malformed URL (`http://[bad/x`, port `:abc` or `:99999`) makes urllib raise ValueError,
     which is turned into `requests.exceptions.InvalidURL`: a `RequestException`, so callers
     handle it like any other failed download instead of crashing the whole run.
     """
     try:
-        joined = urldefrag(urljoin(base, url)).url
+        joined = DOT_ESCAPE.sub(".", urldefrag(urljoin(base, url)).url)
+        joined = requests.Request("GET", joined).prepare().url
         urlsplit(joined).port  # the port is only validated when read
     except ValueError as exc:
         raise requests.exceptions.InvalidURL(f"Invalid URL {url!r}: {exc}") from exc
