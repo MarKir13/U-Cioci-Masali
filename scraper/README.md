@@ -37,6 +37,8 @@ All requests go through `HttpClient` in [scraper/http_client.py](scraper/http_cl
   `Crawl-delay` if it is longer.
 - Redirects are followed by the client itself: every hop is checked against the shop's domain and robots.txt
   and waits for the delay. Malformed URLs are reported as errors instead of crashing the run.
+- URLs are normalized the way `requests` sends them (`/a/../b` and `/a/%2e%2e/b` become `/b`) before these checks,
+  so the checked URL is exactly the URL that is requested.
 - 5xx, 429 and network errors are retried 3 times, with pauses of 5, 10 and 20 s. Other 4xx errors are not retried.
 
 ## Tests
