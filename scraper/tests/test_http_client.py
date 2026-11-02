@@ -291,6 +291,35 @@ def test_3xx_without_location_is_an_error(status):
         client.get("/a")
 
 
+BAD_URLS = ["https://shop.test:abc/x", "https://shop.test:99999/x", "http://[bad/x"]
+
+
+@pytest.mark.parametrize("location", BAD_URLS)
+def test_malformed_redirect_is_an_invalid_url_error(location):
+    """InvalidURL is a RequestException, so a crawl can log it and go on instead of crashing on ValueError."""
+    client, session, _ = make_client({f"{BASE}/a": [redirect(location)]})
+    with pytest.raises(requests.exceptions.InvalidURL):
+        client.get("/a")
+    assert session.calls == [ROBOTS_URL, f"{BASE}/a"]
+
+
+@pytest.mark.parametrize("location", BAD_URLS)
+def test_malformed_robots_txt_redirect_stops_the_run(location):
+    client, session, _ = make_client({}, robots=redirect(location))
+    with pytest.raises(requests.exceptions.InvalidURL):
+        client.get("/a")
+    assert session.calls == [ROBOTS_URL]
+
+
+@pytest.mark.parametrize("url", BAD_URLS)
+def test_fetch_of_a_malformed_url_exits_with_1_without_a_traceback(url, caplog):
+    client, session, _ = make_client({})
+    with caplog.at_level(logging.ERROR):
+        assert fetch_page(client, url, None) == 1
+    assert session.calls == []
+    assert "Could not download" in caplog.text
+
+
 def test_redirect_loop_is_stopped():
     client, session, _ = make_client({f"{BASE}/a": [redirect("/b")], f"{BASE}/b": [redirect("/a")]})
     with pytest.raises(requests.TooManyRedirects):
