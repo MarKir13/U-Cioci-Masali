@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scraper:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install ruff
+        run: pip install ruff==0.17.3
+      - name: Lint
+        run: ruff check .
+      - name: Check formatting
+        run: ruff format --check .
+      # The hashFiles guards can go once scraper/ is on main (issue #14).
+      - name: Install scraper dependencies
+        if: hashFiles('scraper/requirements.txt') != ''
+        run: pip install -r scraper/requirements.txt
+      - name: Unit tests
+        if: hashFiles('scraper/requirements.txt') != ''
+        working-directory: scraper
+        run: python -m pytest
+
+  ci-gate:
+    if: always()
+    needs: [scraper]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail if any required job did not succeed
+        run: test "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "false"
