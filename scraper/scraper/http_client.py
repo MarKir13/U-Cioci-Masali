@@ -80,16 +80,17 @@ def _join_url(base: str, url: str) -> str:
     `http://host\\@sklep/` -> host `host`), so the shop and robots.txt checks see exactly
     the URL that goes out, not one that urllib reads differently.
 
-    `%2e` is decoded to `.` first (the same character, RFC 3986 2.3). requests decodes it only
-    after removing dot segments, so `/a/%2e%2e/b` would be sent as `/a/../b`, which the server
-    reads as `/b` while robots.txt was checked for `/a/../b`.
+    `%2e` is decoded to `.` first (the same character, RFC 3986 2.3), before urljoin and requests
+    remove dot segments. Otherwise `/a/%2e%2e/b` would be sent as `/a/../b`, which the server
+    reads as `/b` while robots.txt was checked for `/a/../b`, and a relative `/a/%2e/../b`
+    would lead to `/a/b` instead of `/b`.
 
     A malformed URL (`http://[bad/x`, port `:abc` or `:99999`) makes urllib raise ValueError,
     which is turned into `requests.exceptions.InvalidURL`: a `RequestException`, so callers
     handle it like any other failed download instead of crashing the whole run.
     """
     try:
-        joined = DOT_ESCAPE.sub(".", urldefrag(urljoin(base, url)).url)
+        joined = urldefrag(urljoin(base, DOT_ESCAPE.sub(".", url))).url
         joined = requests.Request("GET", joined).prepare().url
         urlsplit(joined).port  # the port is only validated when read
     except ValueError as exc:
@@ -182,8 +183,8 @@ class HttpClient:
                 raise DisallowedByRobots(url)
             response = self._send(url)
 
-            location = response.headers.get("Location")
-            if response.status_code not in REDIRECT_STATUSES or not location:
+            location = self._redirect_target(response)
+            if not location:
                 response.history = history
                 _raise_for_status(response)
                 return response
@@ -198,7 +199,11 @@ class HttpClient:
         raise requests.TooManyRedirects(f"More than {config.MAX_REDIRECTS} redirects")
 
     def allowed(self, url: str) -> bool:
-        """Whether robots.txt lets us fetch `url`. Downloads robots.txt on first use."""
+        """Whether robots.txt lets us fetch `url`. Downloads robots.txt on first use.
+
+        `url` is normalized like in `get`, so both give the same answer for `/a/../koszyk`.
+        """
+        url = _join_url(self.base_url, url)
         # Check if request domain is different to shop original shop domain
         if not self._in_shop(url):
             raise OutsideShop(url)
