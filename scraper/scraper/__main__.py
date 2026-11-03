@@ -23,7 +23,9 @@ def validate_positive_float(value):
     try:
         return check_delay(float_value)
     except ValueError:
-        raise argparse.ArgumentTypeError(f"Delay option must be a finite number of at least {config.MIN_DELAY}")
+        raise argparse.ArgumentTypeError(
+            f"Delay option must be a finite number of at least {config.MIN_DELAY} and at most {config.MAX_DELAY}"
+        )
 
 
 def main(argv: list[str] | None = None) -> int:
