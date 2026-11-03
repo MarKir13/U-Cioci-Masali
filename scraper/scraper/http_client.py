@@ -90,7 +90,12 @@ def _join_url(base: str, url: str) -> str:
     handle it like any other failed download instead of crashing the whole run.
     """
     try:
-        joined = urldefrag(urljoin(base, DOT_ESCAPE.sub(".", url))).url
+        # DOT_ESCAPE.sub() is a regex  that replaces '%2e' expressions into dots ('.') (precomiled at the begining of the file)
+        # urljoin simply joins shop base with url
+        # urldefrag removes anchors from url eg. example.com/strona#section1 -> example.com/strona; We have to extract the url via .url property
+        joined = urldefrag(urljoin(base, DOT_ESCAPE.sub(".", url))).url 
+
+        # prepare the url (raw one is not yet able to be sent)
         joined = requests.Request("GET", joined).prepare().url
         urlsplit(joined).port  # the port is only validated when read
     except ValueError as exc:
