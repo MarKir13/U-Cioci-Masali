@@ -20,7 +20,14 @@ from . import config
 
 log = logging.getLogger(__name__)
 
-REDIRECT_STATUSES = {301, 302, 303, 307, 308}
+# Errors worth retrying. A connection dropped while the body is read (ChunkedEncodingError,
+# ContentDecodingError for a cut gzip stream) is not a ConnectionError, so it is listed apart.
+NETWORK_ERRORS = (
+    requests.ConnectionError,
+    requests.Timeout,
+    requests.exceptions.ChunkedEncodingError,
+    requests.exceptions.ContentDecodingError,
+)
 DEFAULT_PORTS = {"http": 80, "https": 443}
 DOT_ESCAPE = re.compile("%2e", re.IGNORECASE)
 
@@ -45,13 +52,24 @@ class RobotsOutsideShop(requests.RequestException):
     """
 
 
+class CrawlDelayTooLong(requests.RequestException):
+    """robots.txt asks for a Crawl-delay above MAX_DELAY.
+
+    Ignoring it would break the shop's rules and waiting that long is not a crawl,
+    so the run stops, like with `RobotsOutsideShop`.
+    """
+
+
 def check_delay(delay: float) -> float:
-    """Return `delay` if it is a finite number of at least MIN_DELAY seconds, else raise ValueError.
+    """Return `delay` if it is a finite number from MIN_DELAY to MAX_DELAY seconds, else raise ValueError.
 
     `nan` needs the explicit check: every comparison with it is False, so `nan < 0.5` would pass.
     """
-    if not math.isfinite(delay) or delay < config.MIN_DELAY:
-        raise ValueError(f"delay must be a finite number of at least {config.MIN_DELAY} s, got {delay}")
+    if not math.isfinite(delay) or not config.MIN_DELAY <= delay <= config.MAX_DELAY:
+        raise ValueError(
+            f"delay must be a finite number of at least {config.MIN_DELAY} s "
+            f"and at most {config.MAX_DELAY} s, got {delay}"
+        )
     return delay
 
 
@@ -195,13 +213,21 @@ class HttpClient:
         """Same scheme, host and port as base_url."""
         return _origin(url) == _origin(self.base_url)
 
+    def _redirect_target(self, response: requests.Response) -> str | None:
+        """Location of a redirect (3xx with Location), else None.
+
+        Read by requests' own code: http.client decodes headers as latin-1, and requests
+        decodes Location again as UTF-8, so `/zdrowie-żółć` is followed as the server meant it.
+        """
+        return self.session.get_redirect_target(response)
+
     def _load_robots(self) -> Protego:
         # Get robots.txt from source shop
         url = _join_url(self.base_url, "/robots.txt")
         for _ in range(config.MAX_ROBOTS_REDIRECTS + 1):
             response = self._send(url)
-            location = response.headers.get("Location")
-            if response.status_code not in REDIRECT_STATUSES or not location:
+            location = self._redirect_target(response)
+            if not location:
                 break
 
             # Only valid redirects go here and the loop is continuing
@@ -225,6 +251,9 @@ class HttpClient:
 
         # Client selects the longer delay of one in config.py and one specified in robots.txt
         crawl_delay = robots.crawl_delay(self.user_agent)
+        if crawl_delay and crawl_delay > config.MAX_DELAY:
+            log.error("robots.txt asks for Crawl-delay %s s, more than the maximum %s s", crawl_delay, config.MAX_DELAY)
+            raise CrawlDelayTooLong(f"robots.txt asks for Crawl-delay {crawl_delay} s, more than {config.MAX_DELAY} s")
         if crawl_delay and crawl_delay > self.delay:
             log.info("robots.txt asks for Crawl-delay %s s, using it instead of %s s", crawl_delay, self.delay)
             self.delay = crawl_delay
@@ -242,7 +271,7 @@ class HttpClient:
                 response = self.session.get(url, timeout=self.timeout, allow_redirects=False)
 
             # network exception -> log last attempt or remember the reason and retry after backoff
-            except (requests.ConnectionError, requests.Timeout) as exc:
+            except NETWORK_ERRORS as exc:
                 if attempt == attempts:
                     log.error("Giving up on %s after %d attempts: %s", url, attempts, exc)
                     raise
