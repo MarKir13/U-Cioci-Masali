@@ -1,15 +1,23 @@
 """Tests for HttpClient. No real network: a fake session returns scripted responses."""
 
+import io
 import logging
 from pathlib import Path
 
 import pytest
 import requests
-from requests.adapters import BaseAdapter
+import urllib3
+from requests.adapters import BaseAdapter, HTTPAdapter
 
 from scraper.__main__ import fetch_page, main, validate_positive_float
-from scraper.config import MAX_REDIRECTS, MAX_ROBOTS_REDIRECTS
-from scraper.http_client import DisallowedByRobots, HttpClient, OutsideShop, RobotsOutsideShop
+from scraper.config import MAX_DELAY, MAX_REDIRECTS, MAX_ROBOTS_REDIRECTS
+from scraper.http_client import (
+    CrawlDelayTooLong,
+    DisallowedByRobots,
+    HttpClient,
+    OutsideShop,
+    RobotsOutsideShop,
+)
 
 BASE = "https://shop.test"
 ROBOTS_URL = f"{BASE}/robots.txt"
@@ -46,6 +54,9 @@ class FakeSession:
         # Optional: every request moves the fake clock forward, like a slow server would.
         self.clock = clock
         self.response_time = response_time
+
+    # The client reads Location with requests' own code, so the fake session uses it too.
+    get_redirect_target = requests.Session.get_redirect_target
 
     def get(self, url, timeout, allow_redirects=True):
         # requests would follow redirects on its own, skipping robots.txt and the delay.
@@ -145,6 +156,39 @@ def test_crawl_delay_from_robots_txt_wins_over_a_shorter_delay():
     assert client.delay == 3
 
 
+def test_crawl_delay_up_to_the_maximum_is_followed():
+    client, _, _ = make_client({}, robots=(200, f"User-agent: *\nCrawl-delay: {MAX_DELAY}"))
+    client.allowed(f"{BASE}/")
+    assert client.delay == MAX_DELAY
+
+
+def test_crawl_delay_above_the_maximum_stops_the_run(caplog):
+    """time.sleep() would overflow on it, and ignoring it would break the shop's rules."""
+    robots = (200, "User-agent: *\nCrawl-delay: 99999999999")
+    client, session, _ = make_client({}, robots=robots)
+    with pytest.raises(CrawlDelayTooLong):
+        client.get("/8-kosmetyki")
+    assert session.calls == [ROBOTS_URL]
+
+    client, _, _ = make_client({}, robots=robots)
+    with caplog.at_level(logging.ERROR):
+        assert fetch_page(client, "/8-kosmetyki", None) == 1
+    assert "Could not download /8-kosmetyki" in caplog.text
+
+
+@pytest.mark.parametrize("path", ["/koszyk", "/a/../koszyk", "/a/%2e%2e/koszyk", "/a/%2e/../koszyk"])
+def test_allowed_normalizes_the_url_like_get(path):
+    client, _, _ = make_client({}, robots=(200, REAL_ROBOTS))
+    assert client.allowed(path) is False
+    assert client.allowed(BASE + path) is False
+
+
+def test_allowed_with_a_malformed_url_is_an_invalid_url_error():
+    client, _, _ = make_client({})
+    with pytest.raises(requests.exceptions.InvalidURL):
+        client.allowed("https://shop.test:abc/x")
+
+
 def test_url_outside_the_shop_is_rejected():
     client, session, _ = make_client({})
     with pytest.raises(OutsideShop):
@@ -209,6 +253,17 @@ def test_gives_up_after_max_retries():
 def test_network_error_is_retried():
     client, _, _ = make_client({f"{BASE}/a": [requests.ConnectionError("reset"), requests.Timeout(), 200]})
     assert client.get("/a").status_code == 200
+
+
+@pytest.mark.parametrize(
+    "error",
+    [requests.exceptions.ChunkedEncodingError("cut body"), requests.exceptions.ContentDecodingError("broken gzip")],
+)
+def test_error_while_reading_the_body_is_retried(error):
+    """Not a ConnectionError: the connection drops after the headers, while the body is read."""
+    client, session, _ = make_client({f"{BASE}/a": [error, (200, "ok")]})
+    assert client.get("/a").text == "ok"
+    assert session.calls.count(f"{BASE}/a") == 2
 
 
 def test_network_error_is_raised_after_max_retries():
@@ -387,17 +442,21 @@ class StubAdapter(BaseAdapter):
 
     FakeSession skips the code of requests that prepares the URL and reads Location,
     so the cases where requests reads a URL differently than urllib need a real Session.
-    A route is a (status, body) or (status, body, headers) tuple; an unknown URL fails the test.
+    A route is a (status, body) or (status, body, headers) tuple, or a function that builds
+    the response from the request; an unknown URL fails the test.
     """
 
-    def __init__(self, routes: dict[str, tuple]):
+    def __init__(self, routes: dict):
         super().__init__()
         self.routes = routes
         self.sent = []
 
     def send(self, request, **kwargs):
         self.sent.append(request.url)
-        status, body, headers = (*self.routes[request.url], None)[:3]
+        route = self.routes[request.url]
+        if callable(route):
+            return route(request)
+        status, body, headers = (*route, None)[:3]
         response = make_response(request.url, status, body, headers)
         response.request = request
         return response
@@ -466,9 +525,10 @@ def test_dot_segments_do_not_bypass_robots_txt(path):
 
 
 @pytest.mark.parametrize("path", DOT_SEGMENT_PATHS)
-def test_absolute_redirect_with_dot_segments_does_not_bypass_robots_txt(path):
-    """urljoin removes dot segments only from a relative Location, so the absolute one is the risk."""
-    client, adapter = make_real_client({f"{BASE}/a": redirect(BASE + path)}, robots=(200, REAL_ROBOTS))
+@pytest.mark.parametrize("origin", [BASE, ""], ids=["absolute", "relative"])
+def test_redirect_with_dot_segments_does_not_bypass_robots_txt(path, origin):
+    """urljoin removes dot segments only from a relative Location, and before %2e is decoded."""
+    client, adapter = make_real_client({f"{BASE}/a": redirect(origin + path)}, robots=(200, REAL_ROBOTS))
     with pytest.raises(DisallowedByRobots):
         client.get("/a")
     assert adapter.sent == [ROBOTS_URL, f"{BASE}/a"]
@@ -483,6 +543,42 @@ def test_the_checked_url_is_the_url_that_is_sent(path):
     assert adapter.sent == [ROBOTS_URL, f"{BASE}/8-kosmetyki"]
 
 
+def cut_body(request) -> requests.Response:
+    """10 of the 1000 bytes promised by Content-Length, as when the connection drops mid-download."""
+    raw = urllib3.HTTPResponse(
+        io.BytesIO(b"0123456789"), headers={"Content-Length": "1000"}, status=200,
+        preload_content=False, enforce_content_length=True,
+    )
+    return HTTPAdapter().build_response(request, raw)
+
+
+def test_connection_dropped_mid_download_is_retried():
+    client, adapter = make_real_client({f"{BASE}/a": cut_body})
+    with pytest.raises(requests.exceptions.ChunkedEncodingError):
+        client.get("/a")
+    # The first attempt and 3 retries.
+    assert adapter.sent.count(f"{BASE}/a") == 4
+
+
+# http.client decodes headers as latin-1, so a Location sent as UTF-8 arrives garbled like this.
+UTF8_LOCATION = "/zdrowie-żółć".encode("utf-8").decode("latin-1")
+UTF8_TARGET = f"{BASE}/zdrowie-%C5%BC%C3%B3%C5%82%C4%87"
+
+
+def test_utf8_location_is_followed_like_requests_does():
+    client, adapter = make_real_client({f"{BASE}/a": redirect(UTF8_LOCATION), UTF8_TARGET: (200, "ok")})
+    assert client.get("/a").text == "ok"
+    assert adapter.sent == [ROBOTS_URL, f"{BASE}/a", UTF8_TARGET]
+
+
+def test_utf8_location_of_robots_txt_is_followed_like_requests_does():
+    client, adapter = make_real_client(
+        {UTF8_TARGET: (200, "User-agent: *\nDisallow: /koszyk")}, robots=redirect(UTF8_LOCATION)
+    )
+    assert client.allowed(f"{BASE}/koszyk") is False
+    assert adapter.sent == [ROBOTS_URL, UTF8_TARGET]
+
+
 """ ========== COMMAND LINE =========="""
 
 @pytest.mark.parametrize("url", ["https://other.test/page", "/koszyk"])
@@ -491,8 +587,8 @@ def test_fetch_of_a_skipped_url_exits_with_1_without_a_traceback(url):
     assert fetch_page(client, url, None) == 1
 
 
-@pytest.mark.parametrize(("value", "expected"), [("0.5", 0.5), ("1", 1.0), ("2.5", 2.5)])
-def test_delay_at_or_above_the_minimum_is_accepted(value, expected):
+@pytest.mark.parametrize(("value", "expected"), [("0.5", 0.5), ("1", 1.0), ("2.5", 2.5), ("3600", 3600.0)])
+def test_delay_from_the_minimum_to_the_maximum_is_accepted(value, expected):
     assert validate_positive_float(value) == expected
 
 
@@ -500,20 +596,25 @@ def test_delay_at_or_above_the_minimum_is_accepted(value, expected):
     ("0", "at least 0.5"),
     ("0.49", "at least 0.5"),
     ("-1", "at least 0.5"),
+    ("3600.5", "at most 3600"),
+    ("1e10", "at most 3600"),
     ("nan", "finite number"),
     ("inf", "finite number"),
     ("abc", "not a real number"),
 ])
-def test_delay_below_the_minimum_stops_before_any_request(value, message, capsys):
+def test_delay_out_of_range_stops_before_any_request(value, message, capsys, monkeypatch):
     # argparse rejects the value before the client is created, so no request is sent.
+    # If it did not, the real client would call the shop: fail the test instead.
+    monkeypatch.setattr("scraper.__main__.setup_logging", lambda *args: None)
+    monkeypatch.setattr("scraper.__main__.HttpClient", lambda **kwargs: pytest.fail("the client was created"))
     with pytest.raises(SystemExit) as exit_info:
         main(["--delay", value, "fetch", "/8-kosmetyki"])
     assert exit_info.value.code == 2
     assert message in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("delay", [0, 0.49, -1, float("nan"), float("inf")])
-def test_client_rejects_a_delay_below_the_minimum_or_not_finite(delay):
+@pytest.mark.parametrize("delay", [0, 0.49, -1, 3600.5, 1e10, float("nan"), float("inf")])
+def test_client_rejects_a_delay_out_of_range_or_not_finite(delay):
     """The client checks the delay itself, so code that bypasses the CLI cannot turn it off."""
     with pytest.raises(ValueError, match="at least 0.5"):
         HttpClient(base_url=BASE, delay=delay)
