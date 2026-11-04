@@ -18,14 +18,14 @@ def validate_positive_float(value):
     try:
         float_value = float(value)
     except ValueError:
-        raise argparse.ArgumentTypeError(f"'{value}' is not a real number")
+        raise argparse.ArgumentTypeError(f"'{value}' is not a real number") from None
 
     try:
         return check_delay(float_value)
     except ValueError:
         raise argparse.ArgumentTypeError(
             f"Delay option must be a finite number of at least {config.MIN_DELAY} and at most {config.MAX_DELAY}"
-        )
+        ) from None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -63,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
 
     setup_logging(config.LOG_FILE, args.verbose)
     client = HttpClient(delay=args.delay)
-    if args.command == "fetch": # start fetching
+    if args.command == "fetch":  # start fetching
         return fetch_page(client, args.url, args.output)
     return 0
 

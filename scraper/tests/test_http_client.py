@@ -25,6 +25,7 @@ REAL_ROBOTS = (Path(__file__).parent / "fixtures" / "robots.txt").read_text(enco
 
 """ ========== HELPER FUNCTIONS =========="""
 
+
 def make_response(url: str, status: int = 200, body: str = "", headers: dict | None = None) -> requests.Response:
     response = requests.Response()
     response.url = url
@@ -94,15 +95,13 @@ def make_client(script, robots=(200, ""), response_time=0.0, **kwargs):
     return client, session, clock
 
 
-
-
-
-
 """ ========== TESTS (WIHTOUT USING SLEEP METHOD FOR SAVING TIME) =========="""
+
 
 def test_sets_user_agent():
     client, session, _ = make_client({}, user_agent="TestBot/1.0")
     assert session.headers["User-Agent"] == "TestBot/1.0"
+
 
 def test_relative_url_is_resolved_against_base_url():
     client, session, _ = make_client({f"{BASE}/8-kosmetyki": [(200, "ok")]})
@@ -218,7 +217,9 @@ def test_slow_responses_still_get_the_full_delay_between_requests():
 def test_delay_counts_from_the_end_of_a_failed_request():
     client, _, clock = make_client(
         {f"{BASE}/a": [requests.Timeout("slow")], f"{BASE}/b": [200]},
-        delay=1.0, max_retries=0, response_time=1.5,
+        delay=1.0,
+        max_retries=0,
+        response_time=1.5,
     )
     with pytest.raises(requests.Timeout):
         client.get("/a")
@@ -296,6 +297,7 @@ def test_4xx_is_not_retried(status):
 
 
 """ ========== REDIRECTS =========="""
+
 
 def test_redirect_is_followed_with_the_delay_before_each_hop():
     client, session, clock = make_client({f"{BASE}/a": [redirect("/b")], f"{BASE}/b": [(200, "ok")]})
@@ -437,6 +439,7 @@ def test_gives_up_after_max_robots_txt_redirects():
 
 """ ========== REAL requests.Session (URL HANDLING DONE BY REQUESTS ITSELF) =========="""
 
+
 class StubAdapter(BaseAdapter):
     """Transport for a real requests.Session that answers from `routes` instead of the network.
 
@@ -546,8 +549,11 @@ def test_the_checked_url_is_the_url_that_is_sent(path):
 def cut_body(request) -> requests.Response:
     """10 of the 1000 bytes promised by Content-Length, as when the connection drops mid-download."""
     raw = urllib3.HTTPResponse(
-        io.BytesIO(b"0123456789"), headers={"Content-Length": "1000"}, status=200,
-        preload_content=False, enforce_content_length=True,
+        io.BytesIO(b"0123456789"),
+        headers={"Content-Length": "1000"},
+        status=200,
+        preload_content=False,
+        enforce_content_length=True,
     )
     return HTTPAdapter().build_response(request, raw)
 
@@ -561,7 +567,7 @@ def test_connection_dropped_mid_download_is_retried():
 
 
 # http.client decodes headers as latin-1, so a Location sent as UTF-8 arrives garbled like this.
-UTF8_LOCATION = "/zdrowie-żółć".encode("utf-8").decode("latin-1")
+UTF8_LOCATION = "/zdrowie-żółć".encode().decode("latin-1")
 UTF8_TARGET = f"{BASE}/zdrowie-%C5%BC%C3%B3%C5%82%C4%87"
 
 
@@ -581,6 +587,7 @@ def test_utf8_location_of_robots_txt_is_followed_like_requests_does():
 
 """ ========== COMMAND LINE =========="""
 
+
 @pytest.mark.parametrize("url", ["https://other.test/page", "/koszyk"])
 def test_fetch_of_a_skipped_url_exits_with_1_without_a_traceback(url):
     client, _, _ = make_client({}, robots=(200, "User-agent: *\nDisallow: /koszyk"))
@@ -592,16 +599,19 @@ def test_delay_from_the_minimum_to_the_maximum_is_accepted(value, expected):
     assert validate_positive_float(value) == expected
 
 
-@pytest.mark.parametrize(("value", "message"), [
-    ("0", "at least 0.5"),
-    ("0.49", "at least 0.5"),
-    ("-1", "at least 0.5"),
-    ("3600.5", "at most 3600"),
-    ("1e10", "at most 3600"),
-    ("nan", "finite number"),
-    ("inf", "finite number"),
-    ("abc", "not a real number"),
-])
+@pytest.mark.parametrize(
+    ("value", "message"),
+    [
+        ("0", "at least 0.5"),
+        ("0.49", "at least 0.5"),
+        ("-1", "at least 0.5"),
+        ("3600.5", "at most 3600"),
+        ("1e10", "at most 3600"),
+        ("nan", "finite number"),
+        ("inf", "finite number"),
+        ("abc", "not a real number"),
+    ],
+)
 def test_delay_out_of_range_stops_before_any_request(value, message, capsys, monkeypatch):
     # argparse rejects the value before the client is created, so no request is sent.
     # If it did not, the real client would call the shop: fail the test instead.

@@ -49,6 +49,8 @@ python -m pytest
 ```
 
 Tests do not use the network. HTML pages saved from the source shop are in [tests/fixtures/](tests/fixtures/).
+Every saved page contains PrestaShop's `static_token` and `token` values, which the secret scan flags. Replace them
+with `REMOVED` before committing a new fixture.
 
 ## Layout
 
