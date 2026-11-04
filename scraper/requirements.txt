@@ -1,6 +1,8 @@
 requests==2.34.2
 # robots.txt parser with wildcard support (urllib.robotparser ignores "*" in paths)
 Protego==0.7.0
+# Schema and validation of the scraped records
+pydantic==2.14.2
 
 # Tests
 pytest==9.2.0
