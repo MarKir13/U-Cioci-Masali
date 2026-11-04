@@ -31,6 +31,16 @@ backups/
 *.zip
 *.tar.gz
 
+# --- Python ---
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# --- Scraper output too large for git (full image set goes to GitHub Releases) ---
+scraper-results/images/
+scraper/cache/
+
 # --- OS / editor ---
 .DS_Store
 Thumbs.db

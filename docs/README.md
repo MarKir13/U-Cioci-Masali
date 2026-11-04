@@ -6,6 +6,7 @@ Documentation is in English. The exception is `AI_LOG.md`, which is in Polish be
 |---|---|
 | [AI_LOG.md](AI_LOG.md) | Log of AI tool usage required by the course rules. One row per use, added by the person who used the tool, in the same PR as the code. Ends with the team reflection. |
 | [adr/](adr/) | Architecture Decision Records: one file per significant decision (context, options, decision, consequences). |
+| [scraper-recon.md](scraper-recon.md) | Survey of the source shop before writing the scraper: robots.txt, sitemap, page structure, selectors, crawl strategy. |
 
 ## When to add what
 
