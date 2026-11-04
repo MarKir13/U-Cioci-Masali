@@ -2,7 +2,10 @@
 document.addEventListener('DOMContentLoaded', function () {
   var toggle = document.getElementById('menu-icon');
   var menu = document.getElementById('mobile_top_menu_wrapper');
-  if (!toggle || !menu) return;
+  var backdrop = document.querySelector('.ciocia-menu-backdrop');
+  var closeButton = menu && menu.querySelector('.ciocia-menu-close');
+  // Only bind to the ciocia header markup; leave any other header untouched.
+  if (!toggle || !menu || !backdrop || !closeButton) return;
 
   function updateExpandedState() {
     toggle.setAttribute('aria-expanded', String(getComputedStyle(menu).display !== 'none'));
@@ -14,8 +17,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   updateExpandedState();
 
-  var backdrop = document.querySelector('.ciocia-menu-backdrop');
-  var closeButton = menu.querySelector('.ciocia-menu-close');
   var previousOverflow;
   var inertElements = [];
   function setDrawer(open) {
@@ -146,8 +147,9 @@ document.addEventListener('DOMContentLoaded', function () {
     item.addEventListener('mouseleave', function () {
       if (!item.contains(document.activeElement) && window.matchMedia('(min-width: 768px)').matches) setOpen(item, false);
     });
+    // Desktop only: in the drawer, closing on press shifts the layout and the tap misses its target.
     item.addEventListener('focusout', function (event) {
-      if (!item.contains(event.relatedTarget)) setOpen(item, false);
+      if (!item.contains(event.relatedTarget) && window.matchMedia('(min-width: 768px)').matches) setOpen(item, false);
     });
   });
 
