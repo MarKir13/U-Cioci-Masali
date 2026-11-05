@@ -6,7 +6,7 @@ import logging
 import re
 from decimal import Decimal
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Self
 
 from pydantic import (
     AfterValidator,
@@ -19,6 +19,8 @@ from pydantic import (
     StringConstraints,
     ValidationError,
     WithJsonSchema,
+    field_validator,
+    model_validator,
 )
 from pydantic.json_schema import models_json_schema
 
@@ -124,6 +126,30 @@ class Product(Record):
     category_ids: list[PositiveInt] = Field(min_length=1)
     # same with images
     images: list[Image] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_prices(self) -> Self:
+        """Current price can't exceed the regular price"""
+        if self.price <= self.regular_price:
+            return self
+        raise ValueError("price can't exceed regular_price")
+
+    @field_validator("category_ids", "family")
+    @classmethod
+    def _no_duplicates(cls, values: list) -> list:
+        """Can't have duplicates in fields listed above"""
+        if len(values) != len(set(values)):
+            raise ValueError("contains duplicates")
+        return values
+
+    @field_validator("images")
+    @classmethod
+    def _no_duplicate_images(cls, images: list[Image]) -> list[Image]:
+        """images can't be converted into set so check only source urls"""
+        urls = [str(image.source_url) for image in images]
+        if len(urls) != len(set(urls)):
+            raise ValueError("contains duplicate source_url")
+        return images
 
 
 def validate_record[T: Record](model: type[T], data: dict, url: str) -> T | None:
