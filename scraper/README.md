@@ -49,8 +49,12 @@ All requests go through `HttpClient` in [scraper/http_client.py](scraper/http_cl
 `validate_record()`: it returns the validated record, or writes the reason and the page URL to `scraper.log` and returns
 `None`, so one bad page does not stop the run and is not saved.
 
-- Prices have at most two decimal places and are saved as JSON strings (`"64.72"`). Parsers must round raw values
-  such as `69.58764` first.
+- Prices have at most two decimal places and 12 digits, and are saved as JSON strings (`"64.72"`). Parsers must round
+  raw values such as `69.58764` first. Other spellings of a valid price are normalized: `"69.590000"` is saved as
+  `"69.59"` and `"1e2"` as `"100"`.
+- `price` cannot exceed `regular_price`. `has_discount` comes from the page and is not derived from the prices.
+- `category_ids`, `family` and `images` (compared by `source_url`) cannot contain duplicates. A product with a duplicate
+  is rejected, so parsers and the crawl have to remove them before validation.
 - Weight stays as raw text (`"250.000000"`, `"g"`), because the unit on the source page is unreliable.
 - A description needs visible text: `<p>&nbsp;</p>` counts as empty.
 
