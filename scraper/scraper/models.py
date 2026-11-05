@@ -38,6 +38,11 @@ def _blank_to_none(value: object) -> object:
     return None if isinstance(value, str) and not value.strip() else value
 
 
+def _normalize_price(value: Decimal) -> Decimal:
+    """Normalizes the price, removing redundant zeros and converts scientific notation"""
+    return Decimal(format(value.normalize(), "f"))
+
+
 """Create reusable data types using Annotated"""
 # Non-empty stripped string
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
@@ -50,11 +55,12 @@ Description = Annotated[Text, AfterValidator(_require_visible_text)]
 
 # Two decimal places, so a raw value like 69.58764 fails unless the parser has rounded it.
 # Decimals are saved as JSON strings, which is what the schema has to describe.
+# max_digits rejects values like 1e30 before normalize(), which rounds past 28 digits and can raise Overflow.
 Price = Annotated[
     Decimal,
-    Field(gt=0, decimal_places=2),
-
-    # Saved as string with an optional .xx 
+    Field(gt=0, max_digits=12, decimal_places=2),
+    AfterValidator(_normalize_price),
+    # Saved as string with an optional .xx
     WithJsonSchema({"type": "string", "pattern": r"^\d+(\.\d{1,2})?$"}, mode="serialization"),
     # ^       => start of text
     # \d+     => one or more number
