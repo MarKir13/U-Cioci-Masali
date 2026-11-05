@@ -1,0 +1,285 @@
+{
+  "$defs": {
+    "Category": {
+      "additionalProperties": false,
+      "description": "A category or subcategory. `parent_id` is null for top-level categories.",
+      "properties": {
+        "id": {
+          "exclusiveMinimum": 0,
+          "title": "Id",
+          "type": "integer"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "url": {
+          "format": "uri",
+          "maxLength": 2083,
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parent Id"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "url",
+        "parent_id"
+      ],
+      "title": "Category",
+      "type": "object"
+    },
+    "Image": {
+      "additionalProperties": false,
+      "description": "A product image. `local_path` is filled in once the file has been downloaded.",
+      "properties": {
+        "source_url": {
+          "format": "uri",
+          "maxLength": 2083,
+          "minLength": 1,
+          "title": "Source Url",
+          "type": "string"
+        },
+        "local_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Local Path"
+        }
+      },
+      "required": [
+        "source_url"
+      ],
+      "title": "Image",
+      "type": "object"
+    },
+    "Product": {
+      "additionalProperties": false,
+      "description": "A product. Variants are separate products, linked through `family`.",
+      "properties": {
+        "id": {
+          "exclusiveMinimum": 0,
+          "title": "Id",
+          "type": "integer"
+        },
+        "url": {
+          "format": "uri",
+          "maxLength": 2083,
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "price": {
+          "pattern": "^\\d+(\\.\\d{1,2})?$",
+          "title": "Price",
+          "type": "string"
+        },
+        "regular_price": {
+          "pattern": "^\\d+(\\.\\d{1,2})?$",
+          "title": "Regular Price",
+          "type": "string"
+        },
+        "has_discount": {
+          "title": "Has Discount",
+          "type": "boolean"
+        },
+        "vat_rate": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vat Rate"
+        },
+        "brand": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Brand"
+        },
+        "ean": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ean"
+        },
+        "size": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Size"
+        },
+        "color": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Color"
+        },
+        "material": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Material"
+        },
+        "pattern": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pattern"
+        },
+        "weight": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RawWeight"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "family": {
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Family",
+          "type": "array"
+        },
+        "category_ids": {
+          "items": {
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "minItems": 1,
+          "title": "Category Ids",
+          "type": "array"
+        },
+        "images": {
+          "items": {
+            "$ref": "#/$defs/Image"
+          },
+          "minItems": 1,
+          "title": "Images",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "name",
+        "description",
+        "price",
+        "regular_price",
+        "has_discount",
+        "category_ids",
+        "images"
+      ],
+      "title": "Product",
+      "type": "object"
+    },
+    "RawWeight": {
+      "additionalProperties": false,
+      "description": "Weight exactly as on the page. The unit is unreliable, so it is converted only on import.",
+      "properties": {
+        "value": {
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        },
+        "unit": {
+          "minLength": 1,
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "unit"
+      ],
+      "title": "RawWeight",
+      "type": "object"
+    }
+  },
+  "title": "Scraper results"
+}

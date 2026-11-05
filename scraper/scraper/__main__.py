@@ -10,6 +10,7 @@ import requests
 from . import config
 from .http_client import HttpClient, SkippedURL, check_delay
 from .logging_config import setup_logging
+from .models import export_schema
 
 log = logging.getLogger("scraper")
 
@@ -55,6 +56,9 @@ def main(argv: list[str] | None = None) -> int:
     fetch.add_argument("url", help="absolute URL, or a path such as /8-kosmetyki")
     fetch.add_argument("-o", "--output", type=Path, help="save the response body to this file")
 
+    # Schema subcommand
+    commands.add_parser("schema", help=f"write the JSON schema of the results to {config.SCHEMA_FILE.name}")
+
     # Parse the arguments
     args = parser.parse_args(argv)
     if args.command is None:
@@ -62,6 +66,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     setup_logging(config.LOG_FILE, args.verbose)
+    if args.command == "schema":  # needs no network
+        export_schema(config.SCHEMA_FILE)
+        return 0
     client = HttpClient(delay=args.delay)
     if args.command == "fetch":  # start fetching
         return fetch_page(client, args.url, args.output)
