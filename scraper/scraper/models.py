@@ -27,8 +27,8 @@ log = logging.getLogger(__name__)
 
 def _require_visible_text(value: str) -> str:
     """Descriptions are HTML, so `<p>&nbsp;</p>` counts as empty too."""
-    # regex that deletes HTML tags [^>] means whatever other than '>' and * means however long => '<tag>text</tag>' becomes 'text'
-    if not html.unescape(re.sub(r"<[^>]*>", "", value)).strip(): # then check if empty
+    # delete HTML tags [^>] means whatever other than '>' and * means however long => '<tag>text</tag>' becomes 'text'
+    if not html.unescape(re.sub(r"<[^>]*>", "", value)).strip():  # then check if empty
         raise ValueError("no visible text")
     return value
 
