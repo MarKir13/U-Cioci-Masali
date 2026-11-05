@@ -14,6 +14,8 @@ from scraper.logging_config import setup_logging
 from scraper.models import Category, Product, json_schema, validate_record
 
 PRODUCT_URL = "https://www.magiczne-indie.pl/5425-bio-amalaki.html"
+FAMILY_URL = "https://www.magiczne-indie.pl/706-olejek.html"
+IMAGE_URL = "https://www.magiczne-indie.pl/14452-product_main_2x/amalaki.jpg"
 
 """ ========== HELPER FUNCTIONS =========="""
 
@@ -116,6 +118,36 @@ def test_saved_product_reads_back_unchanged():
     assert Product.model_validate_json(line) == product
 
 
+@pytest.mark.parametrize(
+    ("price", "regular_price", "has_discount"),
+    [
+        ("64.72", "69.59", True),
+        ("272.99", "272.99", False),  # equal prices are the normal case for a product without a discount
+        ("10.00", "10", False),  # equal once normalized
+        # The flag comes from the page. #9 forbids deriving it from the prices, so no combination is rejected.
+        ("64.72", "69.59", False),
+        ("272.99", "272.99", True),
+    ],
+)
+def test_price_up_to_regular_price_is_accepted_and_the_flag_is_not_derived(price, regular_price, has_discount):
+    product = Product.model_validate(product_data(price=price, regular_price=regular_price, has_discount=has_discount))
+    assert product.has_discount is has_discount
+
+
+def test_lists_without_duplicates_are_accepted_in_their_original_order():
+    second_image = "https://www.magiczne-indie.pl/14453-product_main_2x/amalaki.jpg"
+    product = Product.model_validate(
+        product_data(
+            category_ids=[458, 385],
+            family=[FAMILY_URL, PRODUCT_URL],
+            images=[{"source_url": IMAGE_URL}, {"source_url": second_image}],
+        )
+    )
+    assert product.category_ids == [458, 385]
+    assert [str(url) for url in product.family] == [FAMILY_URL, PRODUCT_URL]
+    assert [str(image.source_url) for image in product.images] == [IMAGE_URL, second_image]
+
+
 """ ========== INVALID RECORDS =========="""
 
 
@@ -128,6 +160,18 @@ def test_saved_product_reads_back_unchanged():
         ({"price": float("inf")}, "price"),
         ({"regular_price": 0}, "regular_price"),
         ({"regular_price": 69.58764}, "regular_price"),  # raw value from data-product, not rounded
+        ({"price": "64.725000"}, "price"),  # zeros at the end do not hide a third decimal place
+        ({"price": "1e-3"}, "price"),
+        ({"regular_price": "10000000000.00"}, "regular_price"),  # one digit over the limit
+        ({"regular_price": "1e30"}, "regular_price"),
+        ({"regular_price": "12345678901234567890123456789.12"}, "regular_price"),  # normalize() would round it
+        ({"regular_price": "1e1000000"}, "regular_price"),  # normalize() would raise Overflow and stop the run
+        ({"category_ids": [385, 385]}, "category_ids"),
+        ({"category_ids": [385, "385"]}, "category_ids"),  # the same id once parsed
+        ({"family": [FAMILY_URL, FAMILY_URL]}, "family"),
+        ({"family": [FAMILY_URL, FAMILY_URL.replace("www", "WWW")]}, "family"),  # the same URL once parsed
+        ({"images": [{"source_url": IMAGE_URL}, {"source_url": IMAGE_URL}]}, "images"),
+        ({"images": [{"source_url": IMAGE_URL}, {"source_url": IMAGE_URL, "local_path": "a.jpg"}]}, "images"),
         ({"url": "not-a-url"}, "url"),
         ({"url": "ftp://www.magiczne-indie.pl/x"}, "url"),
         ({"name": ""}, "name"),
@@ -151,6 +195,18 @@ def test_invalid_product_is_rejected(changes, field):
     with pytest.raises(ValidationError) as exc_info:
         Product.model_validate(product_data(**changes))
     assert exc_info.value.errors()[0]["loc"][0] == field
+
+
+@pytest.mark.parametrize(
+    ("price", "regular_price"),
+    [
+        ("80", "10"),  # a parser that swapped the two fields
+        ("10.01", "10"),
+    ],
+)
+def test_price_above_regular_price_is_rejected(price, regular_price):
+    with pytest.raises(ValidationError, match="price can't exceed regular_price"):
+        Product.model_validate(product_data(price=price, regular_price=regular_price))
 
 
 @pytest.mark.parametrize(
@@ -215,6 +271,13 @@ def test_invalid_record_does_not_stop_the_run_and_is_not_saved(caplog):
     assert len(caplog.records) == 1
 
 
+def test_price_above_regular_price_is_logged_with_its_url(caplog):
+    with caplog.at_level(logging.ERROR):
+        assert validate_record(Product, product_data(price="80", regular_price="10"), PRODUCT_URL) is None
+    assert f"Invalid Product at {PRODUCT_URL}" in caplog.text
+    assert "price can't exceed regular_price" in caplog.text
+
+
 """ ========== JSON SCHEMA =========="""
 
 
@@ -233,6 +296,30 @@ def test_schema_describes_a_saved_product():
     assert price_schema["type"] == "string"
     assert re.search(price_schema["pattern"], product["price"])
     assert not re.search(price_schema["pattern"], "69.58764")
+
+
+@pytest.mark.parametrize(
+    ("value", "saved"),
+    [
+        ("69.590000", "69.59"),
+        ("64.720", "64.72"),
+        ("0.10", "0.1"),
+        ("100.00", "100"),
+        ("1e2", "100"),
+        ("1.5e1", "15"),
+        ("1e-2", "0.01"),
+        (17.2, "17.2"),
+        ("9999999999.99", "9999999999.99"),  # the largest accepted price
+    ],
+)
+def test_saved_price_matches_the_schema_and_reads_back_the_same(value, saved):
+    """A price may arrive in many spellings, but only the form the schema allows may reach the results file."""
+    line = Product.model_validate(product_data(price=value, regular_price=value)).model_dump_json()
+    properties = json_schema()["$defs"]["Product"]["properties"]
+    for field in ("price", "regular_price"):
+        assert json.loads(line)[field] == saved
+        assert re.search(properties[field]["pattern"], saved)
+    assert Product.model_validate_json(line).model_dump_json() == line
 
 
 def test_committed_schema_is_up_to_date():
