@@ -413,6 +413,19 @@
   outline-color: #390807;
 }
 
+/* Source shop: search focus ring only on phones (Bootstrap's light blue), none from 768 px. */
+@media (max-width: 767px) {
+  #header input:focus-visible {
+    outline-color: #85b4fb;
+  }
+}
+
+@media (min-width: 768px) {
+  #header input:focus-visible {
+    outline: none;
+  }
+}
+
 #header .ciocia-submenu[hidden] {
   display: none !important;
 }
