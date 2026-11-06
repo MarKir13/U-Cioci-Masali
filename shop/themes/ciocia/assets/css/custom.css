@@ -73,6 +73,8 @@
     max-width: none;
     margin: 0;
     padding: 0;
+    /* Classic sets overflow: auto, which clips the input's focus outline. */
+    overflow: visible;
   }
 
   #header .header-top #search_widget form input[type="text"] {
@@ -400,7 +402,8 @@
 }
 
 #header a:focus-visible,
-#header button:focus-visible {
+#header button:focus-visible,
+#header input:focus-visible {
   outline-color: var(--ciocia-header-accent);
 }
 

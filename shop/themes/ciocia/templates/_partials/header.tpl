@@ -35,8 +35,8 @@
         <li>
           <a href="{$link->getCMSLink(1)|escape:'htmlall':'UTF-8'}">
             <i class="material-icons" aria-hidden="true">local_shipping</i>
-            <span class="ciocia-copy-desktop">Dostawa od 129 zł gratis</span>
-            <span class="ciocia-copy-mobile">Dostawa gratis od 129 zł</span>
+            <span class="ciocia-copy-desktop">Dostawa od 2000 zł gratis</span>
+            <span class="ciocia-copy-mobile">Dostawa gratis od 2000 zł</span>
           </a>
         </li>
         <li>
@@ -50,7 +50,8 @@
         </li>
       </ul>
       <div class="ciocia-topbar-tools hidden-sm-down">
-        {hook h='displayNav2' mod='ps_currencyselector'}
+        {hook h='displayNav1' excl='ps_contactinfo'}
+        {hook h='displayNav2' excl='ps_languageselector,ps_customersignin,ps_shoppingcart'}
         <a class="ciocia-contact-link" href="{$urls.pages.contact|escape:'htmlall':'UTF-8'}">
           <i class="material-icons" aria-hidden="true">phone</i>
           <span>Kontakt</span>
