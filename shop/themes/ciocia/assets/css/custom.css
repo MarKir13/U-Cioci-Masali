@@ -987,3 +987,365 @@
   #header #mobile_top_menu_wrapper .ciocia-drawer-footer a { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border-radius: 999px; background: #5f0602; color: #fff; font-size: 14.4px; font-weight: 600; }
   #header #mobile_top_menu_wrapper .ciocia-drawer-footer .material-icons { color: #fff; font-size: 20px; }
 }
+
+/* Footer: trust bar, newsletter, link columns and copyright, as on the source shop. */
+#footer {
+  --ciocia-footer-bg: #370101;
+  --ciocia-footer-text: #f0d5bc;
+  --ciocia-footer-heading: #f9d28f;
+  --ciocia-surface-warm: #f5eedd;
+  --ciocia-accent: #5f0602;
+  --ciocia-accent-dark: #2c0001;
+  font-family: "Open Sans", system-ui, -apple-system, sans-serif;
+  font-weight: 300;
+}
+
+#footer:has(> .ciocia-trust) {
+  padding-top: 0;
+}
+
+/* Classic frames the checkout footer in white padding; ours spans the full width there too. */
+body#checkout #footer:has(> .ciocia-trust) {
+  padding: 0;
+  background: none;
+}
+
+/* Source containers: 12 px gutter, 1320 px from 1400 px, and a 1200 px newsletter row. */
+#footer .ciocia-trust > .container,
+#footer .ciocia-footer-before > .container,
+#footer .ciocia-footer-main > .container {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+#footer .ciocia-footer-before > .container {
+  width: auto;
+  max-width: 1200px;
+}
+
+@media (min-width: 1400px) {
+  #footer .ciocia-trust > .container,
+  #footer .ciocia-footer-main > .container {
+    width: 1320px;
+  }
+}
+
+#footer .ciocia-trust {
+  padding: 24px 0;
+  background: var(--ciocia-surface-warm);
+}
+
+#footer .ciocia-trust-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+  gap: 16px;
+  justify-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#footer .ciocia-trust-list li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 176px;
+  color: #333;
+  font-size: 12.8px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+#footer .ciocia-trust-list .material-icons {
+  color: var(--ciocia-accent);
+  font-size: 28px;
+}
+
+#footer .ciocia-footer-before {
+  padding: 40px 0;
+  background: var(--ciocia-surface-warm);
+}
+
+#footer .ciocia-newsletter {
+  display: grid;
+  gap: 12px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 16px;
+}
+
+#footer .ciocia-newsletter-title {
+  margin: 0;
+  padding: 0;
+  color: #333;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+#footer .ciocia-newsletter-row {
+  display: flex;
+  gap: 8px;
+}
+
+#footer .ciocia-newsletter input[type=email] {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 6px 16px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: #fff;
+  color: #333;
+  font-size: 16px;
+}
+
+#footer .ciocia-newsletter input[type=email]:focus {
+  padding: 6px 16px;
+  border: 1px solid var(--ciocia-accent);
+  outline: 2px solid var(--ciocia-accent);
+  outline-offset: 0;
+}
+
+#footer .ciocia-newsletter .btn-primary {
+  height: 38px;
+  padding: 6px 12px;
+  border: 1px solid var(--ciocia-accent);
+  border-radius: 6px;
+  background: var(--ciocia-accent);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 300;
+  text-transform: none;
+  box-shadow: none;
+}
+
+#footer .ciocia-newsletter .btn-primary:hover,
+#footer .ciocia-newsletter .btn-primary:focus-visible {
+  border-color: var(--ciocia-accent-dark);
+  background: var(--ciocia-accent-dark);
+}
+
+#footer .ciocia-newsletter .btn-primary:focus-visible {
+  outline: 2px solid var(--ciocia-accent-dark);
+  outline-offset: 2px;
+}
+
+#footer .ciocia-newsletter .ciocia-newsletter-note {
+  margin: 8px 0 0;
+  padding: 0;
+  color: #5c5c5c;
+  font-size: 14px;
+}
+
+#footer .ciocia-newsletter .alert {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+@media (min-width: 992px) {
+  #footer .ciocia-footer-before {
+    padding: 48px 0;
+  }
+
+  #footer .ciocia-newsletter {
+    grid-template-columns: calc((100% + 24px) * 0.4 - 24px) minmax(0, 1fr);
+    column-gap: 24px;
+    /* Source: col-lg-4 + col-lg-6, centred in the 12-column row. */
+    width: calc((100% + 24px) * 5 / 6 - 24px);
+    margin: 0 auto;
+  }
+}
+
+#footer .ciocia-footer-main {
+  padding: 32px 0 24px;
+  background: var(--ciocia-footer-bg);
+  color: var(--ciocia-footer-text);
+}
+
+#footer .ciocia-footer-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* displayFooter also prints hidden wishlist modals; keep them out of the column grid. */
+#footer .ciocia-footer-columns > :not(.ciocia-footer-block) {
+  grid-column: 1 / -1;
+}
+
+#footer .ciocia-footer-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* Classic greys out every paragraph; footer text follows the footer colour instead. */
+#footer .ciocia-footer-main .ciocia-footer-list p,
+#footer .ciocia-copyright {
+  color: inherit;
+}
+
+#footer .ciocia-footer-main a {
+  color: var(--ciocia-footer-text);
+  text-decoration: none;
+}
+
+#footer .ciocia-footer-main .ciocia-footer-title a {
+  color: #fff;
+}
+
+#footer .ciocia-footer-main a:hover {
+  color: var(--ciocia-footer-heading);
+  text-decoration: underline;
+}
+
+#footer .ciocia-footer-main a:focus-visible,
+#footer .ciocia-footer-toggle:focus-visible {
+  outline: 2px solid var(--ciocia-footer-heading);
+  outline-offset: 2px;
+}
+
+/* The toggle reaches the screen edge on phones; keep its ring inside. */
+#footer .ciocia-footer-toggle:focus-visible {
+  outline-offset: -2px;
+}
+
+#footer .ciocia-footer-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* The whole title row opens the column, not only the chevron. */
+#footer .ciocia-footer-toggle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+#footer .ciocia-footer-toggle .material-icons {
+  transition: transform 0.2s;
+}
+
+#footer .ciocia-footer-toggle:not(.collapsed) .material-icons {
+  transform: rotate(180deg);
+}
+
+#footer .ciocia-footer-list {
+  margin: 0;
+  padding: 0 0 12px;
+  list-style: none;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+#footer .ciocia-footer-list li a {
+  display: block;
+  padding: 4px 0;
+}
+
+#footer .ciocia-footer-contact address {
+  margin: 0 0 16px;
+  font-style: normal;
+}
+
+#footer .ciocia-contact-company {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+#footer .ciocia-contact-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+#footer .ciocia-contact-line .material-icons {
+  font-size: 18px;
+}
+
+#footer .ciocia-copyright {
+  margin: 0;
+  padding-top: 32px;
+  opacity: 0.85;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+#footer .ciocia-copyright strong {
+  font-weight: 600;
+}
+
+@media (max-width: 767px) {
+  #footer .ciocia-trust-list {
+    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    gap: 12px;
+  }
+
+  #footer .ciocia-trust-list li {
+    max-width: none;
+  }
+
+  #footer .ciocia-footer-main {
+    padding-top: 24px;
+  }
+
+  #footer .ciocia-footer-block {
+    margin-bottom: 6px;
+  }
+
+  #footer .ciocia-footer-title {
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 768px) {
+  #footer .ciocia-footer-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+  }
+
+  #footer .ciocia-footer-block {
+    margin-bottom: 40px;
+  }
+
+  #footer .ciocia-footer-title {
+    margin-bottom: 24px;
+  }
+
+  /* From 768 px every column is open and the toggle leaves the tab order. */
+  #footer .ciocia-footer-toggle {
+    display: none;
+  }
+
+  #footer .ciocia-footer-list.collapse {
+    display: block;
+  }
+}
+
+@media (min-width: 992px) {
+  #footer .ciocia-footer-columns {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
