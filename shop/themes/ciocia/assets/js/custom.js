@@ -1,3 +1,34 @@
+/*
+ * Tablet (768-991 px): the source puts heart and account right of the cart, not in the
+ * category row. Move the nodes instead of rendering them twice: Classic's responsive
+ * script needs a single #_desktop_user_info, and DOM order stays equal to visual order.
+ * Runs at once (this file loads after the header) to keep the icons from jumping late.
+ */
+(function () {
+  var tablet = window.matchMedia('(min-width: 768px) and (max-width: 991px)');
+
+  function placeHeaderIcons() {
+    var actions = document.querySelector('#header .ciocia-header-actions');
+    var categoryRow = document.querySelector('#header .ciocia-desktop-navigation .header-top-right');
+    var icons = [
+      document.querySelector('#header .ciocia-header-wishlist'),
+      document.querySelector('#header .ciocia-header-account')
+    ].filter(Boolean);
+    if (!actions || !categoryRow || !icons.length) return false;
+
+    var target = tablet.matches ? actions : categoryRow;
+    if (icons[0].parentElement === target) return true;
+    // Moving a node drops its focus; give it back when the viewport changes mid-tab.
+    var focused = icons.find(function (icon) { return icon.contains(document.activeElement); }) && document.activeElement;
+    target.append.apply(target, icons);
+    if (focused) focused.focus();
+    return true;
+  }
+
+  if (!placeHeaderIcons()) document.addEventListener('DOMContentLoaded', placeHeaderIcons);
+  tablet.addEventListener('change', placeHeaderIcons);
+})();
+
 /* Keep Classic's responsive module relocation; own the mobile drawer interaction. */
 document.addEventListener('DOMContentLoaded', function () {
   var toggle = document.getElementById('menu-icon');
