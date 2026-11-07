@@ -1004,6 +1004,12 @@
   padding-top: 0;
 }
 
+/* Classic frames the checkout footer in white padding; ours spans the full width there too. */
+body#checkout #footer:has(> .ciocia-trust) {
+  padding: 0;
+  background: none;
+}
+
 /* Source containers: 12 px gutter, 1320 px from 1400 px, and a 1200 px newsletter row. */
 #footer .ciocia-trust > .container,
 #footer .ciocia-footer-before > .container,
