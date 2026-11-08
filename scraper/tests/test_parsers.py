@@ -4,7 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from scraper.parsers import parse_category
+from scraper.models import Category
+from scraper.parsers import children_by_parent, missing_parents, parse_category
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -86,3 +87,67 @@ def test_breadcrumb_without_parent_is_rejected():
     )
     with pytest.raises(ValueError, match="fewer than 2 items"):
         parse_category(CATEGORY_URL, H1 + only_this_page)
+
+
+def make_category(category_id: int, parent_id: int | None) -> Category:
+    """A category with a made-up name and URL, for tests where only the ids matter."""
+    return Category(
+        id=category_id,
+        name=f"Category {category_id}",
+        url=f"https://www.magiczne-indie.pl/{category_id}-category",
+        parent_id=parent_id,
+    )
+
+
+def ids(categories: list[Category]) -> list[int]:
+    return [category.id for category in categories]
+
+
+def test_children_are_grouped_by_parent_id():
+    """Top-level categories are under None, the rest under their parent, in the original order."""
+    tree = children_by_parent(
+        [
+            make_category(8, None),
+            make_category(38, 8),
+            make_category(104, 38),
+            make_category(45, 8),
+        ]
+    )
+    assert ids(tree[None]) == [8]
+    assert ids(tree[8]) == [38, 45]
+    assert ids(tree[38]) == [104]
+    assert 104 not in tree  # a category without children gets no key
+
+
+def test_empty_list_gives_empty_tree():
+    assert children_by_parent([]) == {}
+
+
+def test_category_with_unknown_parent_is_reported():
+    categories = [make_category(8, None), make_category(104, 999)]
+    assert ids(missing_parents(categories)) == [104]
+
+
+def test_top_level_category_is_not_reported_as_missing():
+    """parent_id None means the home page, not a parent that was not found."""
+    assert missing_parents([make_category(8, None)]) == []
+
+
+def test_complete_tree_has_no_missing_parents():
+    categories = [make_category(8, None), make_category(38, 8), make_category(104, 38)]
+    assert missing_parents(categories) == []
+
+
+def test_parsed_pages_report_parent_that_was_not_parsed():
+    """Olejki (104) has parent 38, which is not among the parsed pages, so it is reported."""
+    categories = [
+        parse_category(
+            "https://www.magiczne-indie.pl/8-kosmetyki",
+            read_fixture("category_with_subcategories.html"),
+        ),
+        parse_category(
+            "https://www.magiczne-indie.pl/104-olejki-do-wlosow",
+            read_fixture("category_leaf_first_page.html"),
+        ),
+    ]
+    assert ids(missing_parents(categories)) == [104]

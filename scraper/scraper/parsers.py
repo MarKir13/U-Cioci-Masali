@@ -60,3 +60,21 @@ def parse_category(url: str, html: str) -> Category | None:
     }
     category = validate_record(model=Category, data=category_dict, url=url)
     return category
+
+
+def children_by_parent(categories: list[Category]) -> dict[int | None, list[Category]]:
+    """Groups categories by the id of their parent. Top-level categories are under None."""
+    groups: dict[int | None, list[Category]] = {}
+    for category in categories:
+        groups.setdefault(category.parent_id, []).append(category)
+    return groups
+
+
+def missing_parents(categories: list[Category]) -> list[Category]:
+    """Categories whose parent is not in the list."""
+    known_ids = {category.id for category in categories}
+    known_ids.add(None)  # top-level categories have no parent to look for
+    orphans = [
+        category for category in categories if category.parent_id not in known_ids
+    ]
+    return orphans
