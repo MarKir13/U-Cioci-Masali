@@ -41,9 +41,12 @@ def parent_id_from_soup(soup: BeautifulSoup) -> int | None:
 
 def parse_category(url: str, html: str) -> Category | None:
     soup = BeautifulSoup(html, "html.parser")
-    category_id = id_from_url(url)
-    name = name_from_soup(soup)
-    parent_id = parent_id_from_soup(soup)
+    try:
+        category_id = id_from_url(url)
+        name = name_from_soup(soup)
+        parent_id = parent_id_from_soup(soup)
+    except ValueError as exc:
+        raise ValueError(f"{url}: {exc}") from exc
     category_dict = {
         "id": category_id,
         "name": name,
