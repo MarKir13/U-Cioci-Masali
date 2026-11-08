@@ -11,7 +11,11 @@ from scraper.parsers import (
     parse_category,
     parse_sitemap,
     parse_sitemap_index,
+    product_urls_from_soup, 
+    next_page_url_from_soup
 )
+
+from bs4 import BeautifulSoup
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -227,3 +231,41 @@ def test_cdata_is_removed_from_addresses():
     """<loc> wraps the address in CDATA, and ElementTree strips it by itself."""
     products, categories = parse_sample_sitemap()
     assert all(url.startswith("https://") for url in products + categories)
+
+def test_first_page_gives_12_products_and_next_page():
+    html = read_fixture("category_leaf_first_page.html")
+    soup = BeautifulSoup(html, "html.parser")
+    
+    products = product_urls_from_soup(soup)
+    assert len(products) == 12
+    assert len(set(products)) == 12
+    assert all(url.startswith("http") for url in products)
+    
+    next_page = next_page_url_from_soup(soup)
+    assert next_page == "https://www.magiczne-indie.pl/104-olejki-do-wlosow?page=2"
+
+
+def test_middle_page_gives_products_and_next_page():
+    html = read_fixture("category_leaf_middle_page.html")
+    soup = BeautifulSoup(html, "html.parser")
+    
+    products = product_urls_from_soup(soup)
+    assert len(products) > 0 
+    assert len(set(products)) == len(products)
+    assert all(url.startswith("http") for url in products)
+    
+    next_page = next_page_url_from_soup(soup)
+    assert next_page == "https://www.magiczne-indie.pl/104-olejki-do-wlosow?page=4"
+
+
+def test_last_page_gives_10_products_and_no_next_page():
+    html = read_fixture("category_leaf_last_page.html")
+    soup = BeautifulSoup(html, "html.parser")
+    
+    products = product_urls_from_soup(soup)
+    assert len(products) == 10
+    assert len(set(products)) == 10
+    assert all(url.startswith("http") for url in products)
+    
+    next_page = next_page_url_from_soup(soup)
+    assert next_page is None
