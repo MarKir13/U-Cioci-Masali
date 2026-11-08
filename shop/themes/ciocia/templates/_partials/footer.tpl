@@ -35,7 +35,7 @@
     {/block}
     {block name='copyright_link'}
       <p class="ciocia-copyright">
-        &copy; Copyright {'Y'|date} <strong>U Cioci Masali</strong> &mdash; Wszelkie prawa zastrzeżone
+        &copy; Copyright {$smarty.now|date_format:'Y'} <strong>U Cioci Masali</strong> &mdash; Wszelkie prawa zastrzeżone
       </p>
     {/block}
   </div>
