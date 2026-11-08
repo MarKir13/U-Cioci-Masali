@@ -1,4 +1,5 @@
 """Web scraping data functions using BeautifulSoup"""
+
 import json
 from urllib.parse import urlparse
 
@@ -29,7 +30,9 @@ def parent_url_from_soup(soup: BeautifulSoup) -> str:
         if data.get("@type") == "BreadcrumbList":
             bread_crumb_list = data["itemListElement"]
             if len(bread_crumb_list) < 2:
-                raise ValueError("Breadcrumb has fewer than 2 items, so it has no parent") 
+                raise ValueError(
+                    "Breadcrumb has fewer than 2 items, so it has no parent"
+                )
             return bread_crumb_list[-2]["item"]
     raise ValueError("No BreadcrumbList JSON-LD on the page")
 
@@ -57,4 +60,3 @@ def parse_category(url: str, html: str) -> Category | None:
     }
     category = validate_record(model=Category, data=category_dict, url=url)
     return category
-

@@ -1,0 +1,88 @@
+"""Tests of the parsers on pages saved from the source shop. They do not use the network."""
+
+from pathlib import Path
+
+import pytest
+
+from scraper.parsers import parse_category
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+CATEGORY_URL = "https://www.magiczne-indie.pl/104-olejki-do-wlosow"
+HOME_URL = "https://www.magiczne-indie.pl/"
+
+# Minimal pages for the error cases: each test leaves out one of these parts.
+H1 = '<h1 class="page-title-section">Olejki do włosów</h1>'
+BREADCRUMB = """
+<script type="application/ld+json">
+{"@type": "BreadcrumbList", "itemListElement": [
+  {"position": 1, "name": "Strona główna", "item": "https://www.magiczne-indie.pl/"},
+  {"position": 2, "name": "Olejki do włosów", "item": "https://www.magiczne-indie.pl/104-olejki-do-wlosow"}
+]}
+</script>
+"""
+
+
+def read_fixture(name: str) -> str:
+    return (FIXTURES / name).read_text(encoding="utf-8")
+
+
+def test_top_level_category_has_no_parent():
+    """/8-kosmetyki lies directly under the home page, so it has no parent."""
+    category = parse_category(
+        "https://www.magiczne-indie.pl/8-kosmetyki",
+        read_fixture("category_with_subcategories.html"),
+    )
+    assert category.id == 8
+    assert category.name == "Kosmetyki"
+    assert category.parent_id is None
+
+
+def test_category_has_a_parent():
+    """The parent is the second-to-last breadcrumb item, and Polish characters in the name stay intact."""
+    category = parse_category(
+        "https://www.magiczne-indie.pl/104-olejki-do-wlosow",
+        read_fixture("category_leaf_first_page.html"),
+    )
+    assert category.id == 104
+    assert category.name == "Olejki do włosów"
+    assert category.parent_id == 38
+
+
+def test_minimal_page_is_parsed():
+    """Checks that the error cases below fail only because of the part they leave out."""
+    category = parse_category(CATEGORY_URL, H1 + BREADCRUMB)
+    assert category.id == 104
+    assert category.parent_id is None
+
+
+def test_page_without_name_is_rejected():
+    with pytest.raises(ValueError, match="No category name"):
+        parse_category(CATEGORY_URL, BREADCRUMB)
+
+
+def test_page_without_breadcrumb_is_rejected_with_its_url():
+    with pytest.raises(ValueError, match="104-olejki-do-wlosow: No BreadcrumbList"):
+        parse_category(CATEGORY_URL, H1)
+
+
+def test_home_page_is_not_a_category():
+    with pytest.raises(ValueError, match="Id can't be extracted"):
+        parse_category(HOME_URL, H1 + BREADCRUMB)
+
+
+def test_error_names_the_parent_url_that_is_not_a_category():
+    bad_parent = BREADCRUMB.replace(
+        f'"{HOME_URL}"', '"https://www.magiczne-indie.pl/content/4-regulamin"'
+    )
+    with pytest.raises(ValueError, match="content/4-regulamin"):
+        parse_category(CATEGORY_URL, H1 + bad_parent)
+
+
+def test_breadcrumb_without_parent_is_rejected():
+    only_this_page = BREADCRUMB.replace(
+        '{"position": 1, "name": "Strona główna", "item": "https://www.magiczne-indie.pl/"},\n',
+        "",
+    )
+    with pytest.raises(ValueError, match="fewer than 2 items"):
+        parse_category(CATEGORY_URL, H1 + only_this_page)
