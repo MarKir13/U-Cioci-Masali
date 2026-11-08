@@ -1,11 +1,20 @@
-"""Web scraping data functions using BeautifulSoup"""
+"""Parsers that turn pages and sitemaps of the source shop into records. They do not use the network."""
 
 import json
+import re
+import xml.etree.ElementTree as ET
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
 from .models import Category, validate_record
+
+SITEMAP_NS = {"site": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+# Paths of product and category pages, e.g. /242-olejek-amla.html and /104-olejki-do-wlosow.
+# ^ and $ make the pattern match the whole path, so /content/1-koszt-wysylki is not a category.
+PRODUCT_PATH = re.compile(r"^/\d+-[^/]+\.html$")
+# [^/.] does not allow a dot, so a product path (with .html) is never taken for a category.
+CATEGORY_PATH = re.compile(r"^/\d+-[^/.]+$")
 
 
 def name_from_soup(soup: BeautifulSoup) -> str:
@@ -78,3 +87,27 @@ def missing_parents(categories: list[Category]) -> list[Category]:
         category for category in categories if category.parent_id not in known_ids
     ]
     return orphans
+
+
+def parse_sitemap_index(xml: str) -> list[str]:
+    """Addresses of the sitemaps listed in a sitemap index."""
+    root = ET.fromstring(xml)
+    sitemap = []
+    for row in root.findall("site:sitemap/site:loc", SITEMAP_NS):
+        sitemap.append(row.text)
+    return sitemap
+
+
+def parse_sitemap(xml: str) -> tuple[list[str], list[str]]:
+    """Product and category addresses from a sitemap. Other addresses are skipped."""
+    root = ET.fromstring(xml)
+    products: list[str] = []
+    categories: list[str] = []
+    for row in root.findall("site:url/site:loc", SITEMAP_NS):
+        url = row.text
+        path = urlparse(url).path
+        if PRODUCT_PATH.match(path):
+            products.append(url)
+        elif CATEGORY_PATH.match(path):
+            categories.append(url)
+    return products, categories
