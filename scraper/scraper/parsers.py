@@ -28,6 +28,8 @@ def parent_url_from_soup(soup: BeautifulSoup) -> str:
         data = json.loads(script.string)
         if data.get("@type") == "BreadcrumbList":
             bread_crumb_list = data["itemListElement"]
+            if len(bread_crumb_list) < 2:
+                raise ValueError("Breadcrumb has fewer than 2 items, so it has no parent") 
             return bread_crumb_list[-2]["item"]
     raise ValueError("No BreadcrumbList JSON-LD on the page")
 
