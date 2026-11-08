@@ -572,6 +572,11 @@
   #header .ciocia-header-phone {
     display: none;
   }
+
+  /* custom.js moves heart and account here at tablet widths. */
+  #header .ciocia-header-actions .ciocia-header-wishlist {
+    margin-left: 8px;
+  }
 }
 
 /* Mobile mirrors the source: logo / search / account / cart, then categories / contact. */
