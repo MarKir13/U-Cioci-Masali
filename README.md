@@ -14,6 +14,7 @@ built as a team project for the *Biznes Elektroniczny* course at Gdansk Universi
 | PHP | 8.1 (Apache) |
 | Database | MariaDB 10.11.18 |
 | Containers | Docker Engine + Docker Compose v2 |
+| Scraper | Python 3.12, `requests`, Protego, pydantic, pytest (versions in `scraper/requirements.txt`) |
 
 Our own code (child theme `ciocia`, modules, PHP config) lives in `shop/` and is built on top of
 the official image. PrestaShop itself is not stored in this repository.
@@ -78,8 +79,8 @@ pip install -r scraper/requirements.txt
 | `shop/` | Dockerfile, PHP config, child theme, own modules | in progress |
 | `deploy/` | `compose.yaml`, `.env.example`; later: init, backup and restore scripts | in progress |
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
-| `scraper/` | Scraper source code and tests | planned |
-| `scraper-results/` | Scraped data (JSON/CSV) and sample images | planned |
+| `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | in progress |
+| `scraper-results/` | Scraped data (JSON/CSV) and sample images | in progress (schema only) |
 | `tests/` | Playwright E2E tests | planned |
 
 ## Team

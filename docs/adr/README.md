@@ -6,7 +6,7 @@ as "Superseded by NNNN".
 
 ## Index
 
-_No decisions recorded yet._
+- [0001. Results schema and validation with pydantic](0001-results-schema-and-validation.md)
 
 ## Template
 
