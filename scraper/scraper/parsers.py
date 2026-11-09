@@ -107,3 +107,24 @@ def parse_sitemap(xml: str) -> tuple[list[str], list[str]]:
         elif CATEGORY_PATH.match(path):
             categories.append(url)
     return products, categories
+
+
+def product_urls_from_soup(soup: BeautifulSoup) -> list[str]:
+    urls = []
+    for a_tag in soup.select('#js-product-list article.product-miniature a[href$=".html"]'):
+        url = a_tag.get("href")
+        if url and url not in urls:
+            urls.append(url)
+    return urls
+
+
+def next_page_url_from_soup(soup: BeautifulSoup) -> str | None:
+    next_button = soup.select_one("button.next")
+
+    if not next_button:
+        return None
+
+    if "disabled" in next_button.get("class", []):
+        return None
+
+    return next_button.get("data-ps-data")

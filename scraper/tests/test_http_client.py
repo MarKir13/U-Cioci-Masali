@@ -99,7 +99,7 @@ def make_client(script, robots=(200, ""), response_time=0.0, **kwargs):
 
 
 def test_sets_user_agent():
-    client, session, _ = make_client({}, user_agent="TestBot/1.0")
+    _client, session, _ = make_client({}, user_agent="TestBot/1.0")
     assert session.headers["User-Agent"] == "TestBot/1.0"
 
 
@@ -338,7 +338,7 @@ def test_redirect_to_another_scheme_port_or_host_is_not_requested(location):
 
 
 def test_explicit_default_port_is_the_same_shop():
-    client, session, _ = make_client({f"{BASE}/a": [redirect("https://shop.test:443/b")], f"{BASE}:443/b": [200]})
+    client, _session, _ = make_client({f"{BASE}/a": [redirect("https://shop.test:443/b")], f"{BASE}:443/b": [200]})
     assert client.get("/a").status_code == 200
 
 
