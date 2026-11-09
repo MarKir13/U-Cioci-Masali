@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+from bs4 import BeautifulSoup
 
 from scraper.models import Category
 from scraper.parsers import (
@@ -10,6 +11,7 @@ from scraper.parsers import (
     missing_parents,
     next_page_url,
     parse_category,
+    parse_product,
     parse_sitemap,
     parse_sitemap_index,
     product_urls,
@@ -19,6 +21,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 CATEGORY_URL = "https://www.magiczne-indie.pl/104-olejki-do-wlosow"
 HOME_URL = "https://www.magiczne-indie.pl/"
+PRODUCT_URL = "https://www.magiczne-indie.pl/1028-ajurwedyjski-olejek-lagodzacy-bol-miesni-i-stawow-for-muscle-joint-pain-ayush-200ml.html"
 
 # Minimal pages for the error cases: each test leaves out one of these parts.
 H1 = '<h1 class="page-title-section">Olejki do włosów</h1>'

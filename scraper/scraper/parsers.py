@@ -7,7 +7,7 @@ from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
-from .models import Category, validate_record
+from .models import Category, Product, validate_record
 
 SITEMAP_NS = {"site": "http://www.sitemaps.org/schemas/sitemap/0.9"}
 # Paths of product and category pages, e.g. /242-olejek-amla.html and /104-olejki-do-wlosow.
