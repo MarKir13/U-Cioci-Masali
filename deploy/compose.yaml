@@ -34,7 +34,7 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWD: ${DB_PASSWORD}
       PS_INSTALL_AUTO: 1
-      PS_DOMAIN: localhost:${HTTPS_PORT}
+      PS_DOMAIN: "localhost:${HTTPS_PORT:?set HTTPS_PORT in deploy/.env (see .env.example)}"
       PS_ENABLE_SSL: 1
       PS_LANGUAGE: pl
       PS_COUNTRY: PL
@@ -50,13 +50,17 @@ services:
     image: ciocia-proxy:local
     restart: unless-stopped
     depends_on:
-      - shop
+      shop:
+        condition: service_started
+        # nginx resolves shop's IP once at start. A targeted `up -d shop` does not restart
+        # the proxy; run `docker compose restart proxy` after it.
+        restart: true
     ports:
-      - "${HTTP_PORT}:80"
-      - "${HTTPS_PORT}:443"
+      - "${HTTP_PORT:?set HTTP_PORT in deploy/.env (see .env.example)}:80"
+      - "${HTTPS_PORT:?set HTTPS_PORT in deploy/.env (see .env.example)}:443"
     environment:
       # Used in the HTTP -> HTTPS redirect (nginx $host has no port)
-      HTTPS_PORT: ${HTTPS_PORT}
+      HTTPS_PORT: "${HTTPS_PORT:?set HTTPS_PORT in deploy/.env (see .env.example)}"
     volumes:
       # Self-signed cert and key, generated on first start, kept until `down -v`
       - certs:/etc/nginx/certs

@@ -1,6 +1,6 @@
 # 0002. HTTPS through an nginx proxy with a self-signed certificate
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-07
 - Authors: Jakub Rachubka
 
