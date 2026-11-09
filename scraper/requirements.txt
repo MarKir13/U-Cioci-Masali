@@ -3,8 +3,6 @@ requests==2.34.2
 Protego==0.7.0
 # Schema and validation of the scraped records
 pydantic==2.14.2
-# HTML parsing (category pages)
-beautifulsoup4==4.15.0
 
 # Tests
 pytest==9.2.0
