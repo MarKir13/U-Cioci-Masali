@@ -13,7 +13,7 @@
 set -eu
 
 # Limits in MB except MAX_RESULT_IMAGES which is count of objects. Decimals are allowed, e.g. MAX_BLOB_MB=0.5
-MAX_BLOB_MB=10
+MAX_BLOB_MB=0.3
 MAX_PACK_MB=200
 MAX_RESULT_IMAGES=20
 

@@ -44,7 +44,7 @@ jobs:
       # --ignore-gitleaks-allow also reports lines marked with a `gitleaks:allow` comment, and the
       # limits script fails on a committed .gitleaks.toml or .gitleaksignore.
       - name: Secret scan (main and this PR)
-        run: docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"
+        run: docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="--all"
       - name: Repository limits
         if: ${{ !cancelled() }}
         run: sh .github/scripts/check-repo-limits.sh
