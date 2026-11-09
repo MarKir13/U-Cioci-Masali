@@ -39,9 +39,7 @@ def parent_url_from_soup(soup: BeautifulSoup) -> str:
         if data.get("@type") == "BreadcrumbList":
             bread_crumb_list = data["itemListElement"]
             if len(bread_crumb_list) < 2:
-                raise ValueError(
-                    "Breadcrumb has fewer than 2 items, so it has no parent"
-                )
+                raise ValueError("Breadcrumb has fewer than 2 items, so it has no parent")
             return bread_crumb_list[-2]["item"]
     raise ValueError("No BreadcrumbList JSON-LD on the page")
 
@@ -83,9 +81,7 @@ def missing_parents(categories: list[Category]) -> list[Category]:
     """Categories whose parent is not in the list."""
     known_ids = {category.id for category in categories}
     known_ids.add(None)  # top-level categories have no parent to look for
-    orphans = [
-        category for category in categories if category.parent_id not in known_ids
-    ]
+    orphans = [category for category in categories if category.parent_id not in known_ids]
     return orphans
 
 
@@ -112,21 +108,23 @@ def parse_sitemap(xml: str) -> tuple[list[str], list[str]]:
             categories.append(url)
     return products, categories
 
+
 def product_urls_from_soup(soup: BeautifulSoup) -> list[str]:
     urls = []
     for a_tag in soup.select('#js-product-list article.product-miniature a[href$=".html"]'):
-        url = a_tag.get('href')
+        url = a_tag.get("href")
         if url and url not in urls:
             urls.append(url)
     return urls
 
+
 def next_page_url_from_soup(soup: BeautifulSoup) -> str | None:
-    next_button = soup.select_one('button.next')
-    
+    next_button = soup.select_one("button.next")
+
     if not next_button:
         return None
-        
-    if 'disabled' in next_button.get('class', []):
+
+    if "disabled" in next_button.get("class", []):
         return None
-        
-    return next_button.get('data-ps-data')
+
+    return next_button.get("data-ps-data")

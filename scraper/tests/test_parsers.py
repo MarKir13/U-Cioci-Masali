@@ -3,19 +3,17 @@
 from pathlib import Path
 
 import pytest
-
+from bs4 import BeautifulSoup
 from scraper.models import Category
 from scraper.parsers import (
     children_by_parent,
     missing_parents,
+    next_page_url_from_soup,
     parse_category,
     parse_sitemap,
     parse_sitemap_index,
-    product_urls_from_soup, 
-    next_page_url_from_soup
+    product_urls_from_soup,
 )
-
-from bs4 import BeautifulSoup
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -83,9 +81,7 @@ def test_home_page_is_not_a_category():
 
 
 def test_error_names_the_parent_url_that_is_not_a_category():
-    bad_parent = BREADCRUMB.replace(
-        f'"{HOME_URL}"', '"https://www.magiczne-indie.pl/content/4-regulamin"'
-    )
+    bad_parent = BREADCRUMB.replace(f'"{HOME_URL}"', '"https://www.magiczne-indie.pl/content/4-regulamin"')
     with pytest.raises(ValueError, match="content/4-regulamin"):
         parse_category(CATEGORY_URL, H1 + bad_parent)
 
@@ -190,9 +186,7 @@ def parse_sample_sitemap() -> tuple[list[str], list[str]]:
 
 
 def test_sitemap_index_lists_the_sitemap():
-    assert parse_sitemap_index(read_fixture("sitemap_index.xml")) == [
-        f"{SHOP}/1_pl_0_sitemap.xml"
-    ]
+    assert parse_sitemap_index(read_fixture("sitemap_index.xml")) == [f"{SHOP}/1_pl_0_sitemap.xml"]
 
 
 def test_sitemap_gives_products_and_categories_in_order():
@@ -232,15 +226,16 @@ def test_cdata_is_removed_from_addresses():
     products, categories = parse_sample_sitemap()
     assert all(url.startswith("https://") for url in products + categories)
 
+
 def test_first_page_gives_12_products_and_next_page():
     html = read_fixture("category_leaf_first_page.html")
     soup = BeautifulSoup(html, "html.parser")
-    
+
     products = product_urls_from_soup(soup)
     assert len(products) == 12
     assert len(set(products)) == 12
     assert all(url.startswith("http") for url in products)
-    
+
     next_page = next_page_url_from_soup(soup)
     assert next_page == "https://www.magiczne-indie.pl/104-olejki-do-wlosow?page=2"
 
@@ -248,12 +243,12 @@ def test_first_page_gives_12_products_and_next_page():
 def test_middle_page_gives_products_and_next_page():
     html = read_fixture("category_leaf_middle_page.html")
     soup = BeautifulSoup(html, "html.parser")
-    
+
     products = product_urls_from_soup(soup)
-    assert len(products) > 0 
+    assert len(products) > 0
     assert len(set(products)) == len(products)
     assert all(url.startswith("http") for url in products)
-    
+
     next_page = next_page_url_from_soup(soup)
     assert next_page == "https://www.magiczne-indie.pl/104-olejki-do-wlosow?page=4"
 
@@ -261,11 +256,11 @@ def test_middle_page_gives_products_and_next_page():
 def test_last_page_gives_10_products_and_no_next_page():
     html = read_fixture("category_leaf_last_page.html")
     soup = BeautifulSoup(html, "html.parser")
-    
+
     products = product_urls_from_soup(soup)
     assert len(products) == 10
     assert len(set(products)) == 10
     assert all(url.startswith("http") for url in products)
-    
+
     next_page = next_page_url_from_soup(soup)
     assert next_page is None
