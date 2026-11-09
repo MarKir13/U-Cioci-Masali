@@ -1,0 +1,47 @@
+# Rendered at start by the nginx image (envsubst): only defined env vars are replaced,
+# so ${HTTPS_PORT} is filled in and nginx variables like $host stay as they are.
+
+# HTTP: every request goes to the same URL over HTTPS (301).
+# $host has no port, so the published HTTPS port is added explicitly.
+server {
+    listen 80;
+    server_name _;
+
+    return 301 https://$host:${HTTPS_PORT}$request_uri;
+}
+
+# HTTPS: TLS ends here, the shop container gets plain HTTP on the internal network.
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name _;
+
+    ssl_certificate     /etc/nginx/certs/shop.crt;
+    ssl_certificate_key /etc/nginx/certs/shop.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    # No HSTS on purpose: a self-signed cert on localhost would make browsers force HTTPS
+    # for every other local project on localhost.
+
+    # Must match shop/config/php.ini (upload_max_filesize / post_max_size = 32M,
+    # max_execution_time = 300). nginx defaults (1m, 60s) would give 413 on image or module
+    # uploads and 504 on long admin actions.
+    client_max_body_size 32m;
+    proxy_read_timeout   300s;
+    proxy_send_timeout   300s;
+
+    location / {
+        proxy_pass http://shop:80;
+
+        # $http_host keeps the port (localhost:8443), so PrestaShop sees its own domain
+        proxy_set_header Host              $http_host;
+        # Always overwritten here, so a client cannot fake it; Apache in the shop turns it
+        # into HTTPS=on (see shop/Dockerfile)
+        proxy_set_header X-Forwarded-Proto https;
+        # Client IP for PrestaShop (otherwise it would see only the proxy container).
+        # Overwritten, not appended: nginx is the first hop, and PrestaShop would trust a
+        # public IP sent by the client in this header.
+        proxy_set_header X-Forwarded-For   $remote_addr;
+        proxy_set_header X-Real-IP         $remote_addr;
+    }
+}
