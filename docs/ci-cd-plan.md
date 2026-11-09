@@ -180,12 +180,9 @@ Run a linter and the scraper unit tests on every PR (requirement D5).
             run: ruff check .
           - name: Check formatting
             run: ruff format --check .
-          # The hashFiles guards can go once scraper/ is on main (issue #14).
           - name: Install scraper dependencies
-            if: hashFiles('scraper/requirements.txt') != ''
             run: pip install -r scraper/requirements.txt
           - name: Unit tests
-            if: hashFiles('scraper/requirements.txt') != ''
             working-directory: scraper
             run: python -m pytest
 
@@ -200,7 +197,8 @@ Run a linter and the scraper unit tests on every PR (requirement D5).
 ## Acceptance criteria
 - The pipeline runs on the PR that adds it and passes
 - A PR with a lint error or a failing test shows a failed `ci-gate`
-- PR #4 and PR #13 have a green run before they merge
+- PR #4 and PR #13 merged before the pipeline ran on them; their code is verified by this PR's run on the merged
+  `main`, and ruff plus the scraper tests were also run locally on `main` before that
 ```
 
 ### [CI 2/8] CI: repository hygiene and AI log check

@@ -26,12 +26,9 @@ jobs:
         run: ruff check .
       - name: Check formatting
         run: ruff format --check .
-      # The hashFiles guards can go once scraper/ is on main (issue #14).
       - name: Install scraper dependencies
-        if: hashFiles('scraper/requirements.txt') != ''
         run: pip install -r scraper/requirements.txt
       - name: Unit tests
-        if: hashFiles('scraper/requirements.txt') != ''
         working-directory: scraper
         run: python -m pytest
 
