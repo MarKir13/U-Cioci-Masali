@@ -7,6 +7,7 @@ as "Superseded by NNNN".
 ## Index
 
 - [0001. Results schema and validation with pydantic](0001-results-schema-and-validation.md)
+- [0002. HTTPS through an nginx proxy with a self-signed certificate](0002-https-proxy-with-self-signed-certificate.md)
 
 ## Template
 
