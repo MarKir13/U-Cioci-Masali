@@ -4,6 +4,10 @@ FROM prestashop/prestashop:8.2.8-8.1-apache
 # PHP settings for PrestaShop
 COPY config/php.ini /usr/local/etc/php/conf.d/zz-shop.ini
 
+# Behind the HTTPS proxy: treat X-Forwarded-Proto: https as a secure request
+COPY config/apache-https-proxy.conf /etc/apache2/conf-available/https-proxy.conf
+RUN a2enconf https-proxy
+
 # Our theme and modules are kept in /opt/ciocia and copied into the shop files by sync-code.sh
 # (before install and on every start), because /var/www/html lives in a volume.
 COPY --chown=www-data:www-data themes/ /opt/ciocia/themes/
