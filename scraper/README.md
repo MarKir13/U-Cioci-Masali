@@ -60,21 +60,6 @@ All requests go through `HttpClient` in [scraper/http_client.py](scraper/http_cl
 
 After changing a model, run `python -m scraper schema` and commit the new `schema.json`. A test fails if it is out of date.
 
-## Parsers
-
-[scraper/parsers.py](scraper/parsers.py) turns downloaded text into data. The functions do not use the network: the crawl (#10) downloads the pages and passes their text in.
-
-- `parse_sitemap_index(xml)` returns the URLs of the sitemaps listed in `1_index_sitemap.xml`.
-- `parse_sitemap(xml)` returns `(product_urls, category_urls)`. Products are `/{id}-{slug}.html` and categories
-  `/{id}-{slug}`, right after the domain. Home, CMS (`/content/...`), module (`?controller=...`) and brand
-  (`/brand/...`) pages and image URLs are skipped. `<![CDATA[...]]>` in `<loc>` is removed by the XML parser itself.
-- `parse_category(url, html)` returns a `Category`. The id comes from the URL, the name from `h1.page-title-section`
-  and the parent from the second-to-last item of the JSON-LD `BreadcrumbList` (`None` when that item is the home
-  page). A page without the name or the breadcrumb raises `ValueError` with the page URL, so the crawl can log it and
-  go on. A record that fails validation is logged by `validate_record()` and returned as `None`.
-- `children_by_parent(categories)` returns `{parent_id: [children]}`, with top-level categories under `None`.
-- `missing_parents(categories)` returns the categories whose parent is not in the list.
-
 ## Tests
 
 ```sh
@@ -94,5 +79,4 @@ with `REMOVED` before committing a new fixture.
 | `scraper/http_client.py` | Polite HTTP client |
 | `scraper/logging_config.py` | Logging to the console and `scraper.log` |
 | `scraper/models.py` | Schema of the results and validation of records |
-| `scraper/parsers.py` | Parsers of the sitemap and category pages (no network) |
 | `tests/` | Unit tests and saved pages (`fixtures/`) |
