@@ -1,7 +1,8 @@
 #!/bin/sh
 # Checks the repository against the size and content limits the lecturer measures (W1):
 # no file over 10 MB in history, packed size up to 200 MB, at most 20 sample images
-# in scraper-results/, and no .env files, private keys or certificates ever committed.
+# in scraper-results/, no .env files, private keys or certificates ever committed, and no
+# gitleaks config or ignore file that would change what the secret scan reports.
 #
 # Usage, from anywhere inside the repository:
 #   sh .github/scripts/check-repo-limits.sh          history of HEAD (CI on a pull request)
@@ -82,6 +83,17 @@ if [ -z "$forbidden" ]; then
 else
   fail ".env files, keys or certificates committed (remove them and rotate the values):"
   printf '%s\n' "$forbidden" | sed 's/^/        /'
+fi
+
+# 5. Default gitleaks rules with no allowlist, as the lecturer runs it. gitleaks reads
+#    .gitleaks.toml (its rules and allowlist) and .gitleaksignore (findings to skip) from the
+#    scanned repository, so committing either one would silence findings in CI and for the lecturer.
+gitleaks_files=$(git ls-files | grep -E '(^|/)\.gitleaks(\.toml|ignore)$' || true)
+if [ -z "$gitleaks_files" ]; then
+  ok "no gitleaks config or ignore files"
+else
+  fail "gitleaks config or ignore files committed (remove them; findings must be fixed, not ignored):"
+  printf '%s\n' "$gitleaks_files" | sed 's/^/        /'
 fi
 
 exit "$failed"

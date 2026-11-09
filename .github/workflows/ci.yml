@@ -32,9 +32,26 @@ jobs:
         working-directory: scraper
         run: python -m pytest
 
+  repo-hygiene:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history: secrets and large files count in every commit, not only the last one
+          fetch-depth: 0
+      # On a PR, HEAD is GitHub's test merge of the PR into main, so this covers the whole
+      # history of main plus every commit of the PR. Default rules, no allowlist (W1):
+      # --ignore-gitleaks-allow also reports lines marked with a `gitleaks:allow` comment, and the
+      # limits script fails on a committed .gitleaks.toml or .gitleaksignore.
+      - name: Secret scan (main and this PR)
+        run: docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"
+      - name: Repository limits
+        if: ${{ !cancelled() }}
+        run: sh .github/scripts/check-repo-limits.sh
+
   ci-gate:
     if: always()
-    needs: [scraper]
+    needs: [scraper, repo-hygiene]
     runs-on: ubuntu-24.04
     steps:
       - name: Fail if any required job did not succeed
