@@ -8,8 +8,10 @@ Selectors and numbers below were checked on the pages saved in
 
 - The source shop runs **PrestaShop** with a custom theme and custom `ndx*` modules, so most data is
   available as structured JSON embedded in the page, not only as HTML.
-- The sitemap lists **2167 products** and **314 categories**. Of those products, **1311 have at least 2 images**,
+- The sitemap lists **2167 products** and **162 categories**. Of those products, **1311 have at least 2 images**,
   so the requirement of 50 products with 2+ images is met easily.
+  (Corrected on 8.11.2026: the first count of 314 categories also included 140 brand pages and 12 CMS pages,
+  whose URLs end in the same `{id}-{slug}` way. See [Sitemap](#sitemap).)
 - Every field required by the course is available, including the **VAT rate** and full-size images
   (1440 × 1440 px).
 
@@ -31,14 +33,15 @@ Selectors and numbers below were checked on the pages saved in
 ## Sitemap
 
 - URLs are wrapped in `<![CDATA[...]]>` inside `<loc>`, and must be stripped before use.
-- URL types:
-  - **Products:** `/{id}-{slug}.html`, 2167 URLs. Each has `<image:loc>` entries in the `large_default` (800 px) size.
-  - **Categories:** `/{id}-{slug}` (no `.html`), 314 URLs.
-  - **Other:** CMS pages, `?controller=module-...` links. These are ignored.
+- **Categories:** `/{id}-{slug}` (no `.html`), right after the domain, 162 URLs.
+  - **Brands:** `/brand/{id}-{slug}`, 140 URLs, and **CMS pages:** `/content/{id}-{slug}`, 12 URLs. Their ending
+    looks like a category, so the category pattern must match the whole path. Brands are not categories: the brand
+    of a product comes from its JSON-LD.
+  - **Other:** the home page, `?controller=module-...` links. These, the brands and the CMS pages are ignored.
 
 ## Category tree
 
-- The main menu (`ul#top-menu`) shows only 3 levels and **112 of 314** categories, so it is not enough on its own.
+- The main menu (`ul#top-menu`) shows only 3 levels and **112 of 162** categories, so it is not enough on its own.
 - Every category page has a JSON-LD `BreadcrumbList`. It gives the full path to the root, and therefore the parent of
   each category.
 - Subcategory links on a category page: `div.subcategory a`.
@@ -122,14 +125,14 @@ selector.
 ## Recommended crawl strategy
 
 1. **Product URLs from the sitemap.** This takes 1 request instead of walking about 200 listing pages.
-2. **Categories:** fetch each category URL from the sitemap (314 requests). Read the name from `h1` and the parent from
+2. **Categories:** fetch each category URL from the sitemap (162 requests). Read the name from `h1` and the parent from
    the breadcrumb.
 3. **Products:** fetch each product page (2167 requests). Parse `data-product` and the JSON-LD.
 4. **Optional:** walk the leaf category listings with `?page=N`. This is only needed if we want every category a product
    belongs to, not just its default category and breadcrumb path.
 5. **Images:** download `product_main_2x` for every image (about 4950 files), then recompress to ≤ 300 KB.
 
-At 1 request per second, steps 1–3 take about 45 minutes and step 5 about 1.5 hours. This is why resuming matters.
+At 1 request per second, steps 1–3 take about 40 minutes and step 5 about 1.5 hours. This is why resuming matters.
 
 ## Fixtures
 

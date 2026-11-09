@@ -7,11 +7,11 @@ from decimal import Decimal
 
 import pytest
 from pydantic import ValidationError
-
-from scraper import config
 from scraper.__main__ import main
 from scraper.logging_config import setup_logging
 from scraper.models import Category, Product, json_schema, validate_record
+
+from scraper import config
 
 PRODUCT_URL = "https://www.magiczne-indie.pl/5425-bio-amalaki.html"
 FAMILY_URL = "https://www.magiczne-indie.pl/706-olejek.html"
