@@ -72,6 +72,8 @@ Run from the repository root unless noted.
 | Stop, keeping data | `docker compose -f deploy/compose.yaml down` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
 | Scraper lint | `ruff check .` and `ruff format --check .` |
+| Secret scan, as on a PR (Git Bash on Windows: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"` |
+| Repository limits (`--all` for every branch) | `sh .github/scripts/check-repo-limits.sh` |
 
 Storefront: `http://localhost:8080`. Admin: `http://localhost:8080/admin-ciocia`. HTTPS and a one-command data init
 are required but not built yet; update this table when they land.
@@ -84,7 +86,9 @@ Breaking a rule marked **[K]** scores 0 for that requirement, whatever else work
    `main` through a PR approved by another person. An agent does not approve or merge PRs, and only commits or pushes
    when asked.
 2. **[K] No secrets in git, in any commit on any branch.** Configuration goes through `deploy/.env`; only `.env.example`
-   is committed. The check is `gitleaks` over the full history, and what lands on `main` cannot be rewritten.
+   is committed. The check is `gitleaks` over the full history, and what lands on `main` cannot be rewritten. CI runs
+   it on every PR (all commits of `main` plus the PR) and nightly over every branch. A secret removed in a later
+   commit still fails, so remove it by rewriting the feature branch, not with a new commit.
 3. **Do not read or print `deploy/.env`,** and do not handle passwords, API keys or cluster credentials. Course rules
    forbid passing them to AI tools.
 4. **Log AI use in the same PR.** Add a row to `docs/AI_LOG.md` (in Polish), give the PR the `ai-assisted` label, and

@@ -79,8 +79,28 @@ page load after a start takes a few seconds longer while the cache is rebuilt.
 
 ## Continuous integration
 
-GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on every pull request and on every push to
-`main`. A pull request must have a passing `ci-gate` job before it is merged.
+GitHub Actions runs three workflows:
+
+| Workflow | When | What it checks |
+|---|---|---|
+| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `ci-gate`: passes only if both jobs passed |
+| [`pr-policy.yml`](.github/workflows/pr-policy.yml) | A pull request is opened, updated or relabelled | `ai-log`: a PR labelled `ai-assisted` must add or update a row in `docs/AI_LOG.md` |
+| [`secret-scan.yml`](.github/workflows/secret-scan.yml) | Nightly, or by hand from the Actions tab | Secrets and repository limits over every branch, the way the lecturer measures it |
+
+A pull request must have passing `ci-gate` and `ai-log` checks before it is merged.
+
+`repo-hygiene` scans every commit of the PR, because merge commits keep the branch history on `main`. A secret that
+is removed in a later commit therefore still fails the check: rewrite the branch (and force-push it, never `main`)
+instead. A red nightly scan means some branch has a secret in its history; clean that branch or delete it.
+
+The repository limits are set at the top of
+[`.github/scripts/check-repo-limits.sh`](.github/scripts/check-repo-limits.sh): no file over 10 MB in history, at most
+200 MB in total, at most 20 images in `scraper-results/`, and no `.env` file (other than `.env.example`), private key
+or certificate in any commit.
+
+gitleaks runs with its default rules and nothing ignored, as the lecturer runs it. Fix a finding by removing the secret;
+do not silence it. CI reports lines marked `gitleaks:allow` anyway, and the limits script fails if `.gitleaks.toml` or
+`.gitleaksignore` is committed, because gitleaks would read either one from the repository.
 
 To run the same checks locally, install the tools once:
 
@@ -94,6 +114,12 @@ pip install -r scraper/requirements.txt
 | Lint | `ruff check .` |
 | Formatting (`ruff format .` fixes it) | `ruff format --check .` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
+| Secret scan, as on a PR (needs Docker) | `docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"` |
+| Secret scan, every branch | The same command with `--log-opts="--all"` |
+| Repository limits (add `--all` for every branch) | `sh .github/scripts/check-repo-limits.sh` |
+
+In Git Bash on Windows, put `MSYS_NO_PATHCONV=1` in front of the `docker run` command, otherwise the `/repo` path is
+rewritten. `--all` also covers your local branches, so it can report something that is not on GitHub.
 
 ## Repository structure
 
