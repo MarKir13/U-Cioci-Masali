@@ -79,9 +79,7 @@ def test_home_page_is_not_a_category():
 
 
 def test_error_names_the_parent_url_that_is_not_a_category():
-    bad_parent = BREADCRUMB.replace(
-        f'"{HOME_URL}"', '"https://www.magiczne-indie.pl/content/4-regulamin"'
-    )
+    bad_parent = BREADCRUMB.replace(f'"{HOME_URL}"', '"https://www.magiczne-indie.pl/content/4-regulamin"')
     with pytest.raises(ValueError, match="content/4-regulamin"):
         parse_category(CATEGORY_URL, H1 + bad_parent)
 
@@ -186,9 +184,7 @@ def parse_sample_sitemap() -> tuple[list[str], list[str]]:
 
 
 def test_sitemap_index_lists_the_sitemap():
-    assert parse_sitemap_index(read_fixture("sitemap_index.xml")) == [
-        f"{SHOP}/1_pl_0_sitemap.xml"
-    ]
+    assert parse_sitemap_index(read_fixture("sitemap_index.xml")) == [f"{SHOP}/1_pl_0_sitemap.xml"]
 
 
 def test_sitemap_gives_products_and_categories_in_order():

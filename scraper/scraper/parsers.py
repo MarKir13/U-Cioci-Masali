@@ -39,9 +39,7 @@ def parent_url_from_soup(soup: BeautifulSoup) -> str:
         if data.get("@type") == "BreadcrumbList":
             bread_crumb_list = data["itemListElement"]
             if len(bread_crumb_list) < 2:
-                raise ValueError(
-                    "Breadcrumb has fewer than 2 items, so it has no parent"
-                )
+                raise ValueError("Breadcrumb has fewer than 2 items, so it has no parent")
             return bread_crumb_list[-2]["item"]
     raise ValueError("No BreadcrumbList JSON-LD on the page")
 
@@ -83,9 +81,7 @@ def missing_parents(categories: list[Category]) -> list[Category]:
     """Categories whose parent is not in the list."""
     known_ids = {category.id for category in categories}
     known_ids.add(None)  # top-level categories have no parent to look for
-    orphans = [
-        category for category in categories if category.parent_id not in known_ids
-    ]
+    orphans = [category for category in categories if category.parent_id not in known_ids]
     return orphans
 
 
