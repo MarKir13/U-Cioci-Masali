@@ -77,6 +77,25 @@ PrestaShop's cache (`var/cache/prod` and `var/cache/dev`) is cleared automatical
 so new module template overrides take effect after `up -d --build` with no manual step. The first
 page load after a start takes a few seconds longer while the cache is rebuilt.
 
+### Shop content
+
+Store details, CMS pages, footer links and the switched-off demo modules are set by
+[`shop/scripts/setup/shop-content.php`](shop/scripts/setup/shop-content.php) right after the first
+install. Page text is in `shop/scripts/setup/cms/`; shop details and delivery and payment values
+(such as the free delivery threshold) are in
+[`shop/scripts/setup/values.php`](shop/scripts/setup/values.php). Change them there, not in the
+admin panel: changes made there are lost on `down -v` and never reach the rest of the team.
+To apply a change to a running shop, rebuild and run the script again (a reinstall with `down -v`
+applies it too):
+
+```sh
+docker compose -f deploy/compose.yaml up -d --build
+docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh
+```
+
+In Git Bash on Windows, put `MSYS_NO_PATHCONV=1` before the second command, or Git Bash rewrites the
+`/tmp/...` path. Design notes: [ADR 0003](docs/adr/0003-shop-data-set-by-php-setup-scripts.md).
+
 ## Continuous integration
 
 GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on every pull request and on every push to
@@ -99,7 +118,7 @@ pip install -r scraper/requirements.txt
 
 | Path | Contents | Status |
 |---|---|---|
-| `shop/` | Dockerfile, PHP config, child theme, own modules | in progress |
+| `shop/` | Dockerfile, PHP config, child theme, own modules, setup scripts for shop content | in progress |
 | `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`); later: init, backup and restore scripts | in progress |
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
 | `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | in progress |

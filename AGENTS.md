@@ -70,6 +70,7 @@ Run from the repository root unless noted.
 | Apply changes from `shop/` | same command as above |
 | Follow install logs (done at `Starting web server`) | `docker compose -f deploy/compose.yaml logs -f shop` |
 | Stop, keeping data | `docker compose -f deploy/compose.yaml down` |
+| Re-apply shop content to a running shop (after a rebuild) | `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
 | Scraper lint | `ruff check .` and `ruff format --check .` |
 
@@ -126,8 +127,11 @@ Documentation is in English, except `docs/AI_LOG.md`.
   theme and modules from `/opt/ciocia` on every start. A file in the image will not reach the running shop unless it
   goes through that path. The same script deletes `var/cache/prod` and `var/cache/dev` on every start, so new module
   template overrides need no manual cache clear.
-- Scripts run on Linux but are edited on Windows and macOS. `.gitattributes` forces LF for `*.sh`, Dockerfiles and
-  YAML; keep new script types covered.
+- Shop content and settings live in the database. Set them in `shop/scripts/setup/` (ADR 0003), never only in the
+  back office. Post-install scripts run once, on a clean install, and the image keeps starting if one fails: look for
+  `[setup] FAILED` in the shop log. Setup scripts must stay idempotent and must not rely on fixed CMS page IDs.
+- Scripts run on Linux but are edited on Windows and macOS. `.gitattributes` forces LF for `*.sh`, `*.php`,
+  Dockerfiles and YAML; keep new script types covered.
 - `.gitignore` excludes `*.crt`, `*.key`, `*.pem`, `*.zip` and `*.tar.gz`, so certificates and archives must be
   generated or downloaded at runtime.
 - Build images for `linux/amd64`. On Apple Silicon the default is `arm64`, which will not run on the Stage 2 cluster.

@@ -8,6 +8,7 @@ as "Superseded by NNNN".
 
 - [0001. Results schema and validation with pydantic](0001-results-schema-and-validation.md)
 - [0002. HTTPS through an nginx proxy with a self-signed certificate](0002-https-proxy-with-self-signed-certificate.md)
+- [0003. Shop content and settings set by PHP setup scripts](0003-shop-data-set-by-php-setup-scripts.md)
 
 ## Template
 
