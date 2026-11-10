@@ -131,6 +131,12 @@ After changing a model, run `python -m scraper schema` and commit the new `schem
 - `missing_parents(categories)` returns the categories whose parent is not in the list.
 - `product_urls(url, html)` returns absolute, unique product URLs from a product list page.
 - `next_page_url(url, html)` returns the absolute URL of the next page of results, or `None` if there is no next page.
+- `parse_product(url, html)` returns a `Product` from the `data-product` JSON and the JSON-LD blocks. It raises
+  `ValueError` (with the page URL) when `data-product` is missing or not valid JSON.
+  - Both prices go through `round_price()`: two decimal places, halves up (`2.675` becomes `2.68`; `round(float(...), 2)`
+    would give `2.67` and could put `price` above `regular_price`). A value that is not a number is passed on as it is,
+    so validation rejects the product and logs the URL.
+  - Weight is optional. A weight without a unit is skipped with a warning and the product is kept.
 
 ## Tests
 
