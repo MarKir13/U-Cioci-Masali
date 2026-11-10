@@ -64,8 +64,13 @@ else
   fail "repository size: $repo_mb MB (limit $MAX_PACK_MB MB)"
 fi
 
+# Checks 3-5 match file names against patterns. By default git prints a path with non-ASCII
+# characters (e.g. Polish letters) quoted and escaped, as "zdj\304\231cie.jpg", and the closing
+# quote stops patterns ending in $ from matching. core.quotePath=false prints such paths as they are.
+
 # 3. Only sample images in scraper-results/. The full set goes to GitHub Releases.
-images=$(git ls-files -- scraper-results/ | grep -ciE '\.(jpe?g|png|webp|gif)$' || true)
+images=$(git -c core.quotePath=false ls-files -- scraper-results/ |
+  grep -ciE '\.(jpe?g|png|webp|gif|avif|svg)$' || true)
 if [ "$images" -le "$MAX_RESULT_IMAGES" ]; then
   ok "images in scraper-results/: $images (limit $MAX_RESULT_IMAGES)"
 else
@@ -74,10 +79,13 @@ fi
 
 # 4. No .env file, private key or certificate added in any commit of the checked history.
 #    Only .env.example may be committed. --no-renames lists a file renamed to .env as added.
-forbidden=$(git log --format= --name-only --diff-filter=A --no-renames "$@" |
+#    -m also lists files added in a merge commit (e.g. while resolving a conflict), which git log
+#    otherwise skips; files it repeats from the other parent are removed by sort -u.
+#    Matching ignores case, so .ENV and KEY.PEM count too.
+forbidden=$(git -c core.quotePath=false log -m --format= --name-only --diff-filter=A --no-renames "$@" |
   sort -u |
-  grep -E '(^|/)\.env(\.[^/]*)?$|\.(key|pem|crt)$' |
-  grep -vE '(^|/)\.env\.example$' || true)
+  grep -iE '(^|/)\.env(\.[^/]*)?$|\.(key|pem|crt|p12|pfx)$|(^|/)id_(rsa|dsa|ecdsa|ed25519)$' |
+  grep -viE '(^|/)\.env\.example$' || true)
 if [ -z "$forbidden" ]; then
   ok "no .env files, keys or certificates committed"
 else
@@ -88,7 +96,7 @@ fi
 # 5. Default gitleaks rules with no allowlist, as the lecturer runs it. gitleaks reads
 #    .gitleaks.toml (its rules and allowlist) and .gitleaksignore (findings to skip) from the
 #    scanned repository, so committing either one would silence findings in CI and for the lecturer.
-gitleaks_files=$(git ls-files | grep -E '(^|/)\.gitleaks(\.toml|ignore)$' || true)
+gitleaks_files=$(git -c core.quotePath=false ls-files | grep -E '(^|/)\.gitleaks(\.toml|ignore)$' || true)
 if [ -z "$gitleaks_files" ]; then
   ok "no gitleaks config or ignore files"
 else
