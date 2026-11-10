@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import pytest
-from bs4 import BeautifulSoup
 
 from scraper.models import Category
 from scraper.parsers import (
@@ -273,3 +272,86 @@ def test_last_page_gives_10_products_and_no_next_page():
 
     next_page = next_page_url(url, html)
     assert next_page is None
+
+
+def test_parse_product_with_one_image():
+    """Verify single image extraction, basic attributes and JSON data source."""
+    html = read_fixture("product_one_image.html")
+    product = parse_product(PRODUCT_URL, html)
+
+    assert product is not None
+    assert product.id == 1028
+    assert product.name == "Ajurwedyjski Olejek Łagodzący Ból Mięśni i Stawów (For Muscle & Joint Pain) Ayush 200ml"
+    assert product.brand == "AYUSH"
+    assert product.ean == "8906086960004"
+    assert float(product.price) == 54.99
+    assert float(product.regular_price) == 54.99
+    assert product.has_discount is False
+    assert product.vat_rate == 23.0
+
+    assert product.weight is not None
+    assert product.weight.value == "100.000000"
+    assert product.weight.unit == "g"
+
+    assert len(product.images) == 1
+    assert (
+        str(product.images[0].source_url)
+        == "https://www.magiczne-indie.pl/5290-product_main_2x/ajurwedyjski-olejek-lagodzacy-bol-miesni-i-stawow-for-muscle-joint-pain-ayush-200ml.jpg"
+    )
+
+    assert product.category_ids == [179, 8, 37]
+
+
+def test_missing_data_product_raises_error():
+    html_without_data = '<div class="js-product-details">No data here</div>'
+    with pytest.raises(ValueError, match=r"Missing data-product attribute.*at https://"):
+        parse_product(PRODUCT_URL, html_without_data)
+
+
+def test_invalid_json_in_data_product_raises_error():
+    with pytest.raises(ValueError, match=r"Invalid JSON in data-product.*at https://"):
+        parse_product(PRODUCT_URL, '<div class="js-product-details" data-product="invalid"></div>')
+
+
+def test_parse_product_discounted():
+    """Test parsing a discounted product based on acceptance criteria."""
+    html = read_fixture("product_discounted.html")
+    product = parse_product("https://www.magiczne-indie.pl/test-discount.html", html)
+
+    assert product is not None
+    assert product.has_discount is True
+    assert float(product.price) == 64.72
+    assert float(product.regular_price) == 69.59
+    assert product.vat_rate == 8.0
+
+    assert product.category_ids == [385, 80, 55]
+    assert product.weight is None
+    assert product.size is None
+    assert product.color is None
+    assert product.material is None
+    assert product.pattern is None
+
+
+def test_parse_product_many_images():
+    """Test parsing a product with multiple images."""
+    html = read_fixture("product_many_images.html")
+    product = parse_product("https://www.magiczne-indie.pl/test-images.html", html)
+
+    assert product is not None
+    assert product.has_discount is False
+    assert len(product.images) == 10
+    assert product.category_ids == [393, 232]
+
+
+def test_parse_product_with_family():
+    """Test parsing a product with variants (family) and specific JSON-LD attributes."""
+    html = read_fixture("product_with_family.html")
+    product = parse_product("https://www.magiczne-indie.pl/test-family.html", html)
+
+    assert product is not None
+    assert product.size == "200 ml"
+    assert product.pattern == "Amla"
+    assert product.weight is not None
+    assert product.weight.value == "250.000000"
+    assert len(product.family) >= 1
+    assert product.category_ids == [104, 8, 38]
