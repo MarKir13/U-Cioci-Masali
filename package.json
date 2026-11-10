@@ -1,0 +1,13 @@
+{
+  "name": "u-cioci-masali",
+  "private": true,
+  "description": "Development tools only (ESLint). The shop itself does not use npm.",
+  "scripts": {
+    "lint:js": "eslint"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "globals": "17.13.0"
+  }
+}
