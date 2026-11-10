@@ -15,5 +15,7 @@ COPY --chown=www-data:www-data modules/ /opt/ciocia/modules/
 COPY --chmod=755 scripts/sync-code.sh /tmp/pre-install-scripts/10-sync-code.sh
 COPY --chmod=755 scripts/sync-code.sh /tmp/init-scripts/10-sync-code.sh
 
-# Runs once after the automatic install: enables our child theme
+# Run once after the automatic install, in name order: enable our child theme, then put our content
+# into the database. The PHP setup scripts and their data stay in /opt/ciocia/setup, outside the web root.
+COPY scripts/setup/ /opt/ciocia/setup/
 COPY --chmod=755 scripts/post-install/ /tmp/post-install-scripts/

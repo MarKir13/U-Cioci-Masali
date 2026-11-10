@@ -5,6 +5,9 @@ Dockerfile text eol=lf
 *.template text eol=lf
 *.yaml    text eol=lf
 *.yml     text eol=lf
+*.php     text eol=lf
+# CMS page text, stored in the shop database as written
+shop/scripts/setup/cms/*.html text eol=lf
 
 # Saved source pages for scraper tests: keep them byte-for-byte as downloaded
 scraper/tests/fixtures/** -text
