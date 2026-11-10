@@ -1,7 +1,9 @@
 # HTTPS proxy in front of the shop: TLS with a self-signed cert, HTTP -> HTTPS redirect.
 FROM nginx:1.28.0-alpine
 
-# openssl generates the certificate on first start
+# openssl generates the certificate on first start. Any current version does that, and Alpine
+# removes old package versions from its mirrors, so a pinned version would break the build later.
+# hadolint ignore=DL3018
 RUN apk add --no-cache openssl
 
 # The official image runs /docker-entrypoint.d/*.sh in name order before starting nginx:

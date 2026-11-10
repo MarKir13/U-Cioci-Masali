@@ -32,9 +32,70 @@ jobs:
         working-directory: scraper
         run: python -m pytest
 
+  repo-hygiene:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history: secrets and large files count in every commit, not only the last one
+          fetch-depth: 0
+      # On a PR, HEAD is GitHub's test merge of the PR into main, so this covers the whole
+      # history of main plus every commit of the PR. Default rules, no allowlist (W1):
+      # --ignore-gitleaks-allow also reports lines marked with a `gitleaks:allow` comment, and the
+      # limits script fails on a committed .gitleaks.toml or .gitleaksignore.
+      - name: Secret scan (main and this PR)
+        run: docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"
+      - name: Repository limits
+        if: ${{ !cancelled() }}
+        run: sh .github/scripts/check-repo-limits.sh
+
+  # Container, shell, JavaScript and PHP files. Every step runs even if an earlier one failed,
+  # so one run shows all problems. Linters run from pinned Docker images, nothing is installed.
+  infra-lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Dockerfiles (hadolint)
+        if: ${{ !cancelled() }}
+        run: docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile
+      - name: Shell scripts (shellcheck)
+        if: ${{ !cancelled() }}
+        # -z and xargs -0 pass each path as one argument, even with spaces in it
+        run: git ls-files -z '*.sh' | xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0
+      # --quiet prints nothing for a valid file. An unknown variable is only a warning (Compose
+      # replaces it with an empty string), so any output, warning or error, fails the step.
+      - name: Compose file
+        if: ${{ !cancelled() }}
+        run: |
+          cp deploy/.env.example deploy/.env
+          docker compose -f deploy/compose.yaml config --quiet 2>&1 | tee "$RUNNER_TEMP/compose-output.txt"
+          test ! -s "$RUNNER_TEMP/compose-output.txt"
+      # PHP 8.1 checks one file per `php -l`, so xargs -n1 starts one container per file. php exits
+      # with 255 on a syntax error, which makes xargs stop at the first broken file and fail the step.
+      # Passes while shop/modules/ has no PHP files.
+      - name: PHP syntax (php -l)
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -z "$(git ls-files 'shop/modules/*.php')" ]; then
+            echo "No PHP files in shop/modules/"
+            exit 0
+          fi
+          git ls-files -z 'shop/modules/*.php' |
+            xargs -0 -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l
+      - uses: actions/setup-node@v7
+        if: ${{ !cancelled() }}
+        with:
+          node-version: "24"
+      - name: Install ESLint (versions from package-lock.json)
+        if: ${{ !cancelled() }}
+        run: npm ci
+      - name: JavaScript (ESLint)
+        if: ${{ !cancelled() }}
+        run: npx eslint
+
   ci-gate:
     if: always()
-    needs: [scraper]
+    needs: [scraper, repo-hygiene, infra-lint]
     runs-on: ubuntu-24.04
     steps:
       - name: Fail if any required job did not succeed
