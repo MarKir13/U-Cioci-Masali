@@ -73,6 +73,10 @@ only after `down -v`. They are never stored in the repository. Design notes:
 | Apply changes from `shop/` (theme, modules, config) | `docker compose -f deploy/compose.yaml up -d --build` |
 | Reset everything and reinstall from scratch | `docker compose -f deploy/compose.yaml down -v` |
 
+PrestaShop's cache (`var/cache/prod` and `var/cache/dev`) is cleared automatically on every start,
+so new module template overrides take effect after `up -d --build` with no manual step. The first
+page load after a start takes a few seconds longer while the cache is rebuilt.
+
 ## Continuous integration
 
 GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on every pull request and on every push to
