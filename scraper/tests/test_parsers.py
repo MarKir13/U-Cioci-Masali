@@ -8,15 +8,19 @@ from scraper.models import Category
 from scraper.parsers import (
     children_by_parent,
     missing_parents,
+    next_page_url,
     parse_category,
+    parse_product,
     parse_sitemap,
     parse_sitemap_index,
+    product_urls,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
 CATEGORY_URL = "https://www.magiczne-indie.pl/104-olejki-do-wlosow"
 HOME_URL = "https://www.magiczne-indie.pl/"
+PRODUCT_URL = "https://www.magiczne-indie.pl/1028-ajurwedyjski-olejek-lagodzacy-bol-miesni-i-stawow-for-muscle-joint-pain-ayush-200ml.html"
 
 # Minimal pages for the error cases: each test leaves out one of these parts.
 H1 = '<h1 class="page-title-section">Olejki do włosów</h1>'
@@ -223,3 +227,131 @@ def test_cdata_is_removed_from_addresses():
     """<loc> wraps the address in CDATA, and ElementTree strips it by itself."""
     products, categories = parse_sample_sitemap()
     assert all(url.startswith("https://") for url in products + categories)
+
+
+def test_first_page_gives_12_products_and_next_page():
+    """Ensure the first page yields exactly 12 unique, absolute product URLs and a link to page 2."""
+    url = "https://www.magiczne-indie.pl/104-olejki-do-wlosow"
+    html = read_fixture("category_leaf_first_page.html")
+
+    products = product_urls(url, html)
+    assert len(products) == 12
+    assert len(set(products)) == 12
+    for product_url in products:
+        assert product_url.startswith("https://www.magiczne-indie.pl/")
+
+    next_page = next_page_url(url, html)
+    assert next_page == "https://www.magiczne-indie.pl/104-olejki-do-wlosow?page=2"
+
+
+def test_middle_page_gives_products_and_next_page():
+    """Ensure a middle page yields unique, absolute product URLs and a link to the next page."""
+    url = "https://www.magiczne-indie.pl/104-olejki-do-wlosow?page=3"
+    html = read_fixture("category_leaf_middle_page.html")
+
+    products = product_urls(url, html)
+    assert len(products) == 12
+    assert len(set(products)) == 12
+    for product_url in products:
+        assert product_url.startswith("https://www.magiczne-indie.pl/")
+
+    next_page = next_page_url(url, html)
+    assert next_page == "https://www.magiczne-indie.pl/104-olejki-do-wlosow?page=4"
+
+
+def test_last_page_gives_10_products_and_no_next_page():
+    """Ensure the last page yields exactly 10 unique, absolute product URLs and returns None for the next page."""
+    url = "https://www.magiczne-indie.pl/104-olejki-do-wlosow?page=8"
+    html = read_fixture("category_leaf_last_page.html")
+
+    products = product_urls(url, html)
+    assert len(products) == 10
+    assert len(set(products)) == 10
+    for product_url in products:
+        assert product_url.startswith("https://www.magiczne-indie.pl/")
+
+    next_page = next_page_url(url, html)
+    assert next_page is None
+
+
+def test_parse_product_with_one_image():
+    """Verify single image extraction, basic attributes and JSON data source."""
+    html = read_fixture("product_one_image.html")
+    product = parse_product(PRODUCT_URL, html)
+
+    assert product is not None
+    assert product.id == 1028
+    assert product.name == "Ajurwedyjski Olejek Łagodzący Ból Mięśni i Stawów (For Muscle & Joint Pain) Ayush 200ml"
+    assert product.brand == "AYUSH"
+    assert product.ean == "8906086960004"
+    assert float(product.price) == 54.99
+    assert float(product.regular_price) == 54.99
+    assert product.has_discount is False
+    assert product.vat_rate == 23.0
+
+    assert product.weight is not None
+    assert product.weight.value == "100.000000"
+    assert product.weight.unit == "g"
+
+    assert len(product.images) == 1
+    assert (
+        str(product.images[0].source_url)
+        == "https://www.magiczne-indie.pl/5290-product_main_2x/ajurwedyjski-olejek-lagodzacy-bol-miesni-i-stawow-for-muscle-joint-pain-ayush-200ml.jpg"
+    )
+
+    assert product.category_ids == [179, 8, 37]
+
+
+def test_missing_data_product_raises_error():
+    html_without_data = '<div class="js-product-details">No data here</div>'
+    with pytest.raises(ValueError, match=r"Missing data-product attribute.*at https://"):
+        parse_product(PRODUCT_URL, html_without_data)
+
+
+def test_invalid_json_in_data_product_raises_error():
+    with pytest.raises(ValueError, match=r"Invalid JSON in data-product.*at https://"):
+        parse_product(PRODUCT_URL, '<div class="js-product-details" data-product="invalid"></div>')
+
+
+def test_parse_product_discounted():
+    """Test parsing a discounted product based on acceptance criteria."""
+    html = read_fixture("product_discounted.html")
+    product = parse_product("https://www.magiczne-indie.pl/test-discount.html", html)
+
+    assert product is not None
+    assert product.has_discount is True
+    assert float(product.price) == 64.72
+    assert float(product.regular_price) == 69.59
+    assert product.vat_rate == 8.0
+
+    assert product.category_ids == [385, 80, 55]
+    assert product.weight is None
+    assert product.size is None
+    assert product.color is None
+    assert product.material is None
+    assert product.pattern is None
+
+
+def test_parse_product_many_images():
+    """Test parsing a product with multiple images."""
+    html = read_fixture("product_many_images.html")
+    product = parse_product("https://www.magiczne-indie.pl/test-images.html", html)
+
+    assert product is not None
+    assert product.has_discount is False
+    assert len(product.images) == 10
+    assert product.category_ids == [393, 232]
+
+
+def test_parse_product_with_family():
+    """Test parsing a product with variants (family) and specific JSON-LD attributes."""
+    html = read_fixture("product_with_family.html")
+    product = parse_product("https://www.magiczne-indie.pl/test-family.html", html)
+
+    assert product is not None
+    assert product.size == "200 ml"
+    assert product.pattern == "Amla"
+    assert product.weight is not None
+    assert product.weight.value == "250.000000"
+    assert len(product.family) >= 1
+    assert product.category_ids == [104, 8, 38]
