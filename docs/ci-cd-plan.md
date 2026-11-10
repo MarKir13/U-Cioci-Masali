@@ -1,7 +1,7 @@
 # CI/CD plan
 
 Plan for the GitHub Actions pipeline, with issues ready to paste into GitHub. First measured on 2026-11-01 and
-2026-11-02; status updated on 2026-11-09.
+2026-11-02; status updated on 2026-11-10.
 
 ## Where we stand
 
@@ -13,7 +13,7 @@ Results of running the checks on the current code (2026-11-09 unless noted):
 | gitleaks on all branches | **2 findings**: `4330d00` on `feature/scraper-product-list-parser` and `feature/scraper-product-page-parser`, `8638e6e` on the second | PR #37 fails `repo-hygiene` and the nightly scan is red until both branches are rewritten or deleted |
 | gitleaks on PR #4 | The 12 findings in `d81f787` stayed off `main` (squash merge, branch deleted) | They remain only in GitHub's `refs/pull/4`, which clones do not fetch. Only GitHub Support can remove it |
 | ruff and pytest | Run by `ci.yml` on every PR since CI-1 (#22) | D5 met while no PR merges red |
-| hadolint on `shop/Dockerfile`, shellcheck on `shop/scripts/`, `docker compose config` | Clean (2026-11-01) | Not yet run on `deploy/proxy/`, added later by #34. CI-3 covers it |
+| hadolint 2.15.1 on both Dockerfiles, shellcheck 0.11.0 on all 4 tracked `*.sh`, `docker compose config`, ESLint on the theme JS | Clean (2026-11-10). The only finding, `DL3018` (unpinned `openssl` in `deploy/proxy/Dockerfile`), is silenced on that line with the reason | Run by `infra-lint` on every PR once CI-3 merges |
 | Repository size | About 0.6 MB packed; largest file 0.34 MB | Far below the limits |
 | `main` branch protection | Ruleset active since 2026-11-09: PR with 1 approval, `ci-gate` required, no force pushes or deletion | After CI-2 merges, also require `ai-log` and dismiss stale approvals on new commits |
 | PR #36 | Merged by its author without approval and with a failing pipeline; reverted by #38 | Both commits stay in `main`'s history. The content comes back through #35 and a new reviewed PR |
@@ -37,6 +37,10 @@ Results of running the checks on the current code (2026-11-09 unless noted):
 - **The workflows stay plain.** Everyone may be questioned on them at the defence, so we use short shell steps and
   official actions in preference to clever third-party ones.
 - **CI never contacts the source shop.** Scraper tests run on saved pages only.
+- **Linters run from pinned Docker images.** hadolint, shellcheck and `php -l` need nothing installed and give the same
+  result locally and in CI. ESLint is the exception: it is pinned in the root `package-lock.json`.
+- **Findings are fixed, not silenced.** Where a rule really does not fit, only that line is silenced, with the reason
+  above it. No rule is turned off for the whole repository. See [ADR 0003](adr/0003-ci-checks-and-merge-policy.md).
 
 ## Pipeline overview
 
@@ -92,7 +96,7 @@ clones. Any branch cut from `feature/scraper-setup` must be rebased onto `main` 
 |---|---|---|
 | 1 | CI-1 Ruff and scraper tests | Done in #22. **This alone earns D5** |
 | 2 | CI-2 Repository hygiene and AI log | PR #4 tokens removed (done) |
-| 3 | CI-3 Docker, shell and compose lint | CI-1 |
+| 3 | CI-3 Docker, shell and compose lint | CI-1 (done). Stacked on CI-2 (#39), because both change the same lines of `ci.yml` and the docs |
 | 4 | CI-4 Image build and smoke test | CI-3 |
 | 5 | CI-5 Publish image to GHCR | CI-4 |
 | 6 | CI-6 E2E in CI | CI-5, plus the gaps below |
@@ -253,18 +257,23 @@ Catch container mistakes early. "Repair a broken container setting" is one of th
 should stay clean.
 
 ## Tasks
-- [ ] Add an `infra-lint` job to `ci.yml`
-- [ ] hadolint on `shop/Dockerfile`
-- [ ] shellcheck on all `*.sh` in `shop/scripts/` and `deploy/`
-- [ ] `cp deploy/.env.example deploy/.env`, then `docker compose -f deploy/compose.yaml config --quiet`
-- [ ] ESLint on `shop/themes/ciocia/assets/js/` (needs PR #13) and `tests/` (once it exists), with a pinned version and
-      a root `eslint.config.mjs`
-- [ ] `php -l` on PHP files in `shop/modules/`, skipped while there are none
+- [ ] Add an `infra-lint` job to `ci.yml`, one step per tool, each run even if an earlier one failed
+- [ ] hadolint (Docker image `hadolint/hadolint:v2.15.1`) on `shop/Dockerfile` and `deploy/proxy/Dockerfile`
+- [ ] shellcheck (Docker image `koalaman/shellcheck:v0.11.0`) on every tracked `*.sh`
+- [ ] `cp deploy/.env.example deploy/.env`, then `docker compose -f deploy/compose.yaml config --quiet`, failing on any
+      output: Compose only warns about an unknown variable
+- [ ] ESLint on `shop/themes/ciocia/assets/js/`, pinned in a root `package.json` and `package-lock.json`, with a root
+      `eslint.config.mjs`. Add `tests/` once the Playwright suite exists
+- [ ] `php -l` (Docker image `php:8.1.34-cli`) on PHP files in `shop/modules/`, passing while there are none
+- [ ] Fix or silence the current findings: silence only single lines, with the reason above them
 - [ ] Add `infra-lint` to the `needs` of `ci-gate`
+- [ ] ADR on the CI checks and merge policy
+- [ ] README, AGENTS.md: the local commands
 
 ## Acceptance criteria
 - The job passes on `main`
-- A wrong variable name in `compose.yaml` or a shell syntax error fails the job
+- A wrong variable name in `compose.yaml`, a shell syntax error or unquoted variable, `ADD` instead of `COPY` in a
+  Dockerfile, and an undefined variable in the theme JS each fail the job, shown in CI with one temporary commit
 ```
 
 ### [CI 4/8] CI: build the shop image and smoke-test a clean install

@@ -83,7 +83,7 @@ GitHub Actions runs three workflows:
 
 | Workflow | When | What it checks |
 |---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `ci-gate`: passes only if both jobs passed |
+| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and the theme's JavaScript. `ci-gate`: passes only if all jobs passed |
 | [`pr-policy.yml`](.github/workflows/pr-policy.yml) | A pull request is opened, updated or relabelled | `ai-log`: a PR labelled `ai-assisted` must add or update a row in `docs/AI_LOG.md` |
 | [`secret-scan.yml`](.github/workflows/secret-scan.yml) | Nightly, or by hand from the Actions tab | Secrets and repository limits over every branch, the way the lecturer measures it |
 
@@ -102,11 +102,32 @@ gitleaks runs with its default rules and nothing ignored, as the lecturer runs i
 do not silence it. CI reports lines marked `gitleaks:allow` anyway, and the limits script fails if `.gitleaks.toml` or
 `.gitleaksignore` is committed, because gitleaks would read either one from the repository.
 
-To run the same checks locally, install the tools once:
+`infra-lint` runs each check as its own step, so one run shows every problem:
+
+| Step | Tool | What it catches |
+|---|---|---|
+| Dockerfiles | [hadolint](https://github.com/hadolint/hadolint) 2.15.1 | Untagged base images, unpinned packages, `ADD` instead of `COPY`, `cd` instead of `WORKDIR`, and shellcheck findings in `RUN` lines |
+| Shell scripts | [shellcheck](https://www.shellcheck.net/) 0.11.0 on every tracked `*.sh` | Syntax errors, unquoted variables, commands that do not exist in POSIX `sh` |
+| Compose file | `docker compose config --quiet` with `deploy/.env.example` | Unknown keys, undefined services or volumes, invalid ports, missing variables. Compose only warns about an unknown variable and leaves it empty, so the step fails on any output |
+| PHP syntax | `php -l` from `php:8.1.34-cli` on `shop/modules/**/*.php` | Syntax errors. Passes while there are no PHP files |
+| JavaScript | [ESLint](https://eslint.org/) 10.13.0, recommended rules, browser globals ([`eslint.config.mjs`](eslint.config.mjs)) | Undefined variables, unused variables, unreachable code |
+
+hadolint, shellcheck and PHP run from pinned Docker images, so nothing has to be installed for them. ESLint is pinned
+in the root [`package.json`](package.json) and [`package-lock.json`](package-lock.json); npm is used only for these
+development tools. When you update it, choose versions at least two weeks old and pass the matching date, so that
+their dependencies are old enough too: `npm install --save-dev --save-exact eslint@<version> --before=<YYYY-MM-DD>`.
+
+Fix a finding rather than silencing it. If a rule really does not fit, silence that one line and give the reason
+above it, as `deploy/proxy/Dockerfile` does for `# hadolint ignore=DL3018`. Never turn a rule off for the whole
+repository. The reasons are in [ADR 0003](docs/adr/0003-ci-checks-and-merge-policy.md).
+
+To run the same checks locally, install the tools once. The linters run in Docker; ESLint needs Node.js 20.19+, 22.13+
+or 24+:
 
 ```sh
 pip install ruff==0.17.3
 pip install -r scraper/requirements.txt
+npm ci
 ```
 
 | Check | Command |
@@ -117,9 +138,16 @@ pip install -r scraper/requirements.txt
 | Secret scan, as on a PR (needs Docker) | `docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"` |
 | Secret scan, every branch | The same command with `--log-opts="--all"` |
 | Repository limits (add `--all` for every branch) | `sh .github/scripts/check-repo-limits.sh` |
+| Dockerfiles | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile` |
+| Shell scripts | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
+| Compose file (prints nothing when valid) | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
+| PHP syntax | `git ls-files -z 'shop/modules/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
+| JavaScript | `npx eslint` |
 
-In Git Bash on Windows, put `MSYS_NO_PATHCONV=1` in front of the `docker run` command, otherwise the `/repo` path is
-rewritten. `--all` also covers your local branches, so it can report something that is not on GitHub.
+In Git Bash on Windows, put `MSYS_NO_PATHCONV=1` in front of `docker run`, or in front of `xargs` where the command
+uses it, otherwise the `/repo` path is rewritten. `--all` also covers your local branches, so it can report something
+that is not on GitHub. The compose check reads `deploy/.env.example` instead of your own `deploy/.env`, so it gives the
+same result as CI and never shows your passwords.
 
 ## Repository structure
 
