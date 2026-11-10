@@ -124,7 +124,8 @@ Documentation is in English, except `docs/AI_LOG.md`.
 
 - `/var/www/html` is a named volume that is filled from the image only once. `shop/scripts/sync-code.sh` copies the
   theme and modules from `/opt/ciocia` on every start. A file in the image will not reach the running shop unless it
-  goes through that path.
+  goes through that path. The same script deletes `var/cache/prod` and `var/cache/dev` on every start, so new module
+  template overrides need no manual cache clear.
 - Scripts run on Linux but are edited on Windows and macOS. `.gitattributes` forces LF for `*.sh`, Dockerfiles and
   YAML; keep new script types covered.
 - `.gitignore` excludes `*.crt`, `*.key`, `*.pem`, `*.zip` and `*.tar.gz`, so certificates and archives must be
