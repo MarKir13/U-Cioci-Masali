@@ -1,6 +1,6 @@
 """Full scraper run: sitemap -> categories -> listings -> products. Can be stopped and resumed.
 
-Why the data comes from where it does: docs/adr/0003-crawl-sources-and-category-assignment.md
+Why the data comes from where it does: docs/adr/0004-crawl-sources-and-category-assignment.md
 
 Results in scraper-results/:
 - categories.json: every category, rewritten after each new one;

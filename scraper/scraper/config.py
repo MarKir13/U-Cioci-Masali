@@ -31,7 +31,7 @@ LOG_FILE = SCRAPER_DIR / "scraper.log"
 RESULTS_DIR = SCRAPER_DIR.parent / "scraper-results"
 SCHEMA_FILE = RESULTS_DIR / "schema.json"
 
-# Crawl results (see docs/adr/0003-crawl-sources-and-category-assignment.md)
+# Crawl results (see docs/adr/0004-crawl-sources-and-category-assignment.md)
 CATEGORIES_FILE = RESULTS_DIR / "categories.json"
 # One product per line, appended as soon as it is parsed, so an interrupted run loses nothing saved
 PRODUCTS_FILE = RESULTS_DIR / "products.jsonl"

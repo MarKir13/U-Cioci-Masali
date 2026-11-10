@@ -1,4 +1,4 @@
-# 0003. Crawl sources and category assignment
+# 0004. Crawl sources and category assignment
 
 - Status: Proposed
 - Date: 2026-11-10
@@ -9,7 +9,7 @@
 The crawl (#10) has to find every product and every category of the source shop, and know which categories each
 product belongs to. W3 requires at least 4 categories, each with at least 2 non-empty subcategories, and no empty
 category in our shop. Everything goes through the polite client at 1 request per second, so every extra page costs a
-second, and a full run already takes about 40 minutes.
+second, and a full run already takes about an hour (measured: about 1.7 s per page, delay included, for about 2400 pages).
 
 Facts from [scraper-recon.md](../scraper-recon.md) and the saved pages:
 

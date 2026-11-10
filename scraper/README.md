@@ -32,7 +32,7 @@ Everything, including DEBUG messages, is also written to `scraper.log` (not comm
 ## Crawl
 
 `python -m scraper crawl` runs these stages in order ([scraper/crawl.py](scraper/crawl.py)). Why the data comes from
-these pages: [ADR 0003](../docs/adr/0003-crawl-sources-and-category-assignment.md).
+these pages: [ADR 0004](../docs/adr/0004-crawl-sources-and-category-assignment.md).
 
 1. **robots.txt** is loaded first. If that fails, the run stops before requesting any other page.
 2. **Sitemap** (`/1_index_sitemap.xml` and the sitemap it lists): product and category URLs. Downloaded on every run.
