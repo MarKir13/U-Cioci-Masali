@@ -1,0 +1,39 @@
+name: PR policy
+
+# Separate from CI, so that adding or removing a label re-runs only this check, not the tests.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-policy-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # A PR labelled ai-assisted must add or update a row in docs/AI_LOG.md (AGENTS.md, rule 4; D6)
+  ai-log:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The test merge commit and both its parents
+          fetch-depth: 2
+      - name: Require an AI log row on PRs labelled ai-assisted
+        env:
+          AI_ASSISTED: ${{ contains(github.event.pull_request.labels.*.name, 'ai-assisted') }}
+        run: |
+          if [ "$AI_ASSISTED" != "true" ]; then
+            echo "The PR is not labelled ai-assisted, so no AI log row is required."
+            exit 0
+          fi
+          # HEAD is GitHub's test merge of the PR into main and HEAD^1 is main,
+          # so this diff holds exactly what the PR changes. Every log row starts with a date.
+          rows=$(git diff HEAD^1 HEAD -- docs/AI_LOG.md | grep -cE '^\+\| *[0-9]' || true)
+          if [ "$rows" -eq 0 ]; then
+            echo "::error file=docs/AI_LOG.md::The PR is labelled ai-assisted, but adds no row to docs/AI_LOG.md. See rule 4 in AGENTS.md."
+            exit 1
+          fi
+          echo "docs/AI_LOG.md: $rows row(s) added or updated."
