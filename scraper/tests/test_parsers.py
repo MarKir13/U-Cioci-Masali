@@ -3,17 +3,16 @@
 from pathlib import Path
 
 import pytest
-from bs4 import BeautifulSoup
 
 from scraper.models import Category
 from scraper.parsers import (
     children_by_parent,
     missing_parents,
-    next_page_url_from_soup,
+    next_page_url,
     parse_category,
     parse_sitemap,
     parse_sitemap_index,
-    product_urls_from_soup,
+    product_urls,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -229,39 +228,45 @@ def test_cdata_is_removed_from_addresses():
 
 
 def test_first_page_gives_12_products_and_next_page():
+    """Ensure the first page yields exactly 12 unique, absolute product URLs and a link to page 2."""
+    url = "https://www.magiczne-indie.pl/104-olejki-do-wlosow"
     html = read_fixture("category_leaf_first_page.html")
-    soup = BeautifulSoup(html, "html.parser")
 
-    products = product_urls_from_soup(soup)
+    products = product_urls(url, html)
     assert len(products) == 12
     assert len(set(products)) == 12
-    assert all(url.startswith("http") for url in products)
+    for product_url in products:
+        assert product_url.startswith("https://www.magiczne-indie.pl/")
 
-    next_page = next_page_url_from_soup(soup)
+    next_page = next_page_url(url, html)
     assert next_page == "https://www.magiczne-indie.pl/104-olejki-do-wlosow?page=2"
 
 
 def test_middle_page_gives_products_and_next_page():
+    """Ensure a middle page yields unique, absolute product URLs and a link to the next page."""
+    url = "https://www.magiczne-indie.pl/104-olejki-do-wlosow?page=3"
     html = read_fixture("category_leaf_middle_page.html")
-    soup = BeautifulSoup(html, "html.parser")
 
-    products = product_urls_from_soup(soup)
-    assert len(products) > 0
-    assert len(set(products)) == len(products)
-    assert all(url.startswith("http") for url in products)
+    products = product_urls(url, html)
+    assert len(products) == 12
+    assert len(set(products)) == 12
+    for product_url in products:
+        assert product_url.startswith("https://www.magiczne-indie.pl/")
 
-    next_page = next_page_url_from_soup(soup)
+    next_page = next_page_url(url, html)
     assert next_page == "https://www.magiczne-indie.pl/104-olejki-do-wlosow?page=4"
 
 
 def test_last_page_gives_10_products_and_no_next_page():
+    """Ensure the last page yields exactly 10 unique, absolute product URLs and returns None for the next page."""
+    url = "https://www.magiczne-indie.pl/104-olejki-do-wlosow?page=8"
     html = read_fixture("category_leaf_last_page.html")
-    soup = BeautifulSoup(html, "html.parser")
 
-    products = product_urls_from_soup(soup)
+    products = product_urls(url, html)
     assert len(products) == 10
     assert len(set(products)) == 10
-    assert all(url.startswith("http") for url in products)
+    for product_url in products:
+        assert product_url.startswith("https://www.magiczne-indie.pl/")
 
-    next_page = next_page_url_from_soup(soup)
+    next_page = next_page_url(url, html)
     assert next_page is None
