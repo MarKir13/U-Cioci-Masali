@@ -3,11 +3,11 @@
 import json
 import re
 import xml.etree.ElementTree as ET
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
-from .models import Category, validate_record
+from .models import Category, Product, validate_record
 
 SITEMAP_NS = {"site": "http://www.sitemaps.org/schemas/sitemap/0.9"}
 # Paths of product and category pages, e.g. /242-olejek-amla.html and /104-olejki-do-wlosow.
@@ -107,3 +107,112 @@ def parse_sitemap(xml: str) -> tuple[list[str], list[str]]:
         elif CATEGORY_PATH.match(path):
             categories.append(url)
     return products, categories
+
+
+def product_urls(url: str, html: str) -> list[str]:
+    """Extract absolute, unique product URLs from a product list page."""
+    soup = BeautifulSoup(html, "html.parser")
+    urls = []
+    for a_tag in soup.select('#js-product-list article.product-miniature a[href$=".html"]'):
+        href = a_tag.get("href")
+        if href:
+            absolute = urljoin(url, href)
+            if absolute not in urls:
+                urls.append(absolute)
+    return urls
+
+
+def next_page_url(url: str, html: str) -> str | None:
+    """Extract the URL of the next page from the pagination button, or return None if it's the last page."""
+    soup = BeautifulSoup(html, "html.parser")
+
+    next_button = soup.select_one("button.next")
+
+    if not next_button or "disabled" in next_button.get("class", []):
+        return None
+
+    href = next_button.get("data-ps-data")
+    if href:
+        return urljoin(url, href)
+
+    return None
+
+
+def parse_product(url: str, html: str) -> Product | None:
+    """Extracts product data from data-product, JSON-LD, and HTML to build a validated Product."""
+    soup = BeautifulSoup(html, "html.parser")
+
+    details_div = soup.select_one("div.js-product-details")
+    if not details_div or not details_div.has_attr("data-product"):
+        raise ValueError(f"Missing data-product attribute on div.js-product-details at {url}")
+
+    try:
+        data = json.loads(details_div["data-product"])
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON in data-product at {url}") from exc
+
+    regular_price = data.get("price_without_reduction")
+    if regular_price is not None:
+        regular_price = round(float(regular_price), 2)
+
+    images = []
+    for img in data.get("images", []):
+        try:
+            images.append({"source_url": img["bySize"]["product_main_2x"]["url"]})
+        except KeyError:
+            continue
+
+    product_dict = {
+        "id": data.get("id"),
+        "url": url,
+        "name": data.get("name"),
+        "description": data.get("description"),
+        "price": data.get("price_amount"),
+        "regular_price": regular_price,
+        "has_discount": bool(data.get("has_discount")),
+        "vat_rate": data.get("rate"),
+        "images": images,
+        "category_ids": [data.get("id_category_default")] if data.get("id_category_default") else [],
+        "family": [],
+    }
+
+    for script in soup.select('script[type="application/ld+json"]'):
+        try:
+            ld_data = json.loads(script.string)
+        except (json.JSONDecodeError, TypeError):
+            continue
+
+        if not isinstance(ld_data, dict):
+            continue
+
+        if ld_data.get("@type") == "Product":
+            product_dict["size"] = ld_data.get("size")
+            product_dict["color"] = ld_data.get("color")
+            product_dict["material"] = ld_data.get("material")
+            product_dict["pattern"] = ld_data.get("pattern")
+
+            weight = ld_data.get("weight", {})
+            if isinstance(weight, dict) and weight.get("value"):
+                product_dict["weight"] = {"value": weight.get("value"), "unit": weight.get("unitCode", "")}
+
+            brand = ld_data.get("brand", {})
+            product_dict["brand"] = brand.get("name") if isinstance(brand, dict) else brand
+            product_dict["ean"] = ld_data.get("gtin")
+
+        elif ld_data.get("@type") == "BreadcrumbList":
+            for item in ld_data.get("itemListElement", []):
+                item_url = item.get("item")
+                if item_url and CATEGORY_PATH.match(urlparse(item_url).path):
+                    try:
+                        cat_id = id_from_url(item_url)
+                        if cat_id not in product_dict["category_ids"]:
+                            product_dict["category_ids"].append(cat_id)
+                    except ValueError:
+                        pass
+
+    for variant_link in soup.select("nav.ndx-family .ndx-family__opt"):
+        href = variant_link.get("href")
+        if href and href not in product_dict["family"]:
+            product_dict["family"].append(href)
+
+    return validate_record(model=Product, data=product_dict, url=url)
