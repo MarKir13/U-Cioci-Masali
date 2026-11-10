@@ -56,7 +56,7 @@ services:
         # the proxy; run `docker compose restart proxy` after it.
         restart: true
     ports:
-      - "${HTTP_PORTX:?set HTTP_PORT in deploy/.env (see .env.example)}:80"
+      - "${HTTP_PORT:?set HTTP_PORT in deploy/.env (see .env.example)}:80"
       - "${HTTPS_PORT:?set HTTPS_PORT in deploy/.env (see .env.example)}:443"
     environment:
       # Used in the HTTP -> HTTPS redirect (nginx $host has no port)

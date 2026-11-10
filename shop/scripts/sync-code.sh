@@ -8,8 +8,6 @@
 # until the cache is cleared by hand. Nothing serves requests yet, and PrestaShop rebuilds the cache
 # on the first request. Only delete: folders created here would belong to root, not www-data.
 set -e
-
-echo $HOME
 for dir in /opt/ciocia/themes/* /opt/ciocia/modules/*; do
   [ -d "$dir" ] || continue
   target="/var/www/html/${dir#/opt/ciocia/}"

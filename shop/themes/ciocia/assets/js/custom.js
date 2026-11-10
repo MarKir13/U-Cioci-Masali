@@ -4,7 +4,6 @@
  * script needs a single #_desktop_user_info, and DOM order stays equal to visual order.
  * Runs at once (this file loads after the header) to keep the icons from jumping late.
  */
-undefinedThing();
 (function () {
   var tablet = window.matchMedia('(min-width: 768px) and (max-width: 991px)');
 
