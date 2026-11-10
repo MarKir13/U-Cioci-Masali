@@ -3,7 +3,7 @@
 import json
 import re
 import xml.etree.ElementTree as ET
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
@@ -107,3 +107,32 @@ def parse_sitemap(xml: str) -> tuple[list[str], list[str]]:
         elif CATEGORY_PATH.match(path):
             categories.append(url)
     return products, categories
+
+
+def product_urls(url: str, html: str) -> list[str]:
+    """Extract absolute, unique product URLs from a product list page."""
+    soup = BeautifulSoup(html, "html.parser")
+    urls = []
+    for a_tag in soup.select('#js-product-list article.product-miniature a[href$=".html"]'):
+        href = a_tag.get("href")
+        if href:
+            absolute = urljoin(url, href)
+            if absolute not in urls:
+                urls.append(absolute)
+    return urls
+
+
+def next_page_url(url: str, html: str) -> str | None:
+    """Extract the URL of the next page from the pagination button, or return None if it's the last page."""
+    soup = BeautifulSoup(html, "html.parser")
+
+    next_button = soup.select_one("button.next")
+
+    if not next_button or "disabled" in next_button.get("class", []):
+        return None
+
+    href = next_button.get("data-ps-data")
+    if href:
+        return urljoin(url, href)
+
+    return None

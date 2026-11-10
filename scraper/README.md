@@ -74,6 +74,8 @@ After changing a model, run `python -m scraper schema` and commit the new `schem
   go on. A record that fails validation is logged by `validate_record()` and returned as `None`.
 - `children_by_parent(categories)` returns `{parent_id: [children]}`, with top-level categories under `None`.
 - `missing_parents(categories)` returns the categories whose parent is not in the list.
+- `product_urls(url, html)` returns absolute, unique product URLs from a product list page.
+- `next_page_url(url, html)` returns the absolute URL of the next page of results, or `None` if there is no next page.
 
 ## Tests
 
