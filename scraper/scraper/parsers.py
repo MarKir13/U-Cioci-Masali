@@ -1,13 +1,17 @@
 """Parsers that turn pages and sitemaps of the source shop into records. They do not use the network."""
 
 import json
+import logging
 import re
 import xml.etree.ElementTree as ET
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
 from .models import Category, Product, validate_record
+
+log = logging.getLogger(__name__)
 
 SITEMAP_NS = {"site": "http://www.sitemaps.org/schemas/sitemap/0.9"}
 # Paths of product and category pages, e.g. /242-olejek-amla.html and /104-olejki-do-wlosow.
@@ -138,6 +142,41 @@ def next_page_url(url: str, html: str) -> str | None:
     return None
 
 
+def round_price(value: object) -> object:
+    """Round a raw price from the page to two decimal places, halves up (2.675 -> 2.68).
+
+    Goes through the text of the number and `Decimal`, not `round(float(...), 2)`: the float 2.675 is really
+    2.67499999..., so `round` gives 2.67, and if the shop rounded up, `price` would exceed `regular_price`
+    and the product would be rejected. Anything that is not a finite number is returned unchanged, so that
+    `validate_record` rejects it and logs the page URL.
+    """
+    if value is None or isinstance(value, bool):
+        return value
+    try:
+        number = Decimal(str(value))
+        if not number.is_finite():
+            return value
+        return number.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    except InvalidOperation:  # not a number, or too many digits to round
+        return value
+
+
+def parse_weight(url: str, ld_data: dict) -> dict | None:
+    """The raw weight from a JSON-LD `Product`, or None. A weight without a unit is skipped (and logged).
+
+    The unit is unreliable anyway (see the recon notes), but a record with a value and an empty unit
+    fails validation, and that would drop the whole product for a field that is optional.
+    """
+    weight = ld_data.get("weight")
+    if not isinstance(weight, dict) or not weight.get("value"):
+        return None
+    unit = weight.get("unitCode")
+    if not isinstance(unit, str) or not unit.strip():
+        log.warning("Weight %r has no unit, skipped: %s", weight.get("value"), url)
+        return None
+    return {"value": weight["value"], "unit": unit}
+
+
 def parse_product(url: str, html: str) -> Product | None:
     """Extracts product data from data-product, JSON-LD, and HTML to build a validated Product."""
     soup = BeautifulSoup(html, "html.parser")
@@ -151,10 +190,6 @@ def parse_product(url: str, html: str) -> Product | None:
     except json.JSONDecodeError as exc:
         raise ValueError(f"Invalid JSON in data-product at {url}") from exc
 
-    regular_price = data.get("price_without_reduction")
-    if regular_price is not None:
-        regular_price = round(float(regular_price), 2)
-
     images = []
     for img in data.get("images", []):
         try:
@@ -167,8 +202,9 @@ def parse_product(url: str, html: str) -> Product | None:
         "url": url,
         "name": data.get("name"),
         "description": data.get("description"),
-        "price": data.get("price_amount"),
-        "regular_price": regular_price,
+        # Both prices are rounded the same way, so rounding cannot put price above regular_price
+        "price": round_price(data.get("price_amount")),
+        "regular_price": round_price(data.get("price_without_reduction")),
         "has_discount": bool(data.get("has_discount")),
         "vat_rate": data.get("rate"),
         "images": images,
@@ -191,9 +227,9 @@ def parse_product(url: str, html: str) -> Product | None:
             product_dict["material"] = ld_data.get("material")
             product_dict["pattern"] = ld_data.get("pattern")
 
-            weight = ld_data.get("weight", {})
-            if isinstance(weight, dict) and weight.get("value"):
-                product_dict["weight"] = {"value": weight.get("value"), "unit": weight.get("unitCode", "")}
+            weight = parse_weight(url, ld_data)
+            if weight:
+                product_dict["weight"] = weight
 
             brand = ld_data.get("brand", {})
             product_dict["brand"] = brand.get("name") if isinstance(brand, dict) else brand

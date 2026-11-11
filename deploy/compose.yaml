@@ -27,6 +27,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     # No published ports: the shop is reachable only through the proxy (HTTPS)
     environment:
       DB_SERVER: db
@@ -37,13 +39,23 @@ services:
       PS_DOMAIN: "localhost:${HTTPS_PORT:?set HTTPS_PORT in deploy/.env (see .env.example)}"
       PS_ENABLE_SSL: 1
       PS_LANGUAGE: pl
-      PS_COUNTRY: PL
+      # Lowercase: the installer loads localization/<country>.xml (PLN, Polish VAT), and the
+      # file name is case-sensitive. "PL" silently falls back to default.xml (EUR, USD, no VAT).
+      PS_COUNTRY: pl
       PS_FOLDER_ADMIN: ${PS_FOLDER_ADMIN}
       PS_FOLDER_INSTALL: install-dev
       ADMIN_MAIL: ${ADMIN_MAIL}
       ADMIN_PASSWD: ${ADMIN_PASSWORD}
     volumes:
       - shop-data:/var/www/html
+
+  # Catches every e-mail the shop sends (SMTP mailpit:1025, inside the Compose network only).
+  # Read them at http://localhost:8025 (MAILPIT_PORT); the port is bound to this machine only.
+  mailpit:
+    image: axllent/mailpit:v1.32.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MAILPIT_PORT:-8025}:8025"
 
   proxy:
     build: ./proxy

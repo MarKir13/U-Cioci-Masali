@@ -1,5 +1,9 @@
 """Tests of the parsers on pages saved from the source shop. They do not use the network."""
 
+import html as html_lib
+import json
+import logging
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -14,6 +18,7 @@ from scraper.parsers import (
     parse_sitemap,
     parse_sitemap_index,
     product_urls,
+    round_price,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -355,3 +360,95 @@ def test_parse_product_with_family():
     assert product.weight.value == "250.000000"
     assert len(product.family) >= 1
     assert product.category_ids == [104, 8, 38]
+
+
+def product_html(weight: dict | None = None, **data_overrides) -> str:
+    """A minimal product page: data-product plus, with `weight`, a JSON-LD Product block."""
+    data = {
+        "id": 7,
+        "name": "Olejek",
+        "description": "<p>Opis</p>",
+        "price_amount": 10,
+        "price_without_reduction": 10,
+        "has_discount": False,
+        "rate": 23,
+        "id_category_default": 5,
+        "images": [{"bySize": {"product_main_2x": {"url": "https://www.magiczne-indie.pl/1-product_main_2x/x.jpg"}}}],
+        **data_overrides,
+    }
+    page = f"<div class=\"js-product-details\" data-product='{html_lib.escape(json.dumps(data))}'></div>"
+    if weight is not None:
+        ld = {"@type": "Product", "weight": weight}
+        page += f'<script type="application/ld+json">{json.dumps(ld)}</script>'
+    return page
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (2.675, "2.68"),  # round(2.675, 2) gives 2.67
+        (1.005, "1.01"),  # round(1.005, 2) gives 1.0
+        (69.58764, "69.59"),
+        (272.989999, "272.99"),
+        (17.2, "17.20"),
+        (10, "10.00"),
+        ("64.72", "64.72"),
+        (0.125, "0.13"),
+    ],
+)
+def test_round_price_rounds_halves_up(raw, expected):
+    assert round_price(raw) == Decimal(expected)
+
+
+@pytest.mark.parametrize("raw", [None, True, "abc", "", float("nan"), float("inf"), "1e100"])
+def test_round_price_leaves_anything_else_for_validation(raw):
+    result = round_price(raw)
+    assert result is raw or (result != result and raw != raw)  # nan is not equal to itself
+
+
+def test_price_rounded_up_by_the_shop_is_not_above_the_regular_price():
+    """The shop shows 2.68 for 2.675. Rounding both prices the same way keeps price <= regular_price."""
+    product = parse_product(PRODUCT_URL, product_html(price_amount=2.68, price_without_reduction=2.675))
+    assert product is not None
+    assert product.price == Decimal("2.68")
+    assert product.regular_price == Decimal("2.68")
+
+
+def test_unrounded_current_price_is_rounded_too():
+    product = parse_product(PRODUCT_URL, product_html(price_amount=64.72001, price_without_reduction=69.58764))
+    assert product is not None
+    assert (product.price, product.regular_price) == (Decimal("64.72"), Decimal("69.59"))
+
+
+def test_missing_prices_are_rejected_and_logged(caplog):
+    with caplog.at_level(logging.ERROR):
+        assert parse_product(PRODUCT_URL, product_html(price_without_reduction=None)) is None
+    assert f"Invalid Product at {PRODUCT_URL}" in caplog.text
+
+
+def test_weight_without_unit_is_skipped_but_the_product_is_kept(caplog):
+    with caplog.at_level(logging.WARNING):
+        product = parse_product(PRODUCT_URL, product_html(weight={"value": "250.000000"}))
+    assert product is not None
+    assert product.weight is None
+    assert f"Weight '250.000000' has no unit, skipped: {PRODUCT_URL}" in caplog.text
+
+
+@pytest.mark.parametrize("unit", ["", "   ", None, 5])
+def test_weight_with_empty_or_odd_unit_is_skipped(unit):
+    product = parse_product(PRODUCT_URL, product_html(weight={"value": "250.000000", "unitCode": unit}))
+    assert product is not None
+    assert product.weight is None
+
+
+def test_weight_with_unit_is_kept():
+    product = parse_product(PRODUCT_URL, product_html(weight={"value": "250.000000", "unitCode": "g"}))
+    assert product is not None
+    assert (product.weight.value, product.weight.unit) == ("250.000000", "g")
+
+
+@pytest.mark.parametrize("weight", [{}, {"value": ""}, {"value": None, "unitCode": "g"}, "250 g", []])
+def test_missing_or_odd_weight_gives_none(weight):
+    product = parse_product(PRODUCT_URL, product_html(weight=weight))
+    assert product is not None
+    assert product.weight is None

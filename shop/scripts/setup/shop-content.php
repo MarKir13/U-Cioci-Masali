@@ -10,10 +10,12 @@
 use PrestaShop\Module\LinkList\Model\LinkBlock;
 
 require __DIR__ . '/bootstrap.php';
-$values = require __DIR__ . '/values.php';
+// The same settings file as configure-shop.php (shop/config/shop-settings.php in the repository), so the
+// pages describe the carriers, fees and payments the checkout really offers.
+$settings = require getenv('SHOP_SETTINGS') ?: '/opt/ciocia/config/shop-settings.php';
 
 // CMS pages in footer order: link_rewrite => [title, meta description].
-// The page text is in cms/<link_rewrite>.html. {{name}} placeholders are filled in from values.php
+// The page text is in cms/<link_rewrite>.html. {{name}} placeholders are filled in from the settings
 // (see placeholders() below).
 const CMS_PAGES = [
     'o-sklepie' => ['O sklepie', 'Kim jesteśmy i jakie produkty z Indii znajdziesz w naszym sklepie.'],
@@ -26,6 +28,10 @@ const CMS_PAGES = [
 
 // The page linked as the terms and conditions in checkout and registration.
 const TERMS_PAGE = 'regulamin';
+
+// The page linked from the free delivery note in the header (templates/_partials/header.tpl),
+// stored as CIOCIA_DELIVERY_CMS_ID because page IDs differ between installs.
+const DELIVERY_PAGE = 'dostawa';
 
 // The installer's English demo pages, deleted by link_rewrite.
 const DEMO_CMS_PAGES = ['delivery', 'legal-notice', 'terms-and-conditions-of-use', 'about-us', 'secure-payment'];
@@ -93,30 +99,64 @@ function setStoreDetails(array $shop): void
 }
 
 /** Values for the {{name}} placeholders in cms/*.html. */
-function placeholders(array $values): array
+function placeholders(array $settings): array
 {
-    $shop = $values['shop'];
-    $delivery = $values['delivery'];
-    $bank = $values['bank_transfer'];
+    $store = $settings['store'];
+    $bank = $settings['bank_wire'];
 
-    $carrierRows = '';
-    foreach ($delivery['carriers'] as $carrier) {
-        $carrierRows .= '<tr><td>' . e($carrier['name']) . '</td><td>' . e($carrier['time']) . '</td><td>'
-            . price($carrier['fee']) . '</td></tr>';
+    // Fees by weight, as configure-shop.php sets them: one row per weight range, one column per carrier,
+    // so the table stays narrow on phones. Carriers may have different ranges, so the rows use all limits.
+    $carriers = $settings['carriers'];
+    $limits = [];
+    foreach ($carriers as $carrier) {
+        $limits = array_merge($limits, array_keys($carrier['ranges']));
+    }
+    $limits = array_unique($limits);
+    sort($limits);
+    $maxWeight = end($limits);
+
+    $header = '<th>Waga paczki</th>';
+    $delays = '<th>Czas dostawy</th>';
+    foreach ($carriers as $name => $carrier) {
+        $header .= '<th>' . e($name) . '</th>';
+        $delays .= '<td>' . e($carrier['delay']) . '</td>';
+    }
+    $rows = '<tr>' . $delays . '</tr>';
+    $from = 0;
+    foreach ($limits as $upTo) {
+        // Braces are needed: PHP would read "$from–" (with the dash) as one variable name.
+        $rows .= '<tr><th>' . e($from ? "{$from}–{$upTo} kg" : "do {$upTo} kg") . '</th>';
+        foreach ($carriers as $carrier) {
+            $rows .= '<td>' . feeUpTo($carrier['ranges'], $upTo) . '</td>';
+        }
+        $rows .= '</tr>';
+        $from = $upTo;
     }
 
     return [
-        '{{shop_name}}' => e($shop['name']),
-        '{{shop_address}}' => e($shop['address1'] . ', ' . $shop['postcode'] . ' ' . $shop['city']),
-        '{{shop_email}}' => e($shop['email']),
-        '{{free_shipping_from}}' => price($delivery['free_from']),
-        '{{max_weight}}' => e($delivery['max_weight_kg'] . ' kg'),
-        '{{carriers_table}}' => '<table class="table table-bordered"><thead><tr><th>Forma dostawy</th>'
-            . '<th>Czas dostawy</th><th>Koszt brutto</th></tr></thead><tbody>' . $carrierRows . '</tbody></table>',
+        '{{shop_name}}' => e($store['name']),
+        '{{shop_address}}' => e($store['address1'] . ', ' . $store['postcode'] . ' ' . $store['city']),
+        '{{shop_email}}' => e($store['email']),
+        '{{free_shipping_from}}' => price($settings['free_shipping_from']),
+        '{{max_weight}}' => e($maxWeight . ' kg'),
+        '{{carriers_table}}' => '<table class="table table-bordered"><caption>Koszt dostawy brutto</caption>'
+            . '<thead><tr>' . $header . '</tr></thead><tbody>' . $rows . '</tbody></table>',
         '{{bank_owner}}' => e($bank['owner']),
-        '{{bank_name}}' => e($bank['bank']),
-        '{{bank_account}}' => e($bank['account']),
+        '{{bank_account}}' => e($bank['details']),
+        '{{bank_address}}' => e($bank['address']),
     ];
+}
+
+/** Fee of the first range that covers $weight, or "–" if the carrier does not take parcels that heavy. */
+function feeUpTo(array $ranges, float $weight): string
+{
+    foreach ($ranges as $upTo => $fee) {
+        if ($weight <= $upTo) {
+            return price($fee);
+        }
+    }
+
+    return '–';
 }
 
 function e(string $text): string
@@ -264,9 +304,10 @@ function setFormTexts(): void
 }
 
 try {
-    setStoreDetails($values['shop']);
-    $cmsIds = saveCmsPages(placeholders($values));
+    setStoreDetails($settings['store']);
+    $cmsIds = saveCmsPages(placeholders($settings));
     Configuration::updateValue('PS_CONDITIONS_CMS_ID', $cmsIds[TERMS_PAGE]);
+    Configuration::updateValue('CIOCIA_DELIVERY_CMS_ID', $cmsIds[DELIVERY_PAGE]);
     deleteDemoCmsPages();
     saveFooterBlocks($cmsIds);
     setPageTitles();

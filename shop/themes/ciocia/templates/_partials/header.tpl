@@ -31,13 +31,17 @@
 {block name='header_nav'}
   <div class="ciocia-topbar">
     <div class="container">
+      {* Free delivery threshold set by shop/config/shop-settings.php (PLN, gross) *}
+      {assign var='ciocia_free_shipping' value=Configuration::get('PS_SHIPPING_FREE_PRICE')|intval}
+      {* "Dostawa" page, set by shop/scripts/setup/shop-content.php (its ID differs between installs) *}
+      {assign var='ciocia_delivery_page' value=Configuration::get('CIOCIA_DELIVERY_CMS_ID')|intval}
       <ul class="ciocia-topbar-benefits" aria-label="Informacje o sklepie">
         <li>
-          <a href="{$link->getCMSLink(1)|escape:'htmlall':'UTF-8'}">
+          {if $ciocia_delivery_page}<a href="{$link->getCMSLink($ciocia_delivery_page)|escape:'htmlall':'UTF-8'}">{/if}
             <i class="material-icons" aria-hidden="true">local_shipping</i>
-            <span class="ciocia-copy-desktop">Dostawa od 2000 zł gratis</span>
-            <span class="ciocia-copy-mobile">Dostawa gratis od 2000 zł</span>
-          </a>
+            <span class="ciocia-copy-desktop">Dostawa od {$ciocia_free_shipping} zł gratis</span>
+            <span class="ciocia-copy-mobile">Dostawa gratis od {$ciocia_free_shipping} zł</span>
+          {if $ciocia_delivery_page}</a>{/if}
         </li>
         <li>
           <i class="material-icons" aria-hidden="true">schedule</i>

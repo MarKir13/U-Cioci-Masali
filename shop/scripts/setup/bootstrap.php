@@ -1,8 +1,8 @@
 <?php
-// Shared start of the setup scripts in this folder (see docs/adr/0003-shop-data-set-by-php-setup-scripts.md).
+// Shared start of the setup scripts in this folder (see docs/adr/0005-shop-data-set-by-php-setup-scripts.md).
 // Loads PrestaShop, so the scripts can use its classes (CMS, Configuration, Module, ...).
 // Run as www-data, otherwise cache files end up owned by root:
-//   runuser -u www-data -- php /opt/ciocia/setup/<script>.php
+//   runuser -u www-data -- php /opt/ciocia/scripts/setup/<script>.php
 
 if (PHP_SAPI !== 'cli') {
     exit(1);

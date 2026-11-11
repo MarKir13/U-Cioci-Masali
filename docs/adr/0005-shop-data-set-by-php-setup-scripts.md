@@ -1,4 +1,4 @@
-# 0003. Shop content and settings set by PHP setup scripts
+# 0005. Shop content and settings set by PHP setup scripts
 
 - Status: Accepted
 - Date: 2026-11-10
@@ -88,18 +88,21 @@ The image runs `/tmp/post-install-scripts/*` in name order right after installin
 
 ## Decision
 
-Setup scripts live in `shop/scripts/setup/` and are copied to `/opt/ciocia/setup/` in the image,
-outside the web root:
+Setup scripts live in `shop/scripts/setup/` and are copied to `/opt/ciocia/scripts/setup/` in the
+image, outside the web root:
 
-- `bootstrap.php` loads PrestaShop and holds small helpers;
-- `values.php` holds the shop details and the delivery and payment values (free delivery
-  threshold, carriers and fees, weight limit, bank details), all fictional;
-- one PHP script per area: `shop-content.php` for #27; #47 adds its own next to it;
-- page text in `cms/<link_rewrite>.html`, with `{{name}}` placeholders filled from `values.php`, so
-  the "Dostawa" and "Formy płatności" pages state the same values that the configuration uses.
+- `shop/config/shop-settings.php` (copied to `/opt/ciocia/config/`) is the one file with the values:
+  store details, currency, free delivery threshold, carriers and fees by weight, bank details and
+  e-mail, all fictional;
+- one PHP script per area, both reading that file: `shop-content.php` for #27 (with `bootstrap.php`,
+  which loads PrestaShop and holds small helpers) and `configure-shop.php` for #47;
+- page text in `cms/<link_rewrite>.html`, with `{{name}}` placeholders filled from the settings, so
+  the "Dostawa" and "Formy płatności" pages state the same carriers, fees and bank details that the
+  checkout uses.
 
-Each script has a small wrapper in `shop/scripts/post-install/` (`20-shop-content.sh`) that runs it
-as `www-data`; the number sets the order after `10-enable-theme.sh`. Scripts must be idempotent:
+Each script has a small wrapper in `shop/scripts/post-install/` (`20-shop-content.sh`,
+`30-configure-shop.sh`) that runs it as `www-data`; the number sets the order after
+`10-enable-theme.sh`. Scripts must be idempotent:
 find each record by a stable key, update it in place, create it only if missing, and delete only
 records they know (such as the installer's demo pages by their `link_rewrite`).
 
@@ -107,13 +110,17 @@ records they know (such as the installer's demo pages by their `link_rewrite`).
 
 - Content and settings are reviewed in PRs like code. The back office is fine for trying something
   out, but the change belongs in the scripts.
-- To apply a change to a running shop: `up -d --build`, then
+- To apply a change to a running shop: `up -d --build`, then run the script again, e.g.
   `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh`.
-  Running the script overwrites the records it owns and nothing else.
+  Running the script overwrites the records it owns and nothing else. A change in
+  `shop-settings.php` that the pages mention (for example the free delivery threshold) needs both
+  `20-shop-content.sh` and `30-configure-shop.sh`.
 - The installer also adds English. The scripts give it the Polish text, so no installer English
   shows up if someone switches language.
 - Nothing may rely on fixed CMS page IDs. The script sets settings that point to a page, such as
-  `PS_CONDITIONS_CMS_ID` for the terms and conditions, from the IDs it gets.
+  `PS_CONDITIONS_CMS_ID` for the terms and conditions, from the IDs it gets. Templates that link to
+  one of our pages read such a setting too (`CIOCIA_DELIVERY_CMS_ID` for the free delivery note in
+  the header).
 - The image does not stop when a post-install script fails. The script prints `[setup] FAILED:`
   and the reason to the shop log, so check `logs shop` after a clean install.
 - Upgrading PrestaShop or `ps_linklist` means running the scripts again on a clean install and

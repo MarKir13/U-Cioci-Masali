@@ -4,4 +4,4 @@
 # Safe to run again on a running shop, for example after changing the content and rebuilding:
 #   docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh
 set -e
-runuser -u www-data -- php /opt/ciocia/setup/shop-content.php
+runuser -u www-data -- php /opt/ciocia/scripts/setup/shop-content.php
