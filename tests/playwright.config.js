@@ -9,7 +9,7 @@ if (!/^\d+$/.test(process.env.E2E_SEED)) {
 }
 
 export default defineConfig({
-  testDir: "./tests",
+  testDir: "./e2e",
   outputDir: "./test-results",
   workers: 1,
   fullyParallel: false,

@@ -56,6 +56,7 @@ Full findings: `docs/scraper-recon.md` (on PR #4 until it merges). The essential
 | `tests/` | Playwright E2E tests: specs in `tests/`, page helpers in `pages/`, shared code in `support/`; own `package.json` |
 | `deploy/` | `compose.yaml`, `.env.example`, scripts for install, data init, backup and restore |
 | `docs/` | `AI_LOG.md`, ADRs in `adr/`, [ci-cd-plan.md](docs/ci-cd-plan.md), other documentation |
+| `tests/` | Playwright E2E tests: specs in `e2e/`, page helpers in `pages/`, shared code in `support/`; own `package.json` |
 
 The structure is a graded requirement. Do not add new top-level directories, apart from tool config such as
 `.github/`.

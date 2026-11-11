@@ -146,7 +146,7 @@ so the suite can run many times on the same shop.
 
 | Path | Contents |
 |---|---|
-| `tests/tests/` | `smoke.spec.js` (home page over HTTPS, no console errors) and `order.spec.js` (the W4 scenario, one step per point of the brief) |
+| `tests/e2e/` | `smoke.spec.js` (home page over HTTPS, no console errors) and `order.spec.js` (the W4 scenario, one step per point of the brief) |
 | `tests/pages/` | One file per area of the shop (catalog, search, cart, account, checkout, orders) with its selectors and actions |
 | `tests/support/` | Shared code: fixtures (`test`, `rng`, `consoleErrors`), seeded random numbers, test data |
 
