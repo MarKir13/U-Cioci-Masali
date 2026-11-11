@@ -70,6 +70,7 @@ Run from the repository root unless noted.
 | Build and start the shop | `docker compose -f deploy/compose.yaml up -d --build` |
 | Apply changes from `shop/` | same command as above |
 | Follow install logs (done at `Starting web server`) | `docker compose -f deploy/compose.yaml logs -f shop` |
+| Re-apply shop settings from `shop/config/shop-settings.php` (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop runuser -u www-data -- php /opt/ciocia/scripts/setup/configure-shop.php` |
 | Stop, keeping data | `docker compose -f deploy/compose.yaml down` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
 | Scraper lint | `ruff check .` and `ruff format --check .` |
@@ -78,11 +79,12 @@ Run from the repository root unless noted.
 | Dockerfile lint (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile` |
 | Shell lint (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
 | Compose check, must print nothing. Never drop `--quiet` or use `deploy/.env` | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
-| PHP syntax (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z 'shop/modules/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
+| PHP syntax (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
 | JavaScript lint (after `npm ci` once) | `npx eslint` |
 
-Storefront: `http://localhost:8080`. Admin: `http://localhost:8080/admin-ciocia`. HTTPS and a one-command data init
-are required but not built yet; update this table when they land.
+Storefront: `https://localhost:8443` (HTTP on 8080 redirects there). Admin: `https://localhost:8443/admin-ciocia`.
+Shop e-mails: `http://localhost:8025` (Mailpit). A one-command data init is required but not built yet; update this
+table when it lands.
 
 ## Hard rules
 
@@ -136,8 +138,13 @@ Documentation is in English, except `docs/AI_LOG.md`.
   theme and modules from `/opt/ciocia` on every start. A file in the image will not reach the running shop unless it
   goes through that path. The same script deletes `var/cache/prod` and `var/cache/dev` on every start, so new module
   template overrides need no manual cache clear.
-- Scripts run on Linux but are edited on Windows and macOS. `.gitattributes` forces LF for `*.sh`, Dockerfiles and
-  YAML; keep new script types covered.
+- Scripts in `shop/scripts/post-install/` run once, in name order, right after the automatic install, and never on
+  an existing install. Shop settings (currency, carriers, payments, e-mail) live in `shop/config/shop-settings.php`
+  and are applied by `shop/scripts/setup/configure-shop.php`, which must stay idempotent so it can be re-run by hand.
+- `PS_COUNTRY` must be lowercase (`pl`): the installer loads `localization/<value>.xml`, and with `PL` it silently
+  falls back to EUR/USD and no VAT rates.
+- Scripts run on Linux but are edited on Windows and macOS. `.gitattributes` forces LF for `*.sh`, `*.php`, Dockerfiles
+  and YAML; keep new script types covered.
 - `.gitignore` excludes `*.crt`, `*.key`, `*.pem`, `*.zip` and `*.tar.gz`, so certificates and archives must be
   generated or downloaded at runtime.
 - Build images for `linux/amd64`. On Apple Silicon the default is `arm64`, which will not run on the Stage 2 cluster.

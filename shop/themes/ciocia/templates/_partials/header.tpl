@@ -31,12 +31,14 @@
 {block name='header_nav'}
   <div class="ciocia-topbar">
     <div class="container">
+      {* Free delivery threshold set by shop/config/shop-settings.php (PLN, gross) *}
+      {assign var='ciocia_free_shipping' value=Configuration::get('PS_SHIPPING_FREE_PRICE')|intval}
       <ul class="ciocia-topbar-benefits" aria-label="Informacje o sklepie">
         <li>
           <a href="{$link->getCMSLink(1)|escape:'htmlall':'UTF-8'}">
             <i class="material-icons" aria-hidden="true">local_shipping</i>
-            <span class="ciocia-copy-desktop">Dostawa od 2000 zł gratis</span>
-            <span class="ciocia-copy-mobile">Dostawa gratis od 2000 zł</span>
+            <span class="ciocia-copy-desktop">Dostawa od {$ciocia_free_shipping} zł gratis</span>
+            <span class="ciocia-copy-mobile">Dostawa gratis od {$ciocia_free_shipping} zł</span>
           </a>
         </li>
         <li>
