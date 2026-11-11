@@ -9,6 +9,7 @@ as "Superseded by NNNN".
 - [0001. Results schema and validation with pydantic](0001-results-schema-and-validation.md)
 - [0002. HTTPS through an nginx proxy with a self-signed certificate](0002-https-proxy-with-self-signed-certificate.md)
 - [0003. CI checks and merge policy](0003-ci-checks-and-merge-policy.md)
+- [0004. Crawl sources and category assignment](0004-crawl-sources-and-category-assignment.md)
 
 ## Template
 

@@ -40,6 +40,8 @@ __pycache__/
 # --- Scraper output too large for git (full image set goes to GitHub Releases) ---
 scraper-results/images/
 scraper/cache/
+# Left behind only if a results file was being written when the crawl was interrupted
+scraper-results/*.tmp
 
 # --- OS / editor ---
 .DS_Store

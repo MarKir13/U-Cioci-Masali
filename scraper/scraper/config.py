@@ -30,3 +30,18 @@ SCRAPER_DIR = Path(__file__).resolve().parent.parent
 LOG_FILE = SCRAPER_DIR / "scraper.log"
 RESULTS_DIR = SCRAPER_DIR.parent / "scraper-results"
 SCHEMA_FILE = RESULTS_DIR / "schema.json"
+
+# Crawl results (see docs/adr/0004-crawl-sources-and-category-assignment.md)
+CATEGORIES_FILE = RESULTS_DIR / "categories.json"
+# One product per line, appended as soon as it is parsed, so an interrupted run loses nothing saved
+PRODUCTS_FILE = RESULTS_DIR / "products.jsonl"
+# Product ids found on category listings, and where each unfinished listing continues
+LISTINGS_FILE = RESULTS_DIR / "listings.json"
+# Downloaded pages, gzipped, so a parser fix can be re-run without the network. Not committed.
+CACHE_DIR = SCRAPER_DIR / "cache"
+
+# Sitemap index named in the source shop's robots.txt and recon notes
+SITEMAP_INDEX = "/1_index_sitemap.xml"
+# Na prezent and Nowości: products never have them as their default category, so they appear neither
+# in the product's data nor in its breadcrumb. Their listings are walked to the last page.
+FULL_LISTING_CATEGORY_IDS = (458, 50)

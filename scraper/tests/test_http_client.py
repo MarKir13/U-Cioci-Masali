@@ -149,6 +149,22 @@ def test_unreadable_robots_txt_stops_the_run():
         client.get("/8-kosmetyki")
 
 
+def test_load_robots_downloads_robots_txt_only_once():
+    client, session, _ = make_client({f"{BASE}/8-kosmetyki": [200]})
+    client.load_robots()
+    client.load_robots()
+    client.get("/8-kosmetyki")
+    assert session.calls == [ROBOTS_URL, f"{BASE}/8-kosmetyki"]
+
+
+def test_load_robots_raises_when_robots_txt_cannot_be_read():
+    """The crawl calls load_robots() before its loop and stops on this error."""
+    client, session, _ = make_client({}, robots=403)
+    with pytest.raises(requests.HTTPError):
+        client.load_robots()
+    assert session.calls == [ROBOTS_URL]
+
+
 def test_crawl_delay_from_robots_txt_wins_over_a_shorter_delay():
     client, _, _ = make_client({}, robots=(200, "User-agent: *\nCrawl-delay: 3"))
     client.allowed(f"{BASE}/")

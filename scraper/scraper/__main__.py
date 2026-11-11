@@ -8,6 +8,7 @@ from pathlib import Path
 import requests
 
 from . import config
+from .crawl import Crawler, PageCache
 from .http_client import HttpClient, SkippedURL, check_delay
 from .logging_config import setup_logging
 from .models import export_schema
@@ -27,6 +28,16 @@ def validate_positive_float(value):
         raise argparse.ArgumentTypeError(
             f"Delay option must be a finite number of at least {config.MIN_DELAY} and at most {config.MAX_DELAY}"
         ) from None
+
+
+def positive_int(value):
+    try:
+        number = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{value}' is not a whole number") from None
+    if number < 1:
+        raise argparse.ArgumentTypeError("must be at least 1")
+    return number
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -56,6 +67,16 @@ def main(argv: list[str] | None = None) -> int:
     fetch.add_argument("url", help="absolute URL, or a path such as /8-kosmetyki")
     fetch.add_argument("-o", "--output", type=Path, help="save the response body to this file")
 
+    # Crawl subcommand
+    crawl = commands.add_parser("crawl", help="download categories and products into scraper-results/ (resumable)")
+    crawl.add_argument(
+        "--limit",
+        type=positive_int,
+        metavar="N",
+        help="test run: at most N new pages in each stage (categories, listing pages, products)",
+    )
+    crawl.add_argument("--no-cache", action="store_true", help="do not read or write saved pages in scraper/cache/")
+
     # Schema subcommand
     commands.add_parser("schema", help=f"write the JSON schema of the results to {config.SCHEMA_FILE.name}")
 
@@ -72,6 +93,9 @@ def main(argv: list[str] | None = None) -> int:
     client = HttpClient(delay=args.delay)
     if args.command == "fetch":  # start fetching
         return fetch_page(client, args.url, args.output)
+    if args.command == "crawl":
+        cache = None if args.no_cache else PageCache(config.CACHE_DIR)
+        return Crawler(client, cache=cache, limit=args.limit).run()
     return 0
 
 

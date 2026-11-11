@@ -202,6 +202,15 @@ class HttpClient:
 
         raise requests.TooManyRedirects(f"More than {config.MAX_REDIRECTS} redirects")
 
+    def load_robots(self) -> None:
+        """Download robots.txt now, if it is not loaded yet.
+
+        A failed download is not remembered, so a caller that loops over many URLs calls this first
+        and stops when it raises. Otherwise every URL in the loop would download robots.txt again.
+        """
+        if self._robots is None:
+            self._robots = self._load_robots()
+
     def allowed(self, url: str) -> bool:
         """Whether robots.txt lets us fetch `url`. Downloads robots.txt on first use.
 
@@ -212,8 +221,7 @@ class HttpClient:
         if not self._in_shop(url):
             raise OutsideShop(url)
 
-        if self._robots is None:
-            self._robots = self._load_robots()
+        self.load_robots()
 
         # Use Protego's can_fetch method with our url with User-Agent
         return self._robots.can_fetch(url, self.user_agent)
