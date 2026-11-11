@@ -35,8 +35,6 @@
   --ciocia-secondary-dark: #5c636a;
   --ciocia-text: #333;
   --ciocia-text-muted: #666;
-  /* 3.23:1 on the card: only for large or non-essential text. */
-  --ciocia-text-light: #888;
   /* The source uses #c87f60 / #b06d52 (2.87:1 and 3.71:1 on the card). The same hue, darker, passes 4.5:1. */
   --ciocia-link: #9a5a3f;
   --ciocia-link-hover: #8f4f36;
@@ -416,6 +414,11 @@ body#checkout section.checkout-step.-unreachable .step-title {
   border-radius: 4px 0 0 4px;
 }
 
+/* Classic's quantity field (product page, cart) is 3rem wide; the padding above would leave no room for "10". */
+#wrapper .bootstrap-touchspin input.form-control {
+  padding: 0.175rem 0.5rem;
+}
+
 #wrapper form .form-control-label {
   font-weight: 600;
 }
@@ -434,7 +437,12 @@ body#checkout section.checkout-step.-unreachable .step-title {
   background-color: var(--ciocia-primary);
 }
 
-#wrapper .custom-checkbox input[type="checkbox"]:focus-visible + span,
+#wrapper .custom-checkbox input[type="checkbox"]:focus-visible + span {
+  border-color: var(--ciocia-field-focus-border);
+  box-shadow: var(--ciocia-field-focus-ring);
+}
+
+/* Separate rule: a browser without :has() drops the whole selector list, so the checkbox rule stays apart. */
 #wrapper .custom-radio:has(input[type="radio"]:focus-visible) {
   border-color: var(--ciocia-field-focus-border);
   box-shadow: var(--ciocia-field-focus-ring);
