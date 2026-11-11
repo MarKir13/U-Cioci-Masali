@@ -1,4 +1,4 @@
-# 0005. Products left out on purpose, and publishing the images
+# 0006. Products left out on purpose, and publishing the images
 
 - Status: Proposed
 - Date: 2026-11-11
