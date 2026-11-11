@@ -529,10 +529,6 @@ body#checkout section.checkout-step.-unreachable .step-title {
     transform: translateY(8px);
   }
 
-  #header #_desktop_logo h1 {
-    margin-bottom: 0;
-  }
-
   #header .ciocia-desktop-navigation .header-top-right {
     display: flex;
     align-items: center;
@@ -1835,5 +1831,204 @@ body#checkout #footer:has(> .ciocia-trust) {
 @media (min-width: 992px) {
   #footer .ciocia-footer-columns {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/*
+ * Home page banner (issue #63), as the hero on the source: one rounded card with the slider on the
+ * left and the text on the right from 768 px; stacked below. Template: modules/ps_imageslider/.../slider.tpl.
+ * Sizes and breakpoints are the source's own (its ndx-home-hero rules).
+ */
+
+/*
+ * On the source home page the cream card fills the page column (up to 985 px) at every width, while other
+ * pages keep the narrower Classic container below 992 px. Classic's container has a fixed width at each
+ * breakpoint (540, 720, 960 px), so on the home page it is released to the 985 px #wrapper.
+ * The card also starts right under the menu there: Classic's 25 px top padding of #wrapper is removed.
+ * Other pages keep it, as on the source, where the breadcrumb sits between the menu and the card.
+ */
+body#index #wrapper {
+  padding-top: 0;
+}
+
+body#index #wrapper > .container {
+  width: 100%;
+  max-width: none;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+#wrapper .ciocia-hero {
+  display: grid;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #fffdf7 0%, var(--ciocia-surface-warm) 100%);
+}
+
+#wrapper .ciocia-hero__media {
+  align-self: start;
+  background: #f7f7eb;
+}
+
+/*
+ * Classic gives its slider a fixed height of 340 px and a bottom margin, and on phones stretches it to
+ * the full screen width (100vw, moved left), past the card and its arrows.
+ */
+#wrapper .ciocia-hero .carousel {
+  left: auto;
+  width: auto;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 0.625rem;
+  box-shadow: none;
+}
+
+#wrapper .ciocia-hero .carousel-inner {
+  height: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#wrapper .ciocia-hero .carousel-item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 440 / 243;
+  object-fit: cover;
+}
+
+/*
+ * Arrows as on the source: a small dark chevron on a 36 px white square, on a full-height strip at each
+ * side of the photo, faint (opacity 0.35).
+ */
+#wrapper .ciocia-hero__arrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+
+#wrapper .ciocia-hero__arrow--prev {
+  left: 0;
+}
+
+#wrapper .ciocia-hero__arrow--next {
+  right: 0;
+}
+
+/*
+ * Hovering does not change them, as on the source. Keyboard focus does (unlike the source): at 0.35 the
+ * focus outline would be hard to see.
+ */
+#wrapper .ciocia-hero__arrow:focus-visible {
+  opacity: 0.9;
+}
+
+#wrapper .ciocia-hero__arrow .material-icons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.25rem;
+  background: #fff;
+  color: #212529;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+#wrapper .ciocia-hero__content {
+  align-self: center;
+  padding: clamp(1rem, 2.5vw, 1.75rem);
+}
+
+/* The source colour #b06d52 has 3.4:1 on the card; the theme's darker link copper passes 4.5:1. */
+#wrapper .ciocia-hero__eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--ciocia-link);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+#wrapper .ciocia-hero__title {
+  margin: 0;
+  color: var(--ciocia-primary);
+  font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+  font-weight: 600;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+#wrapper .ciocia-hero__lead {
+  margin: 0.85rem 0 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+#wrapper .ciocia-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.15rem;
+}
+
+#wrapper .ciocia-hero__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  font-size: 1rem;
+}
+
+/* Side by side; the buttons wrap below each other by themselves when the text column is too narrow. */
+@media (min-width: 768px) {
+  #wrapper .ciocia-hero {
+    grid-template-columns: minmax(0, 1.05fr) minmax(20rem, 0.95fr);
+  }
+}
+
+/*
+ * Phones: stacked, square corners, buttons full width one below the other. The banner keeps the card's
+ * 20 px inner spacing on both sides, like the sections below it. The source pulls it 12 px to the left
+ * instead, but its container clips that part, so there it looks cut off on the left (text 3 px from the
+ * edge) and 33 px from the right edge.
+ */
+@media (max-width: 767px) {
+  #wrapper .ciocia-hero {
+    border-radius: 0;
+  }
+
+  #wrapper .ciocia-hero__content {
+    padding: 1rem 0.9rem 1.15rem;
+  }
+
+  #wrapper .ciocia-hero__title {
+    font-size: clamp(1.25rem, 5.5vw, 1.55rem);
+  }
+
+  #wrapper .ciocia-hero__actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #wrapper .ciocia-hero__actions .btn {
+    width: 100%;
   }
 }
