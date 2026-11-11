@@ -1,7 +1,33 @@
 import { test as base, expect } from "@playwright/test";
 import { createRandom, seed } from "./random.js";
 
+// Key under which the theme saves the cookie choice (shop/themes/ciocia/assets/js/custom.js, #62)
+const COOKIE_CONSENT_KEY = "ciocia_cookie_consent";
+
 export const test = base.extend({
+  // Cookie panel from the theme: saved as accepted before every page load, so it never covers buttons.
+  // A test that checks the panel itself turns this off with test.use({ acceptCookies: false }).
+  acceptCookies: [true, { option: true }],
+
+  page: async ({ page, acceptCookies }, use) => {
+    if (acceptCookies) {
+      await page.addInitScript(
+        ({ key, value }) => {
+          try {
+            globalThis.localStorage.setItem(key, value);
+          } catch {
+            // about:blank has no localStorage; the shop's pages do
+          }
+        },
+        {
+          key: COOKIE_CONSENT_KEY,
+          value: JSON.stringify({ necessary: true, analytics: false, ads: false }),
+        },
+      );
+    }
+    await use(page);
+  },
+
   // A fresh generator per test: the same seed gives the same picks, whatever ran before
   rng: async ({}, use) => {
     await use(createRandom(seed));
