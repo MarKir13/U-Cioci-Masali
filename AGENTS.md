@@ -70,7 +70,7 @@ Run from the repository root unless noted.
 | Build and start the shop | `docker compose -f deploy/compose.yaml up -d --build` |
 | Apply changes from `shop/` | same command as above |
 | Follow install logs (done at `Starting web server`) | `docker compose -f deploy/compose.yaml logs -f shop` |
-| Re-apply shop settings from `shop/config/shop-settings.php` (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop runuser -u www-data -- php /opt/ciocia/scripts/setup/configure-shop.php` |
+| Re-apply `shop/config/shop-settings.php` and shop content to a running shop, after a rebuild (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh`, then the same with `30-configure-shop.sh` |
 | Stop, keeping data | `docker compose -f deploy/compose.yaml down` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
 | Scraper lint | `ruff check .` and `ruff format --check .` |
@@ -138,9 +138,13 @@ Documentation is in English, except `docs/AI_LOG.md`.
   theme and modules from `/opt/ciocia` on every start. A file in the image will not reach the running shop unless it
   goes through that path. The same script deletes `var/cache/prod` and `var/cache/dev` on every start, so new module
   template overrides need no manual cache clear.
-- Scripts in `shop/scripts/post-install/` run once, in name order, right after the automatic install, and never on
-  an existing install. Shop settings (currency, carriers, payments, e-mail) live in `shop/config/shop-settings.php`
-  and are applied by `shop/scripts/setup/configure-shop.php`, which must stay idempotent so it can be re-run by hand.
+- Shop content and settings live in the database. Set them in `shop/scripts/setup/` (ADR 0005), never only in the
+  back office. Scripts in `shop/scripts/post-install/` run once, in name order, right after the automatic install,
+  and never on an existing install; the image keeps starting if one fails: look for `[setup] FAILED` in the shop log.
+- All values (store details, currency, carriers, payments, e-mail) live in `shop/config/shop-settings.php`. Both
+  `shop-content.php` (CMS pages, footer links, store details) and `configure-shop.php` read it, so the pages match
+  the checkout. Setup scripts must stay idempotent so they can be re-run by hand, and must not rely on fixed CMS
+  page IDs.
 - `PS_COUNTRY` must be lowercase (`pl`): the installer loads `localization/<value>.xml`, and with `PL` it silently
   falls back to EUR/USD and no VAT rates.
 - Scripts run on Linux but are edited on Windows and macOS. `.gitattributes` forces LF for `*.sh`, `*.php`, Dockerfiles

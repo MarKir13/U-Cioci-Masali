@@ -1,17 +1,33 @@
 <?php
 /**
- * Shop settings applied by shop/scripts/setup/configure-shop.php (issue #47).
+ * Shop settings, read by two setup scripts, run in this order by shop/scripts/post-install/:
+ * - 20-shop-content.sh (shop-content.php, issue #27) writes the store details and fills the CMS pages
+ *   "Dostawa", "Formy płatności", "Regulamin" and others with the same values, so the pages always
+ *   describe what the checkout really offers;
+ * - 30-configure-shop.sh (configure-shop.php, issue #47) applies them to the shop configuration.
  *
- * This is the one place to change delivery, payment and e-mail settings. After a change:
+ * This is the one place to change store details, delivery, payment and e-mail settings. After a change
+ * (Git Bash: prefix the exec commands with MSYS_NO_PATHCONV=1):
  *   docker compose -f deploy/compose.yaml up -d --build
- *   docker compose -f deploy/compose.yaml exec shop runuser -u www-data -- \
- *       php /opt/ciocia/scripts/setup/configure-shop.php
+ *   docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh
+ *   docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/30-configure-shop.sh
  * A fresh install (after `down -v`) applies it automatically.
  *
  * All amounts are in PLN, gross (VAT included), as the customer sees them.
  */
 
 return [
+    // Store details: footer, contact page, sender of shop e-mails and the CMS pages.
+    // FICTIONAL: no real company, address or e-mail.
+    'store' => [
+        'name' => 'U Cioci Masali',
+        'address1' => 'ul. Przykładowa 1',
+        'postcode' => '80-000',
+        'city' => 'Gdańsk',
+        'country_iso' => 'PL',
+        'email' => 'kontakt@example.com',
+    ],
+
     // Currencies. PLN is the default; EUR stays in the selector, as on magiczne-indie.pl.
     // Both payment methods accept every currency listed here.
     'currency_default' => 'PLN',
@@ -41,7 +57,8 @@ return [
         ],
     ],
 
-    // Bank transfer details shown to the customer. FICTIONAL: not a real account or company.
+    // Bank transfer details shown to the customer (also on the "Formy płatności" page).
+    // FICTIONAL: not a real account or company.
     'bank_wire' => [
         'owner' => 'U Cioci Masali sp. z o.o. (firma fikcyjna, projekt studencki)',
         'details' => 'PL00 0000 0000 0000 0000 0000 0000 (numer fikcyjny, nie wpłacaj pieniędzy)',

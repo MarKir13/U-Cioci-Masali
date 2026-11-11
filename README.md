@@ -78,28 +78,39 @@ PrestaShop's cache (`var/cache/prod` and `var/cache/dev`) is cleared automatical
 so new module template overrides take effect after `up -d --build` with no manual step. The first
 page load after a start takes a few seconds longer while the cache is rebuilt.
 
-### Shop settings: currency, delivery, payments, e-mail
+### Shop settings and content
 
-Right after the first install, `shop/scripts/setup/configure-shop.php` sets up the shop for Poland:
-PLN (plus EUR in the selector, as on the source shop), Poland as the only country, Polish VAT groups
-(23, 8, 5, 0 %), two carriers priced by weight up to 50 kg, free delivery from 2000 PLN gross,
-bank transfer and cash on delivery (no cheque), invoices, and e-mail through Mailpit.
+Right after the first install, two scripts in `shop/scripts/setup/` put our settings and content into
+the database:
 
-All values are in [`shop/config/shop-settings.php`](shop/config/shop-settings.php); the header banner
-("Dostawa od 2000 zł gratis") reads the threshold from the shop configuration, not from the template. To change one,
-for example the free delivery threshold, edit that file, then rebuild and run the script again
-(it is idempotent: a second run changes nothing and creates no duplicates):
+- `shop-content.php` sets the store details, the CMS pages (O sklepie, Regulamin, Polityka
+  prywatności, Dostawa, Formy płatności, Zwrot towaru), the footer links, and switches off the demo
+  modules. Page text is in `shop/scripts/setup/cms/`.
+- `configure-shop.php` sets up the shop for Poland: PLN (plus EUR in the selector, as on the source
+  shop), Poland as the only country, Polish VAT groups (23, 8, 5, 0 %), two carriers priced by weight
+  up to 50 kg, free delivery from 2000 PLN gross, bank transfer and cash on delivery (no cheque),
+  invoices, and e-mail through Mailpit.
+
+All values for both are in [`shop/config/shop-settings.php`](shop/config/shop-settings.php): store
+details, free delivery threshold, carriers and fees, bank details. The "Dostawa" and "Formy płatności"
+pages and the header banner ("Dostawa od 2000 zł gratis") take them from there, so they always match
+the checkout. Change values in that file, not in the admin panel: changes made there are lost on
+`down -v` and never reach the rest of the team. To apply a change to a running shop, rebuild and run
+both scripts again (they are idempotent: a second run changes nothing and creates no duplicates;
+a reinstall with `down -v` applies them too):
 
 ```sh
 docker compose -f deploy/compose.yaml up -d --build
-docker compose -f deploy/compose.yaml exec shop runuser -u www-data -- php /opt/ciocia/scripts/setup/configure-shop.php
+docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh
+docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/30-configure-shop.sh
 ```
 
-In Git Bash on Windows, put `MSYS_NO_PATHCONV=1` in front of the second command. Settings changed in
-the admin panel are lost on `down -v` and missing on other machines, so change them in this file.
+In Git Bash on Windows, put `MSYS_NO_PATHCONV=1` in front of the last two commands, or Git Bash
+rewrites the `/tmp/...` path. Design notes: [ADR 0005](docs/adr/0005-shop-data-set-by-php-setup-scripts.md).
 
-> **Install made before this script existed** (prices in EUR, demo carriers): run the two commands
-> above once. The script also imports the Polish VAT groups that the old install is missing.
+> **Install made before these scripts existed** (prices in EUR, demo carriers, English demo pages):
+> run the commands above once. `configure-shop.php` also imports the Polish VAT groups that the old
+> install is missing.
 
 ## Continuous integration
 
@@ -177,7 +188,7 @@ same result as CI and never shows your passwords.
 
 | Path | Contents | Status |
 |---|---|---|
-| `shop/` | Dockerfile, PHP config, child theme, own modules | in progress |
+| `shop/` | Dockerfile, PHP config, child theme, own modules, setup scripts for shop content | in progress |
 | `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`); later: init, backup and restore scripts | in progress |
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
 | `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | in progress |
