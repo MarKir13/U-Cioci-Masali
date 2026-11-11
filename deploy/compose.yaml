@@ -22,7 +22,9 @@ services:
 
   shop:
     build: ../shop
-    image: ciocia-shop:local
+    # Without SHOP_IMAGE: built locally (--build) and tagged ciocia-shop:local. With it, for
+    # example the image CI published to GHCR, run with --no-build to use that image instead.
+    image: ${SHOP_IMAGE:-ciocia-shop:local}
     restart: unless-stopped
     depends_on:
       db:
@@ -71,7 +73,8 @@ services:
 
   proxy:
     build: ./proxy
-    image: ciocia-proxy:local
+    # Same as SHOP_IMAGE above
+    image: ${PROXY_IMAGE:-ciocia-proxy:local}
     restart: unless-stopped
     depends_on:
       shop:
