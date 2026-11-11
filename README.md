@@ -16,6 +16,7 @@ built as a team project for the *Biznes Elektroniczny* course at Gdansk Universi
 | HTTPS proxy | nginx 1.28.0 (`nginx:1.28.0-alpine`), self-signed certificate |
 | Containers | Docker Engine + Docker Compose v2 |
 | Scraper | Python 3.12, `requests`, Protego, pydantic, pytest (versions in `scraper/requirements.txt`) |
+| E2E tests | Playwright 1.64.1 (headless Chromium) on Node.js 24, see [E2E tests](#e2e-tests) |
 
 Our own code (child theme `ciocia`, modules, PHP config) lives in `shop/` and is built on top of
 the official image. PrestaShop itself is not stored in this repository.
@@ -101,13 +102,66 @@ the admin panel are lost on `down -v` and missing on other machines, so change t
 > **Install made before this script existed** (prices in EUR, demo carriers): run the two commands
 > above once. The script also imports the Polish VAT groups that the old install is missing.
 
+
+## E2E tests
+
+The Playwright suite in [`tests/`](tests/) runs the W4 purchase scenario in headless Chromium against a running
+shop. It has its own [`package.json`](tests/package.json), separate from the ESLint tools in the root one.
+
+Requirements: [Node.js](https://nodejs.org/) 24 and a running shop (see [Running the shop](#running-the-shop)).
+
+1. Install the dependencies and the browser once, from `tests/`:
+   ```sh
+   cd tests
+   npm ci
+   npx playwright install chromium
+   ```
+   On Linux without a desktop (CI, a cluster node) use `npx playwright install --with-deps chromium`.
+2. Run the whole suite, from `tests/`:
+   ```sh
+   npm test
+   ```
+
+The shop address comes from `BASE_URL` (default `https://localhost:8443`); the self-signed certificate is accepted.
+
+| Shell | Command |
+|---|---|
+| bash, Git Bash | `BASE_URL=https://localhost:8443 npm test` |
+| PowerShell | `$env:BASE_URL = "https://localhost:8443"; npm test` |
+
+The host in `BASE_URL` must be the shop's own domain (`PS_DOMAIN`, set at install time), because PrestaShop
+redirects every other host name there. The smoke test fails if that happens.
+
+Reports are written on every run; both folders are ignored by git:
+
+| Report | Where |
+|---|---|
+| HTML: every step, plus a screenshot and a trace when a test fails | `tests/playwright-report/index.html`, open it with `npm run report` |
+| JUnit XML | `tests/test-results/junit.xml` |
+
+Products and quantities are picked at random from a seed, which both reports show (`seed` annotation). To repeat
+a failed run with the same picks, pass that seed: `E2E_SEED=123456789 npm test` (PowerShell:
+`$env:E2E_SEED = "123456789"; npm test`). The new customer's e-mail is unique on every run, with or without a seed,
+so the suite can run many times on the same shop.
+
+| Path | Contents |
+|---|---|
+| `tests/tests/` | `smoke.spec.js` (home page over HTTPS, no console errors) and `order.spec.js` (the W4 scenario, one step per point of the brief) |
+| `tests/pages/` | One file per area of the shop (catalog, search, cart, account, checkout, orders) with its selectors and actions |
+| `tests/support/` | Shared code: fixtures (`test`, `rng`, `consoleErrors`), seeded random numbers, test data |
+
+Rules for new tests: import `test` and `expect` from `tests/support/fixtures.js`, keep selectors in `tests/pages/`,
+and never wait a fixed time. Wait on a condition instead (`expect(...)`, `waitForURL`, `waitForResponse`);
+`npx eslint` fails on `waitForTimeout`. The whole run must stay under 5 minutes, and Playwright stops it after 4.
+
+
 ## Continuous integration
 
 GitHub Actions runs three workflows:
 
 | Workflow | When | What it checks |
 |---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and the theme's JavaScript. `ci-gate`: passes only if all jobs passed |
+| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and JavaScript (theme and E2E tests). `ci-gate`: passes only if all jobs passed |
 | [`pr-policy.yml`](.github/workflows/pr-policy.yml) | A pull request is opened, updated or relabelled | `ai-log`: a PR labelled `ai-assisted` must add or update a row in `docs/AI_LOG.md` |
 | [`secret-scan.yml`](.github/workflows/secret-scan.yml) | Nightly, or by hand from the Actions tab | Secrets and repository limits over every branch, the way the lecturer measures it |
 
@@ -182,7 +236,7 @@ same result as CI and never shows your passwords.
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
 | `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | in progress |
 | `scraper-results/` | Scraped data (JSON/CSV) and sample images | in progress (schema only) |
-| `tests/` | Playwright E2E tests | planned |
+| `tests/` | Playwright E2E tests | in progress |
 
 ## Team
 
