@@ -13,7 +13,10 @@
     </div>
     <input type="hidden" name="blockHookName" value="{$hookName}">
     <input type="hidden" name="action" value="0">
-    <p class="ciocia-newsletter-note">Wypiszesz się w każdej chwili — link znajdziesz w stopce każdego maila.</p>
+    {* NW_CONDITIONS, set by shop/scripts/setup/shop-content.php; registration shows the same text *}
+    {if $conditions}
+      <p class="ciocia-newsletter-note">{$conditions}</p>
+    {/if}
     {if $msg}
       <p class="alert {if $nw_error}alert-danger{else}alert-success{/if}" role="status">{$msg}</p>
     {/if}

@@ -46,6 +46,7 @@ Full findings: `docs/scraper-recon.md` (on PR #4 until it merges). The essential
 | Scraper | Python 3.12, `requests`, Protego, pytest |
 | E2E tests | Playwright, headless (Selenium is not allowed) |
 | Test mail | Mailpit or MailHog in a container |
+| Linters | hadolint 2.15.1, shellcheck 0.11.0, `php -l` (`php:8.1.34-cli`), all as Docker images; ESLint 10.13.0 on Node 24, pinned in the root `package.json` (development tools only) |
 
 | Path | Contents |
 |---|---|
@@ -69,12 +70,21 @@ Run from the repository root unless noted.
 | Build and start the shop | `docker compose -f deploy/compose.yaml up -d --build` |
 | Apply changes from `shop/` | same command as above |
 | Follow install logs (done at `Starting web server`) | `docker compose -f deploy/compose.yaml logs -f shop` |
+| Re-apply `shop/config/shop-settings.php` and shop content to a running shop, after a rebuild (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh`, then the same with `30-configure-shop.sh` |
 | Stop, keeping data | `docker compose -f deploy/compose.yaml down` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
 | Scraper lint | `ruff check .` and `ruff format --check .` |
+| Secret scan, as on a PR (Git Bash on Windows: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"` |
+| Repository limits (`--all` for every branch) | `sh .github/scripts/check-repo-limits.sh` |
+| Dockerfile lint (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile` |
+| Shell lint (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
+| Compose check, must print nothing. Never drop `--quiet` or use `deploy/.env` | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
+| PHP syntax (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
+| JavaScript lint (after `npm ci` once) | `npx eslint` |
 
-Storefront: `http://localhost:8080`. Admin: `http://localhost:8080/admin-ciocia`. HTTPS and a one-command data init
-are required but not built yet; update this table when they land.
+Storefront: `https://localhost:8443` (HTTP on 8080 redirects there). Admin: `https://localhost:8443/admin-ciocia`.
+Shop e-mails: `http://localhost:8025` (Mailpit). A one-command data init is required but not built yet; update this
+table when it lands.
 
 ## Hard rules
 
@@ -84,7 +94,9 @@ Breaking a rule marked **[K]** scores 0 for that requirement, whatever else work
    `main` through a PR approved by another person. An agent does not approve or merge PRs, and only commits or pushes
    when asked.
 2. **[K] No secrets in git, in any commit on any branch.** Configuration goes through `deploy/.env`; only `.env.example`
-   is committed. The check is `gitleaks` over the full history, and what lands on `main` cannot be rewritten.
+   is committed. The check is `gitleaks` over the full history, and what lands on `main` cannot be rewritten. CI runs
+   it on every PR (all commits of `main` plus the PR) and nightly over every branch. A secret removed in a later
+   commit still fails, so remove it by rewriting the feature branch, not with a new commit.
 3. **Do not read or print `deploy/.env`,** and do not handle passwords, API keys or cluster credentials. Course rules
    forbid passing them to AI tools.
 4. **Log AI use in the same PR.** Add a row to `docs/AI_LOG.md` (in Polish), give the PR the `ai-assisted` label, and
@@ -126,12 +138,23 @@ Documentation is in English, except `docs/AI_LOG.md`.
   theme and modules from `/opt/ciocia` on every start. A file in the image will not reach the running shop unless it
   goes through that path. The same script deletes `var/cache/prod` and `var/cache/dev` on every start, so new module
   template overrides need no manual cache clear.
-- Scripts run on Linux but are edited on Windows and macOS. `.gitattributes` forces LF for `*.sh`, Dockerfiles and
-  YAML; keep new script types covered.
+- Shop content and settings live in the database. Set them in `shop/scripts/setup/` (ADR 0005), never only in the
+  back office. Scripts in `shop/scripts/post-install/` run once, in name order, right after the automatic install,
+  and never on an existing install; the image keeps starting if one fails: look for `[setup] FAILED` in the shop log.
+- All values (store details, currency, carriers, payments, e-mail) live in `shop/config/shop-settings.php`. Both
+  `shop-content.php` (CMS pages, footer links, store details) and `configure-shop.php` read it, so the pages match
+  the checkout. Setup scripts must stay idempotent so they can be re-run by hand, and must not rely on fixed CMS
+  page IDs.
+- `PS_COUNTRY` must be lowercase (`pl`): the installer loads `localization/<value>.xml`, and with `PL` it silently
+  falls back to EUR/USD and no VAT rates.
+- Scripts run on Linux but are edited on Windows and macOS. `.gitattributes` forces LF for `*.sh`, `*.php`, Dockerfiles
+  and YAML; keep new script types covered.
 - `.gitignore` excludes `*.crt`, `*.key`, `*.pem`, `*.zip` and `*.tar.gz`, so certificates and archives must be
   generated or downloaded at runtime.
 - Build images for `linux/amd64`. On Apple Silicon the default is `arm64`, which will not run on the Stage 2 cluster.
 - GHCR image names must be lowercase, while the repository owner is `MarKir13`.
+- Fix lint findings instead of silencing them. If a rule really does not fit, silence only that line and put the reason
+  above it (as `# hadolint ignore=DL3018` in `deploy/proxy/Dockerfile`); never turn a rule off for the repository.
 
 ## Requirements: Stage 1
 

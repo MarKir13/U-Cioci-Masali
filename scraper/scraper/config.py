@@ -30,3 +30,33 @@ SCRAPER_DIR = Path(__file__).resolve().parent.parent
 LOG_FILE = SCRAPER_DIR / "scraper.log"
 RESULTS_DIR = SCRAPER_DIR.parent / "scraper-results"
 SCHEMA_FILE = RESULTS_DIR / "schema.json"
+
+# Crawl results (see docs/adr/0004-crawl-sources-and-category-assignment.md)
+CATEGORIES_FILE = RESULTS_DIR / "categories.json"
+# One product per line, appended as soon as it is parsed, so an interrupted run loses nothing saved
+PRODUCTS_FILE = RESULTS_DIR / "products.jsonl"
+# Product ids found on category listings, and where each unfinished listing continues
+LISTINGS_FILE = RESULTS_DIR / "listings.json"
+# Downloaded pages, gzipped, so a parser fix can be re-run without the network. Not committed.
+CACHE_DIR = SCRAPER_DIR / "cache"
+
+# Sitemap index named in the source shop's robots.txt and recon notes
+SITEMAP_INDEX = "/1_index_sitemap.xml"
+# Na prezent and Nowości: products never have them as their default category, so they appear neither
+# in the product's data nor in its breadcrumb. Their listings are walked to the last page.
+FULL_LISTING_CATEGORY_IDS = (458, 50)
+
+# Product images (W2/W3: longer side 800-1600 px, JPEG or WebP, at most 300 KB per file)
+# Not committed: the whole set goes to a GitHub Release (see .gitignore)
+IMAGES_DIR = RESULTS_DIR / "images"
+# Source URLs that can never give a usable file (too small, corrupted), so a resumed run does not ask again
+IMAGE_PROBLEMS_FILE = RESULTS_DIR / "image_problems.json"
+IMAGE_MIN_SIDE = 800
+IMAGE_MAX_SIDE = 1600
+# 300 KB counted as 300 000 bytes: the stricter reading of "KB", so no file is over the limit either way
+IMAGE_MAX_BYTES = 300_000
+# JPEG quality is lowered from the first to the last value (searched in between) until the file fits
+IMAGE_QUALITY_START = 90
+IMAGE_QUALITY_MIN = 40
+# A picture that does not fit even at the lowest quality is shrunk by this factor, down to IMAGE_MIN_SIDE
+IMAGE_SHRINK_STEP = 0.9
