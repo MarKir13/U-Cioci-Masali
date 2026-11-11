@@ -5,7 +5,8 @@ Why the data comes from where it does: docs/adr/0004-crawl-sources-and-category-
 Results in scraper-results/:
 - categories.json: every category, rewritten after each new one;
 - listings.json: product URLs found on each category listing, and the next page to walk;
-- products.jsonl: one product per line, appended as soon as it is parsed.
+- products.jsonl: one product per line, appended as soon as it is parsed;
+- rejected.json: products left out on purpose, with the reason (a full run only).
 
 Each file is written so that Ctrl+C at any moment leaves it readable (see `save_json` and `append_line`).
 On the next run everything already saved is loaded and skipped, so it is not downloaded again.
@@ -39,6 +40,8 @@ from .parsers import (
 
 log = logging.getLogger(__name__)
 
+NO_CATEGORY = "in no category of the shop: its only category ids {} are not in the sitemap"
+
 
 # ---------- Saving and loading results ----------
 
@@ -67,6 +70,14 @@ def append_line(path: Path, record: dict) -> None:
         file.write(line)
 
 
+def save_lines(path: Path, records: list[dict]) -> None:
+    """Rewrite a JSON Lines file in one step (the counterpart of `append_line`)."""
+    text = "".join(json.dumps(record, ensure_ascii=False) + "\n" for record in records)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
+
 def load_lines(path: Path) -> list[dict]:
     """Records from a JSON Lines file.
 
@@ -88,6 +99,18 @@ def load_lines(path: Path) -> list[dict]:
         except json.JSONDecodeError as exc:
             raise ValueError(f"{path} line {number} is not valid JSON: {exc}") from exc
     return records
+
+
+def empty_categories(categories: dict[int, dict], products: dict[int, dict]) -> list[int]:
+    """Ids of categories with no product in them or in any of their subcategories."""
+    keep: set[int] = set()
+    for product in products.values():
+        for category_id in product["category_ids"]:
+            # Walk up, so a parent whose products all sit in subcategories is kept too
+            while category_id in categories and category_id not in keep:
+                keep.add(category_id)
+                category_id = categories[category_id]["parent_id"]
+    return [category_id for category_id in categories if category_id not in keep]
 
 
 @dataclass
@@ -147,15 +170,26 @@ class Crawler:
         cache: PageCache | None = None,
         limit: int | None = None,
         full_listing_ids: tuple[int, ...] = config.FULL_LISTING_CATEGORY_IDS,
+        empty_category_ids: tuple[int, ...] = config.KNOWN_EMPTY_CATEGORY_IDS,
     ):
         self.client = client
         self.cache = cache
         # Test runs: at most `limit` new pages in each stage (categories, listing pages, products)
         self.limit = limit
         self.full_listing_ids = full_listing_ids
+        self.empty_category_ids = empty_category_ids
         self.categories_file = results_dir / config.CATEGORIES_FILE.name
         self.listings_file = results_dir / config.LISTINGS_FILE.name
         self.products_file = results_dir / config.PRODUCTS_FILE.name
+        self.rejected_file = results_dir / config.REJECTED_FILE.name
+        self.images_dir = results_dir / config.IMAGES_DIR.name
+        # Category ids that exist in the shop (saved, or listed in the sitemap but not saved yet). None until
+        # the categories are known; a test run (--limit) never fills it, because it saves only some categories.
+        self.known_categories: set[int] | None = None
+        # Products left out on purpose (product id -> {"id", "url", "reason"}); saved by a full run
+        self.rejected: dict[int, dict] = {}
+        # Pages of products that could not be downloaded. Their categories may look empty, so none is removed.
+        self.download_failures = 0
         results_dir.mkdir(parents=True, exist_ok=True)
 
     def run(self) -> int:
@@ -184,11 +218,17 @@ class Crawler:
         listings = load_listings(self.listings_file)
         self.crawl_categories(category_page_urls, categories, listings)
         self.walk_full_listings(listings)
+        if self.limit is None:
+            self.known_categories = categories.keys() | {id_from_url(url) for url in category_page_urls}
 
         # Keyed by the id in the URL, the same key crawl_products uses to decide what to skip
         products = {id_from_url(record["url"]): record for record in load_lines(self.products_file)}
+        self.drop_unknown_categories(products)
         self.crawl_products(product_page_urls, listings, products)
 
+        if self.limit is None:
+            self.remove_empty_categories(categories, products)
+            save_json(self.rejected_file, sorted(self.rejected.values(), key=lambda entry: entry["id"]))
         self.report(categories, listings, products)
         return 0
 
@@ -218,6 +258,9 @@ class Crawler:
             category_id = id_from_url(url)
             if category_id in categories:
                 stats["already saved"] += 1
+                continue
+            if category_id in self.empty_category_ids:
+                log.info("Skipping category %d: it is empty in the source shop and has no breadcrumb", category_id)
                 continue
             if self._limit_reached(stats["downloaded"]):
                 break
@@ -298,6 +341,7 @@ class Crawler:
                 if category_id not in listed_in[product_id]:
                     listed_in[product_id].append(category_id)
 
+        self.download_failures = 0
         stats = Counter()
         skipped = [product_id for product_id in urls if product_id in products]
         if skipped:
@@ -327,23 +371,95 @@ class Crawler:
         """The product on `url` with the listing categories added, or None (the reason is logged)."""
         html = self.fetch(url)
         if html is None:
+            self.download_failures += 1
             return None
+        problems: list[str] = []
         try:
-            product = parse_product(url, html)
+            product = parse_product(url, html, problems)
         except ValueError as exc:
             log.error("Could not parse product %s: %s", url, exc)
+            self.reject(url, f"cannot be parsed: {exc}")
             return None
         if product is None:  # invalid record, logged by validate_record
+            self.reject(url, "invalid record: " + "; ".join(problems))
             return None
 
         # The page gives the default category and its breadcrumb; listings add the rest (Na prezent, Nowości)
         extra = [category_id for category_id in listed_in if category_id not in product.category_ids]
-        if not extra:
+        if extra:
+            # Validated again, so a merged record follows the same rules as a parsed one
+            data = product.model_dump(mode="json")
+            data["category_ids"] = product.category_ids + extra
+            product = validate_record(model=Product, data=data, url=url, problems=problems)
+            if product is None:
+                self.reject(url, "invalid record: " + "; ".join(problems))
+                return None
+        return self.with_known_categories(product, url)
+
+    def reject(self, url: str, reason: str) -> None:
+        """Remember that the product on `url` is left out on purpose (saved in rejected.json by a full run)."""
+        product_id = id_from_url(url)
+        self.rejected[product_id] = {"id": product_id, "url": url, "reason": reason}
+
+    def with_known_categories(self, product: Product, url: str) -> Product | None:
+        """`product` without category ids the shop's category list does not have, or None if none is left.
+
+        The source shop gives some products a default category that has no page we can reach: 1 is PrestaShop's
+        internal root, 44 is the hidden "Wszystkie" (all products). A product in no real category cannot be placed
+        in our shop, so it is left out.
+        """
+        if self.known_categories is None:
             return product
-        # Validated again, so a merged record follows the same rules as a parsed one
+        kept = [category_id for category_id in product.category_ids if category_id in self.known_categories]
+        if kept == product.category_ids:
+            return product
+        dropped = [category_id for category_id in product.category_ids if category_id not in self.known_categories]
+        if not kept:
+            log.warning("Product %d is in no category of the shop (only %s), leaving it out", product.id, dropped)
+            self.reject(url, NO_CATEGORY.format(dropped))
+            return None
+        log.info("Product %d: ignoring category ids %s, they are not categories of the shop", product.id, dropped)
         data = product.model_dump(mode="json")
-        data["category_ids"] = product.category_ids + extra
+        data["category_ids"] = kept
         return validate_record(model=Product, data=data, url=url)
+
+    def drop_unknown_categories(self, products: dict[int, dict]) -> None:
+        """The same cleaning as `with_known_categories` for products saved by an earlier run (and their images)."""
+        if self.known_categories is None:
+            return
+        changed = False
+        for product_id, record in list(products.items()):
+            kept = [category_id for category_id in record["category_ids"] if category_id in self.known_categories]
+            if kept == record["category_ids"]:
+                continue
+            changed = True
+            dropped = [category_id for category_id in record["category_ids"] if category_id not in kept]
+            if kept:
+                log.info("Product %d: ignoring category ids %s, not categories of the shop", product_id, dropped)
+                record["category_ids"] = kept
+                continue
+            log.warning("Product %d is in no category of the shop (only %s), removing it", product_id, dropped)
+            self.reject(record["url"], NO_CATEGORY.format(dropped))
+            del products[product_id]
+            for file in self.images_dir.glob(f"{product_id}-*.jpg"):
+                file.unlink()
+        if changed:
+            save_lines(self.products_file, list(products.values()))
+
+    def remove_empty_categories(self, categories: dict[int, dict], products: dict[int, dict]) -> None:
+        """Drop categories with no products from the saved categories (the shop must have none: W3)."""
+        if self.download_failures:
+            log.warning(
+                "%d product pages could not be downloaded, so no empty category is removed. Run the crawl again.",
+                self.download_failures,
+            )
+            return
+        empty = empty_categories(categories, products)
+        for category_id in empty:
+            log.warning("Category %d %s has no products, removing it", category_id, categories[category_id]["name"])
+            del categories[category_id]
+        if empty:
+            save_json(self.categories_file, list(categories.values()))
 
     def report(self, categories: dict[int, dict], listings: dict[int, Listing], products: dict[int, dict]) -> None:
         """Warn about categories that would be empty in our shop, and about unknown category ids."""
