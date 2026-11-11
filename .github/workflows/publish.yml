@@ -1,7 +1,8 @@
 name: Publish images
 
 # Builds the shop and proxy images for linux/amd64 and pushes them to GitHub's registry (GHCR),
-# so the Stage 2 cluster can pull them. Pull requests that change them only build, without pushing.
+# so the Stage 2 cluster can pull them. Only main and etap* tags push; pull requests and manual runs
+# from any other branch only build.
 on:
   push:
     branches: [main]
@@ -26,6 +27,9 @@ jobs:
   # One copy of this job per image, running side by side
   build:
     strategy:
+      # Each image finishes on its own: a failing proxy build does not cancel the shop build
+      # halfway, and the red job shows which image is missing. `verify` needs both.
+      fail-fast: false
       matrix:
         include:
           - image: shop
@@ -36,13 +40,17 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      # Push only reviewed code: main or an etap* tag. On a pull request github.ref is
+      # refs/pull/<n>/merge, and a manual run from a feature branch has that branch's ref.
+      PUBLISH: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/etap') }}
     steps:
       - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v4
       # GITHUB_TOKEN is the token GitHub gives every run; with packages: write it may push to
       # this repository's packages. No secret to create or store.
       - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
+        if: env.PUBLISH == 'true'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -61,12 +69,12 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
           flavor: latest=false
-      - name: Build, and push unless this is a pull request
+      - name: Build, and push on main or an etap* tag
         uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.context }}
           platforms: linux/amd64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ env.PUBLISH == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           # One plain image per tag. By default a provenance record (how the image was built) is
@@ -76,11 +84,12 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
-  # On main only: pull the images just pushed, without logging in, and smoke-test them.
-  # This is how Stage 2 nodes get them, so the packages must be public.
+  # On main only (a push or a manual run): pull the images just pushed, without logging in, and
+  # smoke-test them. This is how Stage 2 nodes get them, so the packages must be public.
+  # Skipped if either build failed, since `needs: build` waits for both.
   verify:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:

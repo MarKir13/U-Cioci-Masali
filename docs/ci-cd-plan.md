@@ -319,7 +319,9 @@ both the shop and the proxy need an image in a registry.
 
 ## Tasks
 - [ ] Add `.github/workflows/publish.yml`, on push to `main`, tags `etap*` and by hand, with `packages: write` and
-      logging in through `GITHUB_TOKEN`. Pull requests that change `shop/` or `deploy/proxy/` only build
+      logging in through `GITHUB_TOKEN`. Push only from `main` or an `etap*` tag (`github.ref`); pull requests that
+      change `shop/` or `deploy/proxy/` and manual runs on other branches only build
+- [ ] `fail-fast: false` in the matrix, so one failing image does not cancel the other halfway
 - [ ] One `build` job as a matrix over `shop` (`shop/`) and `proxy` (`deploy/proxy/`), with
       `docker/setup-buildx-action@v4`, `docker/login-action@v4`, `docker/metadata-action@v6`,
       `docker/build-push-action@v7`
