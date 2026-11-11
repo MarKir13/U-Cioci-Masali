@@ -10,6 +10,7 @@ import requests
 from . import config
 from .crawl import Crawler, PageCache
 from .http_client import HttpClient, SkippedURL, check_delay
+from .images import ImageDownloader
 from .logging_config import setup_logging
 from .models import export_schema
 
@@ -77,6 +78,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     crawl.add_argument("--no-cache", action="store_true", help="do not read or write saved pages in scraper/cache/")
 
+    # Images subcommand
+    images = commands.add_parser(
+        "images", help="download product images into scraper-results/images/ and fit them to the store's limits"
+    )
+    images.add_argument("--limit", type=positive_int, metavar="N", help="test run: download at most N new images")
+
     # Schema subcommand
     commands.add_parser("schema", help=f"write the JSON schema of the results to {config.SCHEMA_FILE.name}")
 
@@ -96,6 +103,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "crawl":
         cache = None if args.no_cache else PageCache(config.CACHE_DIR)
         return Crawler(client, cache=cache, limit=args.limit).run()
+    if args.command == "images":
+        return ImageDownloader(client, limit=args.limit).run()
     return 0
 
 
