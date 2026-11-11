@@ -2,7 +2,7 @@
 FROM prestashop/prestashop:8.2.8-8.1-apache
 
 # PHP settings for PrestaShop
-COPY config/php.ini /usr/local/etc/php/conf.d/zz-shop.ini
+COPY config/missing.ini /usr/local/etc/php/conf.d/zz-shop.ini
 
 # Behind the HTTPS proxy: treat X-Forwarded-Proto: https as a secure request
 COPY config/apache-https-proxy.conf /etc/apache2/conf-available/https-proxy.conf
