@@ -1,15 +1,12 @@
 {
-  "name": "tests",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "name": "u-cioci-masali-e2e",
+  "private": true,
+  "description": "Playwright E2E tests for the W4 scenario. Run with npm test.",
   "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
   "devDependencies": {
     "@playwright/test": "1.64.1"
   }
