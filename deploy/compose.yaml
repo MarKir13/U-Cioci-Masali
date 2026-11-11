@@ -48,6 +48,18 @@ services:
       ADMIN_PASSWD: ${ADMIN_PASSWORD}
     volumes:
       - shop-data:/var/www/html
+    # Healthy once Apache answers. The image starts Apache only after the install and our
+    # post-install scripts, so this means the shop is ready. Plain HTTP here gets PrestaShop's
+    # 302 to HTTPS, and curl -f fails only on 4xx/5xx. Failures during start_period (the first
+    # install) do not count. `docker compose ps` shows the status, and `up --wait` waits for it.
+    # Every check is a line in the shop's access log: every 5 s while starting, then every 30 s.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10m
+      start_interval: 5s
 
   # Catches every e-mail the shop sends (SMTP mailpit:1025, inside the Compose network only).
   # Read them at http://localhost:8025 (MAILPIT_PORT); the port is bound to this machine only.
