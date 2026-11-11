@@ -21,6 +21,8 @@ pip install -r requirements.txt
 python -m scraper --help
 python -m scraper crawl                                         # full run into ../scraper-results/ (resumable)
 python -m scraper crawl --limit 5                               # test run: at most 5 new pages per stage
+python -m scraper images                                        # download and fit the product images (resumable)
+python -m scraper images --limit 5                              # test run: at most 5 new images
 python -m scraper fetch /8-kosmetyki                            # download one page, print status and size
 python -m scraper fetch /8-kosmetyki -o tests/fixtures/x.html   # save it, e.g. as a test fixture
 python -m scraper schema                                        # write ../scraper-results/schema.json
@@ -77,6 +79,40 @@ Every downloaded category, listing and product page is also saved, gzipped, in `
 about 40 KB per page, so about 90 MB for a full run). Pages found there are not downloaded again, so after a parser fix you can delete
 `products.jsonl` and rebuild it without the network. Use `--no-cache` to turn this off, and delete the folder to
 download fresh pages.
+
+## Images
+
+`python -m scraper images` (run after `crawl`) downloads every image listed in `products.jsonl` and fits it to the
+store's limits ([scraper/images.py](scraper/images.py)). The source URLs are the `product_main_2x` size (1440 px), taken
+from the product pages by the crawl. Images are fetched through the same polite `HttpClient` as pages.
+
+Each image is saved as `scraper-results/images/<product id>-<number>.jpg` (`images/` is in `.gitignore`: the full set
+goes to a GitHub Release). Its path, relative to `scraper-results/`, is written to `local_path` of the image in
+`products.jsonl`.
+
+| Rule | Value |
+|---|---|
+| Longer side | 800-1600 px. A larger picture is scaled down to 1600; a picture is never enlarged |
+| Format | JPEG. Transparent areas become white |
+| Size | At most 300 000 bytes. The JPEG quality is lowered from 90 to 40 (binary search) until the file fits; if quality 40 is still too big, the picture is shrunk in 10% steps, but not below 800 px |
+
+A source image is not saved and is reported (a warning in the log, a line in the final summary and an entry in
+`scraper-results/image_problems.json`) when:
+
+- its longer side is below 800 px (`TooSmallImage`),
+- it cannot be read, e.g. the download was cut off or the server sent HTML (`CorruptImage`),
+- it cannot get under 300 KB even at 800 px and quality 40 (`TooLargeImage`).
+
+`image_problems.json` is also the list of URLs a later run does not ask for again, since the same bytes would fail
+again. Download errors (HTTP error, network error) are not remembered, so they are tried again. At the end the log
+lists products that have no usable image at all, because the project needs at least one for each product.
+
+Stopping and resuming works like the crawl: a file is written under its final name only when complete, so an image
+that is on disk is skipped, and `products.jsonl` is rewritten (to a `.tmp` file, then renamed) every 50 downloaded
+images and on Ctrl+C. To fetch an image again, delete its file. Do not run `crawl` and `images` at the same time:
+both write `products.jsonl`.
+
+Expect about one image per second (`--delay`), so the whole set takes roughly an hour.
 
 ## Politeness
 
@@ -156,6 +192,7 @@ with `REMOVED` before committing a new fixture.
 | `scraper/config.py` | Base URL, User-Agent, delay, timeouts |
 | `scraper/http_client.py` | Polite HTTP client |
 | `scraper/crawl.py` | Full run: stages, saving and resuming, page cache |
+| `scraper/images.py` | Image download, resizing and recompression (Pillow), `local_path` |
 | `scraper/logging_config.py` | Logging to the console and `scraper.log` |
 | `scraper/models.py` | Schema of the results and validation of records |
 | `scraper/parsers.py` | Parsers of the sitemap, category, listing and product pages (no network) |
