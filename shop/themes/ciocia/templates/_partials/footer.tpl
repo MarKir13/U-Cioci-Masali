@@ -40,3 +40,5 @@
     {/block}
   </div>
 </div>
+
+{include file='_partials/cookie-notice.tpl'}
