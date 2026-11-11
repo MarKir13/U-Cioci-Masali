@@ -29,6 +29,99 @@
   tablet.addEventListener('change', placeHeaderIcons);
 })();
 
+/*
+ * Desktop (992 px+): the header sticks to the top (CSS). After 100 px of scroll, .is-compact folds
+ * away the top bar and the category row, leaving logo, search and cart; at 60 px or less they come
+ * back. The gap between the two values stops flicker on slow scroll.
+ * CSS cannot animate to or from height: auto, so this script measures each folding row and passes
+ * its height as --ciocia-row-height. It also sets on <html>:
+ *   --ciocia-header-collapsed: how much shorter the compact header is. The margin under the header
+ *     grows by this much while the rows shrink, so the page below does not move.
+ *   --ciocia-header-height: the header's height now, for scroll-margin on focused fields.
+ *   --ciocia-header-compact-height: for other sticky elements, such as the checkout summary.
+ */
+(function () {
+  var header = document.getElementById('header');
+  if (!header) return;
+  var root = document.documentElement;
+  var desktop = window.matchMedia('(min-width: 992px)');
+  var rows = Array.from(header.querySelectorAll('.header-banner, .ciocia-topbar, .ciocia-desktop-navigation'));
+  var COLLAPSE_AFTER = 100;
+  var EXPAND_AT = 60;
+  var fullHeight = 0;
+  var compactHeight = 0;
+  var scheduled = false;
+
+  function setCompact(compact) {
+    header.classList.toggle('is-compact', compact);
+    if (desktop.matches) root.style.setProperty('--ciocia-header-height', (compact ? compactHeight : fullHeight) + 'px');
+  }
+
+  function measure() {
+    if (!desktop.matches) {
+      rows.forEach(function (row) { row.style.removeProperty('--ciocia-row-height'); });
+      ['--ciocia-header-height', '--ciocia-header-compact-height', '--ciocia-header-collapsed']
+        .forEach(function (name) { root.style.removeProperty(name); });
+      return;
+    }
+    // .is-measuring turns transitions off and gives the rows their natural height. Classes change
+    // back and forth within one task, so the browser lays the states out but never paints them.
+    var compact = header.classList.contains('is-compact');
+    header.classList.add('is-measuring');
+    // getBoundingClientRect, not offsetHeight: heights such as 25.06 px must not be rounded.
+    function height(el) { return el.getBoundingClientRect().height; }
+    header.classList.remove('is-compact');
+    fullHeight = height(header);
+    var rowHeights = rows.map(height);
+    header.classList.add('is-compact');
+    compactHeight = height(header);
+    header.classList.toggle('is-compact', compact);
+
+    rows.forEach(function (row, i) { row.style.setProperty('--ciocia-row-height', rowHeights[i] + 'px'); });
+    root.style.setProperty('--ciocia-header-compact-height', compactHeight + 'px');
+    root.style.setProperty('--ciocia-header-collapsed', (fullHeight - compactHeight) + 'px');
+    setCompact(compact);
+    // Apply the new values while transitions are still off, so nothing animates from the old ones.
+    height(header);
+    header.classList.remove('is-measuring');
+    // Settle the normal state now too. Otherwise the next fold would start from the measuring
+    // state, where rows have height: auto, which cannot animate: rows would jump, the margin not.
+    height(header);
+  }
+
+  function update() {
+    scheduled = false;
+    var y = window.scrollY;
+    if (!desktop.matches || y <= EXPAND_AT) {
+      setCompact(false);
+    } else if (y > COLLAPSE_AFTER && !rows.some(function (row) { return row.contains(document.activeElement); })) {
+      // Do not hide a row while keyboard focus is inside it.
+      setCompact(true);
+    }
+  }
+
+  function scheduleUpdate() {
+    if (scheduled) return;
+    scheduled = true;
+    window.requestAnimationFrame(update);
+  }
+
+  window.addEventListener('scroll', scheduleUpdate, { passive: true });
+  // Focus leaving the top bar or the category row may let the header collapse now.
+  header.addEventListener('focusout', scheduleUpdate);
+  desktop.addEventListener('change', function () {
+    measure();
+    update();
+  });
+  // Watch the row contents, not the header: the header itself changes size while it animates.
+  // Fires once at start and again when fonts load, the menu wraps or the width changes.
+  var observer = new ResizeObserver(measure);
+  header.querySelectorAll('.header-banner > *, .ciocia-topbar > .container, .ciocia-header-layout, .ciocia-desktop-navigation > .container')
+    .forEach(function (el) { observer.observe(el); });
+  measure();
+  update();
+})();
+
 /* Keep Classic's responsive module relocation; own the mobile drawer interaction. */
 document.addEventListener('DOMContentLoaded', function () {
   var toggle = document.getElementById('menu-icon');
