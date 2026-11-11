@@ -30,6 +30,7 @@
   --ciocia-surface-light: #fffaf6;
   --ciocia-gold: #f9d28f;
   --ciocia-primary: #5f0602;
+  --ciocia-primary-hover: #7a1006;
   --ciocia-primary-dark: #2c0001;
   --ciocia-secondary: #6c757d;
   --ciocia-secondary-dark: #5c636a;
@@ -1916,7 +1917,7 @@ body#checkout #footer:has(> .ciocia-trust) {
 
 .ciocia-cookie__btn--primary:hover,
 .ciocia-cookie__btn--primary:focus-visible {
-  background: #7a1006;
+  background: var(--ciocia-primary-hover);
 }
 
 .ciocia-cookie__btn--ghost {
