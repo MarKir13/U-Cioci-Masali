@@ -16,7 +16,8 @@ $settings = require getenv('SHOP_SETTINGS') ?: '/opt/ciocia/config/shop-settings
 
 // CMS pages in footer order: link_rewrite => [title, meta description].
 // The page text is in cms/<link_rewrite>.html. {{name}} placeholders are filled in from the settings
-// (see placeholders() below).
+// (see placeholders() below), {{link:<link_rewrite>}} becomes a link to that page with its title as
+// the text (see cmsLinks()).
 const CMS_PAGES = [
     'o-sklepie' => ['O sklepie', 'Kim jesteśmy i jakie produkty z Indii znajdziesz w naszym sklepie.'],
     'regulamin' => ['Regulamin', 'Zasady składania zamówień, płatności, dostawy, zwrotów i reklamacji.'],
@@ -73,8 +74,9 @@ const FORM_TEXTS = [
     // Customer data privacy (module ps_dataprivacy). The installer leaves it in English.
     'CUSTPRIV_MSG_AUTH' => 'Twoje dane osobowe wykorzystujemy do realizacji zamówień i odpowiedzi na pytania. '
         . 'W każdej chwili możesz je poprawić lub usunąć. Szczegóły znajdziesz w polityce prywatności.',
-    // Newsletter (module ps_emailsubscription). The installer's text points to the deleted legal notice page.
-    'NW_CONDITIONS' => 'Możesz zrezygnować w każdej chwili. Link do wypisania się znajdziesz w każdym e-mailu z newslettera.',
+    // Newsletter (module ps_emailsubscription): under the form in the footer and next to the checkbox in
+    // registration. The installer's text points to the deleted legal notice page.
+    'NW_CONDITIONS' => 'Wypiszesz się w każdej chwili — link znajdziesz w stopce każdego maila.',
 ];
 
 function setStoreDetails(array $shop): void
@@ -172,11 +174,28 @@ function price(float $amount): string
     return number_format($amount, $decimals, ',', '') . ' zł';
 }
 
+/** Values for the {{link:<link_rewrite>}} placeholders: a link to that CMS page, with its title as the text. */
+function cmsLinks(array $cmsIds): array
+{
+    $link = Context::getContext()->link;
+    $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+    $links = [];
+    foreach ($cmsIds as $linkRewrite => $id) {
+        // Only the path is stored, without the domain, so the links keep working when the shop runs under
+        // another address (Stage 2 cluster).
+        $url = parse_url($link->getCMSLink($id, null, null, $idLang));
+        $href = $url['path'] . (isset($url['query']) ? '?' . $url['query'] : '');
+        $links["{{link:$linkRewrite}}"] = '<a href="' . e($href) . '">' . e(CMS_PAGES[$linkRewrite][0]) . '</a>';
+    }
+
+    return $links;
+}
+
 function pageContent(string $linkRewrite, array $placeholders): string
 {
     $file = __DIR__ . '/cms/' . $linkRewrite . '.html';
     $html = strtr(file_get_contents($file), $placeholders);
-    if (preg_match('/\{\{\w+\}\}/', $html, $unknown)) {
+    if (preg_match('/\{\{[\w:-]+\}\}/', $html, $unknown)) {
         throw new RuntimeException("Unknown placeholder {$unknown[0]} in $file");
     }
 
@@ -195,27 +214,45 @@ function findCmsPageId(string $linkRewrite): int
 /** Creates or updates the CMS pages. Returns their IDs by link_rewrite. */
 function saveCmsPages(array $placeholders): array
 {
+    // Pages link to each other ({{link:...}}) and a link needs the page ID, so missing pages are created
+    // first without text, and then every page gets its text.
     $ids = [];
-    $position = 0;
-    foreach (CMS_PAGES as $linkRewrite => [$title, $description]) {
-        $id = findCmsPageId($linkRewrite);
-        $page = new CMS($id ?: null);
-        $page->id_cms_category = 1; // root CMS category
-        $page->active = true;
-        $page->indexation = false; // noindex: the shop is never meant to be public
-        $page->meta_title = forAllLanguages($title);
-        $page->meta_description = forAllLanguages($description);
-        $page->link_rewrite = forAllLanguages($linkRewrite);
-        $page->content = forAllLanguages(pageContent($linkRewrite, $placeholders));
-        mustSave($id ? $page->update() : $page->add(), "CMS page $linkRewrite");
+    foreach (array_keys(CMS_PAGES) as $linkRewrite) {
+        $ids[$linkRewrite] = findCmsPageId($linkRewrite);
+        if (!$ids[$linkRewrite]) {
+            $ids[$linkRewrite] = saveCmsPage(null, $linkRewrite, '');
+            say("Created CMS page $linkRewrite (id {$ids[$linkRewrite]})");
+        }
+    }
 
-        // add() always puts a new page last; set the order explicitly (used by the sitemap).
-        Db::getInstance()->update('cms', ['position' => $position++], 'id_cms = ' . (int) $page->id);
-        $ids[$linkRewrite] = (int) $page->id;
-        say(($id ? 'Updated' : 'Created') . " CMS page \"$title\" (id {$page->id})");
+    $placeholders += cmsLinks($ids);
+    foreach ($ids as $linkRewrite => $id) {
+        saveCmsPage($id, $linkRewrite, pageContent($linkRewrite, $placeholders));
+        say('Saved CMS page "' . CMS_PAGES[$linkRewrite][0] . "\" (id $id)");
     }
 
     return $ids;
+}
+
+/** Saves one page of CMS_PAGES; a new page when $id is null. Returns the page ID. */
+function saveCmsPage(?int $id, string $linkRewrite, string $content): int
+{
+    [$title, $description] = CMS_PAGES[$linkRewrite];
+    $page = new CMS($id);
+    $page->id_cms_category = 1; // root CMS category
+    $page->active = true;
+    $page->indexation = false; // noindex: the shop is never meant to be public
+    $page->meta_title = forAllLanguages($title);
+    $page->meta_description = forAllLanguages($description);
+    $page->link_rewrite = forAllLanguages($linkRewrite);
+    $page->content = forAllLanguages($content);
+    mustSave($id ? $page->update() : $page->add(), "CMS page $linkRewrite");
+
+    // add() always puts a new page last; set the order of CMS_PAGES explicitly (used by the sitemap).
+    $position = array_search($linkRewrite, array_keys(CMS_PAGES), true);
+    Db::getInstance()->update('cms', ['position' => $position], 'id_cms = ' . (int) $page->id);
+
+    return (int) $page->id;
 }
 
 function deleteDemoCmsPages(): void
