@@ -85,7 +85,7 @@ the database:
 
 - `shop-content.php` sets the store details, the CMS pages (O sklepie, Regulamin, Polityka
   prywatności, Dostawa, Formy płatności, Zwrot towaru), the footer links, and switches off the demo
-  modules. Page text is in `shop/scripts/setup/cms/`.
+  modules. Page text is in `shop/scripts/setup/cms/`. It also sets up the home page banner (see below).
 - `configure-shop.php` sets up the shop for Poland: PLN (plus EUR in the selector, as on the source
   shop), Poland as the only country, Polish VAT groups (23, 8, 5, 0 %), two carriers priced by weight
   up to 50 kg, free delivery from 2000 PLN gross, bank transfer and cash on delivery (no cheque),
@@ -111,6 +111,30 @@ rewrites the `/tmp/...` path. Design notes: [ADR 0005](docs/adr/0005-shop-data-s
 > **Install made before these scripts existed** (prices in EUR, demo carriers, English demo pages):
 > run the commands above once. `configure-shop.php` also imports the Polish VAT groups that the old
 > install is missing.
+
+### How to change the home page banner
+
+The banner at the top of the home page (image slider, heading, title, text and two buttons, as on
+magiczne-indie.pl) is set by `home_banner` in
+[`shop/config/shop-settings.php`](shop/config/shop-settings.php):
+
+- **Text:** edit `eyebrow` (small line above the title), `title` or `lead`.
+- **Buttons:** edit `label` or `link` of `button_primary` (filled) and `button_secondary` (outline).
+  `link` is a PrestaShop page name, such as `'new-products'` or `'prices-drop'`, or a category ID
+  written as a number, such as `'link' => 12`.
+- **Slides:** put the image (JPEG or WebP, at most 1600 px on the longer side and 300 KB) in
+  `shop/themes/ciocia/assets/img/home-banner/` and list it under `slides` with a Polish `alt` text.
+  Removing a line removes that slide.
+
+Then rebuild and run `20-shop-content.sh`, as above (the first two commands are enough). A wrong page
+name or category ID stops the script with `[setup] FAILED` and names the value.
+
+**After the data import:** the categories Kosmetyki and Suplementy do not exist until the products are
+imported, so the buttons lead to "Nowe produkty" and "Promocje" for now. Once they exist, find their IDs
+in the admin panel (Katalog > Kategorie, column ID) and set them as the buttons' `link`.
+
+The layout is in `shop/themes/ciocia/modules/ps_imageslider/views/templates/hook/slider.tpl` and in the
+"Home page banner" section of `custom.css`.
 
 ## Continuous integration
 
