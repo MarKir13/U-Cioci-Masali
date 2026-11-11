@@ -15,6 +15,7 @@ Results of running the checks on the current code (2026-11-09 unless noted):
 | ruff and pytest | Run by `ci.yml` on every PR since CI-1 (#22) | D5 met while no PR merges red |
 | hadolint 2.15.1 on both Dockerfiles, shellcheck 0.11.0 on all 4 tracked `*.sh`, `docker compose config`, ESLint on the theme JS | Clean (2026-11-10). The only finding, `DL3018` (unpinned `openssl` in `deploy/proxy/Dockerfile`), is silenced on that line with the reason | Run by `infra-lint` on every PR since #42 |
 | Clean install: `up --build --wait`, then `.github/scripts/smoke-test.sh` | Ready in 49–75 s locally (installer 33 s, post-install scripts 6 s); all checks pass (2026-11-11) | Run by `smoke` once CI-4 merges. A failing `30-configure-shop.sh` still gives a healthy container (restart, then "already installed"), so only the smoke test's configuration check catches it |
+| Both images built for `linux/amd64` with `--provenance=false`, then run with `up --no-build` | Shop image 2.13 GB locally, proxy 83 MB. No `.env`, keys or product images inside, only public CA bundles. Smoke test passes on them (2026-11-11) | Pushed and verified by `publish.yml` once CI-5 merges. GHCR creates new packages as private: the owner makes both public after the first push |
 | Repository size | About 0.6 MB packed; largest file 0.34 MB | Far below the limits |
 | `main` branch protection | Ruleset active since 2026-11-09: PR with 1 approval, `ci-gate` required, no force pushes or deletion | After CI-2 merges, also require `ai-log` and dismiss stale approvals on new commits |
 | PR #36 | Merged by its author without approval and with a failing pipeline; reverted by #38 | Both commits stay in `main`'s history. The content comes back through #35 and a new reviewed PR |
@@ -52,7 +53,7 @@ Times are estimates until the first real runs.
 | `ci.yml` | Every PR, push to `main` | `scraper`, `repo-hygiene`, `infra-lint`, `changes`, `smoke` (only when `shop/`, `deploy/` or the smoke test changed), `ci-gate` | D5, W1, W3 | 2 min, about 8 with `smoke` |
 | `pr-policy.yml` | PR opened, updated or relabelled | `ai-log` | D6 | Under 1 min |
 | `secret-scan.yml` | Nightly, manual | `all-branches`: gitleaks and repository limits over every branch | W1 | 1 min |
-| `publish.yml` | Push to `main`, tag `etap*` | Build and push the image, create a release on tags | Stage 2 | 3 min |
+| `publish.yml` | Push to `main`, tag `etap*`, manual; PRs changing `shop/` or `deploy/proxy/` (build only) | `build` (shop and proxy images), `verify` (main only); a release on tags comes with CI-7 | Stage 2 | 3 min, about 5 with `verify` |
 | `e2e.yml` | Push to `main`, nightly, manual | Stack, seed subset, Playwright, reports | W4 | 15 min |
 | `acceptance.yml` | Manual, before tagging | Clean clone, full data, all lecturer metrics | W3, W4, D1 | 45 min |
 
@@ -99,7 +100,7 @@ clones. Any branch cut from `feature/scraper-setup` must be rebased onto `main` 
 | 2 | CI-2 Repository hygiene and AI log | PR #4 tokens removed (done) |
 | 3 | CI-3 Docker, shell and compose lint | Done in #42 |
 | 4 | CI-4 Image build and smoke test | CI-3 (done) |
-| 5 | CI-5 Publish image to GHCR | CI-4 |
+| 5 | CI-5 Publish images to GHCR | CI-4. Stacked on CI-4 (#57), because both change `compose.yaml`, the README CI section and the docs |
 | 6 | CI-6 E2E in CI | CI-5, plus the gaps below |
 | 7 | CI-7 Release for `etap1` | CI-5 |
 | 8 | CI-8 Acceptance run | CI-6 |
@@ -309,28 +310,33 @@ Prove on every relevant PR that the shop installs from scratch. A clean-clone fa
 - The job finishes in under 10 minutes
 ```
 
-### [CI 5/8] CD: publish the amd64 shop image to GHCR
+### [CI 5/8] CD: publish the amd64 shop and proxy images to GHCR
 
 ```md
 ## Goal
-Produce a versioned image that Stage 2 can pull on the Swarm cluster.
+Produce versioned images that Stage 2 can pull on the Swarm cluster. `docker stack deploy` ignores `build:`, so
+both the shop and the proxy need an image in a registry.
 
 ## Tasks
-- [ ] Add `.github/workflows/publish.yml`, on push to `main` and tags `etap*`, with `packages: write` and logging in
-      through `GITHUB_TOKEN`
-- [ ] Use `docker/setup-buildx-action@v4`, `docker/login-action@v4`, `docker/metadata-action@v6`,
+- [ ] Add `.github/workflows/publish.yml`, on push to `main`, tags `etap*` and by hand, with `packages: write` and
+      logging in through `GITHUB_TOKEN`. Pull requests that change `shop/` or `deploy/proxy/` only build
+- [ ] One `build` job as a matrix over `shop` (`shop/`) and `proxy` (`deploy/proxy/`), with
+      `docker/setup-buildx-action@v4`, `docker/login-action@v4`, `docker/metadata-action@v6`,
       `docker/build-push-action@v7`
-- [ ] Hard-code the lowercase name `ghcr.io/markir13/u-cioci-masali/shop`, since GHCR rejects uppercase
-- [ ] Build with `platforms: linux/amd64`
-- [ ] Tags: `main`, `sha-<short>`, and the git tag name
-- [ ] `deploy/compose.yaml`: `image: ${SHOP_IMAGE:-ciocia-shop:local}` and `platform: linux/amd64`
-- [ ] Set the package to public, so cluster nodes need no registry credentials
+- [ ] Hard-code the lowercase names `ghcr.io/markir13/u-cioci-masali/shop` and `.../proxy`, since GHCR rejects uppercase
+- [ ] Build with `platforms: linux/amd64` and `provenance: false` (one plain image per tag)
+- [ ] Tags: `sha-<7 characters>`, `main`, and the git tag name; no `latest`
+- [ ] `verify` job, on `main` only: pull both `sha-` images without logging in, check `linux/amd64`, start the stack
+      from them with `--no-build` and run the smoke test
+- [ ] `deploy/compose.yaml`: `image: ${SHOP_IMAGE:-ciocia-shop:local}` and `${PROXY_IMAGE:-ciocia-proxy:local}`.
+      No `platform:`, so local builds on Apple Silicon stay native
+- [ ] Set both packages to public, so cluster nodes need no registry credentials
 - [ ] Write an ADR on how images are built and distributed
 
 ## Acceptance criteria
-- `docker pull ghcr.io/markir13/u-cioci-masali/shop:main` works while logged out
-- `docker image inspect` reports `amd64`
-- The image holds no `.env`, product data or product images
+- `docker pull ghcr.io/markir13/u-cioci-masali/shop:main` and `.../proxy:main` work while logged out
+- `docker image inspect` reports `linux/amd64`
+- The images hold no `.env`, keys, product data or product images
 ```
 
 ### [CI 6/8] CI: run Playwright E2E against the full stack

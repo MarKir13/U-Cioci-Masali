@@ -114,13 +114,14 @@ rewrites the `/tmp/...` path. Design notes: [ADR 0005](docs/adr/0005-shop-data-s
 
 ## Continuous integration
 
-GitHub Actions runs three workflows:
+GitHub Actions runs four workflows:
 
 | Workflow | When | What it checks |
 |---|---|---|
 | [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and the theme's JavaScript. `smoke`: a clean install of the shop, only when `changes` finds a change in `shop/`, `deploy/` or the smoke test itself. `ci-gate`: passes only if all jobs passed or were skipped |
 | [`pr-policy.yml`](.github/workflows/pr-policy.yml) | A pull request is opened, updated or relabelled | `ai-log`: a PR labelled `ai-assisted` must add or update a row in `docs/AI_LOG.md` |
 | [`secret-scan.yml`](.github/workflows/secret-scan.yml) | Nightly, or by hand from the Actions tab | Secrets and repository limits over every branch, the way the lecturer measures it |
+| [`publish.yml`](.github/workflows/publish.yml) | Every push to `main`, tags `etap*`, by hand; pull requests that change `shop/` or `deploy/proxy/` | `build`: the shop and proxy images for `linux/amd64`, pushed to GHCR except on pull requests. `verify` (on `main` only): pulls them without logging in, checks they are `amd64` and runs the smoke test on them. Not a required check |
 
 A pull request must have passing `ci-gate` and `ai-log` checks before it is merged.
 
@@ -168,6 +169,35 @@ The script checks, through the HTTPS proxy:
 
 It does not need product data, so it says nothing about product pages, the cart or checkout. On a failure, the job
 prints the container status and logs.
+
+### Published images
+
+`publish.yml` builds the two images on GitHub's `amd64` runners, which matches the Stage 2 cluster, and pushes them
+to GitHub's registry (GHCR). Both packages are public, so they can be pulled without logging in. The reasons are in
+[ADR 0006](docs/adr/0006-image-build-and-distribution.md).
+
+| Image | Built from |
+|---|---|
+| `ghcr.io/markir13/u-cioci-masali/shop` | `shop/` |
+| `ghcr.io/markir13/u-cioci-masali/proxy` | `deploy/proxy/` |
+
+| Tag | Points to |
+|---|---|
+| `sha-<7 characters of the commit>` | The image built from that commit of `main`; never moves |
+| `main` | The newest `main` |
+| `etap1` | The version handed in, once the tag `etap1` exists |
+
+There is no `latest`. To run the published images instead of building, set `SHOP_IMAGE` and `PROXY_IMAGE` (in
+`deploy/.env`, or in front of the command) and start without `--build`:
+
+```sh
+SHOP_IMAGE=ghcr.io/markir13/u-cioci-masali/shop:main PROXY_IMAGE=ghcr.io/markir13/u-cioci-masali/proxy:main \
+  docker compose -f deploy/compose.yaml up -d --no-build
+```
+
+Without these variables, nothing changes: `up -d --build` builds both images locally as `ciocia-shop:local` and
+`ciocia-proxy:local`. Setting them to your own names, such as `ciocia-shop:test`, also keeps a second local stack (with
+`-p` and other ports) from replacing the images of your main one.
 
 To run the same checks locally, install the tools once. The linters run in Docker; ESLint needs Node.js 20.19+, 22.13+
 or 24+:
