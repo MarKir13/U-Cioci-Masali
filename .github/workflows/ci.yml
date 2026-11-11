@@ -72,15 +72,15 @@ jobs:
           test ! -s "$RUNNER_TEMP/compose-output.txt"
       # PHP 8.1 checks one file per `php -l`, so xargs -n1 starts one container per file. php exits
       # with 255 on a syntax error, which makes xargs stop at the first broken file and fail the step.
-      # Passes while shop/modules/ has no PHP files.
+      # Covers every PHP file under shop/ (modules, setup scripts, settings); git's '*' also matches '/'.
       - name: PHP syntax (php -l)
         if: ${{ !cancelled() }}
         run: |
-          if [ -z "$(git ls-files 'shop/modules/*.php')" ]; then
-            echo "No PHP files in shop/modules/"
+          if [ -z "$(git ls-files 'shop/*.php')" ]; then
+            echo "No PHP files in shop/"
             exit 0
           fi
-          git ls-files -z 'shop/modules/*.php' |
+          git ls-files -z 'shop/*.php' |
             xargs -0 -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l
       - uses: actions/setup-node@v7
         if: ${{ !cancelled() }}

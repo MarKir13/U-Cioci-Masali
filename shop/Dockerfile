@@ -15,5 +15,11 @@ COPY --chown=www-data:www-data modules/ /opt/ciocia/modules/
 COPY --chmod=755 scripts/sync-code.sh /tmp/pre-install-scripts/10-sync-code.sh
 COPY --chmod=755 scripts/sync-code.sh /tmp/init-scripts/10-sync-code.sh
 
-# Runs once after the automatic install: enables our child theme
+# Shop configuration (currency, carriers, payments, e-mail): values and the PHP script applying them.
+# Kept in /opt/ciocia so the script can be run again by hand on a running shop.
+COPY --chown=www-data:www-data config/shop-settings.php /opt/ciocia/config/shop-settings.php
+COPY --chown=www-data:www-data scripts/setup/ /opt/ciocia/scripts/setup/
+
+# Run once after the automatic install, in name order: 10 enables our child theme,
+# 30 configures the shop with scripts/setup/configure-shop.php
 COPY --chmod=755 scripts/post-install/ /tmp/post-install-scripts/

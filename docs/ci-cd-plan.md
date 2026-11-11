@@ -264,7 +264,7 @@ should stay clean.
       output: Compose only warns about an unknown variable
 - [ ] ESLint on `shop/themes/ciocia/assets/js/`, pinned in a root `package.json` and `package-lock.json`, with a root
       `eslint.config.mjs`. Add `tests/` once the Playwright suite exists
-- [ ] `php -l` (Docker image `php:8.1.34-cli`) on PHP files in `shop/modules/`, passing while there are none
+- [ ] `php -l` (Docker image `php:8.1.34-cli`) on PHP files in `shop/` (modules, setup scripts, settings)
 - [ ] Fix or silence the current findings: silence only single lines, with the reason above them
 - [ ] Add `infra-lint` to the `needs` of `ci-gate`
 - [ ] ADR on the CI checks and merge policy
