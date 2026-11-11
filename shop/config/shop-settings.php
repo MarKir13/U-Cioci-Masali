@@ -13,6 +13,7 @@
 
 return [
     // Currencies. PLN is the default; EUR stays in the selector, as on magiczne-indie.pl.
+    // Both payment methods accept every currency listed here.
     'currency_default' => 'PLN',
     'currencies_extra' => [
         'EUR' => 0.23, // fixed exchange rate: 1 PLN = 0.23 EUR (no live rate download)

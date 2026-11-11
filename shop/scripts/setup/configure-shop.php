@@ -251,7 +251,8 @@ function configureShipping(array $settings)
 }
 
 /**
- * Bank transfer and cash on delivery, for the default currency, country and our carriers.
+ * Bank transfer and cash on delivery, for every active currency (PLN and EUR, so checkout works
+ * after switching currency in the header), the default country and our carriers.
  * Cheque is uninstalled: it is not used in Poland.
  */
 function configurePayments(array $settings, array $carrierReferences)
@@ -268,7 +269,10 @@ function configurePayments(array $settings, array $carrierReferences)
 
     $db = Db::getInstance();
     $idShop = (int) Configuration::get('PS_SHOP_DEFAULT');
-    $idCurrency = (int) Currency::getIdByIsoCode($settings['currency_default'], 0, true);
+    $currencyIds = [];
+    foreach (array_merge([$settings['currency_default']], array_keys($settings['currencies_extra'])) as $iso) {
+        $currencyIds[] = (int) Currency::getIdByIsoCode($iso, 0, true);
+    }
     $idCountry = (int) Country::getByIso($settings['country_default']);
 
     foreach (['ps_wirepayment', 'ps_cashondelivery'] as $name) {
@@ -281,7 +285,9 @@ function configurePayments(array $settings, array $carrierReferences)
         $where = 'id_module = ' . $idModule . ' AND id_shop = ' . $idShop;
 
         $db->delete('module_currency', $where);
-        $db->insert('module_currency', ['id_module' => $idModule, 'id_shop' => $idShop, 'id_currency' => $idCurrency]);
+        foreach ($currencyIds as $idCurrency) {
+            $db->insert('module_currency', ['id_module' => $idModule, 'id_shop' => $idShop, 'id_currency' => $idCurrency]);
+        }
 
         $db->delete('module_country', $where);
         $db->insert('module_country', ['id_module' => $idModule, 'id_shop' => $idShop, 'id_country' => $idCountry]);
