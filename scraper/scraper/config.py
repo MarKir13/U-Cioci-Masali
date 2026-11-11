@@ -45,3 +45,18 @@ SITEMAP_INDEX = "/1_index_sitemap.xml"
 # Na prezent and Nowości: products never have them as their default category, so they appear neither
 # in the product's data nor in its breadcrumb. Their listings are walked to the last page.
 FULL_LISTING_CATEGORY_IDS = (458, 50)
+
+# Product images (W2/W3: longer side 800-1600 px, JPEG or WebP, at most 300 KB per file)
+# Not committed: the whole set goes to a GitHub Release (see .gitignore)
+IMAGES_DIR = RESULTS_DIR / "images"
+# Source URLs that can never give a usable file (too small, corrupted), so a resumed run does not ask again
+IMAGE_PROBLEMS_FILE = RESULTS_DIR / "image_problems.json"
+IMAGE_MIN_SIDE = 800
+IMAGE_MAX_SIDE = 1600
+# 300 KB counted as 300 000 bytes: the stricter reading of "KB", so no file is over the limit either way
+IMAGE_MAX_BYTES = 300_000
+# JPEG quality is lowered from the first to the last value (searched in between) until the file fits
+IMAGE_QUALITY_START = 90
+IMAGE_QUALITY_MIN = 40
+# A picture that does not fit even at the lowest quality is shrunk by this factor, down to IMAGE_MIN_SIDE
+IMAGE_SHRINK_STEP = 0.9
