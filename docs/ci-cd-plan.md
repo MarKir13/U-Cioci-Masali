@@ -1,7 +1,7 @@
 # CI/CD plan
 
 Plan for the GitHub Actions pipeline, with issues ready to paste into GitHub. First measured on 2026-11-01 and
-2026-11-02; status updated on 2026-11-10.
+2026-11-02; status updated on 2026-11-11.
 
 ## Where we stand
 
@@ -13,7 +13,8 @@ Results of running the checks on the current code (2026-11-09 unless noted):
 | gitleaks on all branches | **2 findings**: `4330d00` on `feature/scraper-product-list-parser` and `feature/scraper-product-page-parser`, `8638e6e` on the second | PR #37 fails `repo-hygiene` and the nightly scan is red until both branches are rewritten or deleted |
 | gitleaks on PR #4 | The 12 findings in `d81f787` stayed off `main` (squash merge, branch deleted) | They remain only in GitHub's `refs/pull/4`, which clones do not fetch. Only GitHub Support can remove it |
 | ruff and pytest | Run by `ci.yml` on every PR since CI-1 (#22) | D5 met while no PR merges red |
-| hadolint 2.15.1 on both Dockerfiles, shellcheck 0.11.0 on all 4 tracked `*.sh`, `docker compose config`, ESLint on the theme JS | Clean (2026-11-10). The only finding, `DL3018` (unpinned `openssl` in `deploy/proxy/Dockerfile`), is silenced on that line with the reason | Run by `infra-lint` on every PR once CI-3 merges |
+| hadolint 2.15.1 on both Dockerfiles, shellcheck 0.11.0 on all 4 tracked `*.sh`, `docker compose config`, ESLint on the theme JS | Clean (2026-11-10). The only finding, `DL3018` (unpinned `openssl` in `deploy/proxy/Dockerfile`), is silenced on that line with the reason | Run by `infra-lint` on every PR since #42 |
+| Clean install: `up --build --wait`, then `.github/scripts/smoke-test.sh` | Ready in 49–75 s locally (installer 33 s, post-install scripts 6 s); all checks pass (2026-11-11) | Run by `smoke` once CI-4 merges. A failing `30-configure-shop.sh` still gives a healthy container (restart, then "already installed"), so only the smoke test's configuration check catches it |
 | Repository size | About 0.6 MB packed; largest file 0.34 MB | Far below the limits |
 | `main` branch protection | Ruleset active since 2026-11-09: PR with 1 approval, `ci-gate` required, no force pushes or deletion | After CI-2 merges, also require `ai-log` and dismiss stale approvals on new commits |
 | PR #36 | Merged by its author without approval and with a failing pipeline; reverted by #38 | Both commits stay in `main`'s history. The content comes back through #35 and a new reviewed PR |
@@ -48,7 +49,7 @@ Times are estimates until the first real runs.
 
 | Workflow | Trigger | Jobs | Covers | Time |
 |---|---|---|---|---|
-| `ci.yml` | Every PR, push to `main` | `scraper`, `repo-hygiene`, `infra-lint`, `smoke` (only when `shop/` or `deploy/` changed), `ci-gate` | D5, W1, W3 | 2 min, about 8 with `smoke` |
+| `ci.yml` | Every PR, push to `main` | `scraper`, `repo-hygiene`, `infra-lint`, `changes`, `smoke` (only when `shop/`, `deploy/` or the smoke test changed), `ci-gate` | D5, W1, W3 | 2 min, about 8 with `smoke` |
 | `pr-policy.yml` | PR opened, updated or relabelled | `ai-log` | D6 | Under 1 min |
 | `secret-scan.yml` | Nightly, manual | `all-branches`: gitleaks and repository limits over every branch | W1 | 1 min |
 | `publish.yml` | Push to `main`, tag `etap*` | Build and push the image, create a release on tags | Stage 2 | 3 min |
@@ -96,8 +97,8 @@ clones. Any branch cut from `feature/scraper-setup` must be rebased onto `main` 
 |---|---|---|
 | 1 | CI-1 Ruff and scraper tests | Done in #22. **This alone earns D5** |
 | 2 | CI-2 Repository hygiene and AI log | PR #4 tokens removed (done) |
-| 3 | CI-3 Docker, shell and compose lint | CI-1 (done). Stacked on CI-2 (#39), because both change the same lines of `ci.yml` and the docs |
-| 4 | CI-4 Image build and smoke test | CI-3 |
+| 3 | CI-3 Docker, shell and compose lint | Done in #42 |
+| 4 | CI-4 Image build and smoke test | CI-3 (done) |
 | 5 | CI-5 Publish image to GHCR | CI-4 |
 | 6 | CI-6 E2E in CI | CI-5, plus the gaps below |
 | 7 | CI-7 Release for `etap1` | CI-5 |
@@ -283,22 +284,28 @@ should stay clean.
 Prove on every relevant PR that the shop installs from scratch. A clean-clone failure means W3 is not passed.
 
 ## Tasks
-- [ ] `deploy/compose.yaml`: add a healthcheck to `shop` using `curl` (present in the image), with a `start_period` long
-      enough for the first install
-- [ ] Add a `changes` job that sets outputs from `git diff --name-only` for `shop/` and `deploy/`
-- [ ] Add a `smoke` job, run only when those paths changed:
+- [ ] `deploy/compose.yaml`: add a healthcheck to `shop` using `curl` (present in the image) against `localhost`
+      inside the container, with a `start_period` long enough for the first install
+- [ ] Add a `changes` job that sets an output from `git diff --name-only HEAD^1 HEAD` for `shop/`, `deploy/`,
+      `.github/workflows/ci.yml` and the smoke test script
+- [ ] Add `.github/scripts/smoke-test.sh`, runnable locally against any running shop, that checks through the proxy:
+  - [ ] HTTP answers 301 to HTTPS on the published port
+  - [ ] the home page answers 200 as UTF-8 HTML (one language installed, so no `/pl/` prefix)
+  - [ ] the page is in Polish (`lang="pl-PL"`) and uses the theme `ciocia`
+  - [ ] the header shows a free delivery threshold above 0, so the configuration script ran. A failing
+        `post-install/30-configure-shop.sh` does not stop the container: it restarts as "already installed"
+- [ ] Add a `smoke` job, run only when `changes` says so:
   - [ ] `cp deploy/.env.example deploy/.env`
   - [ ] `docker compose -f deploy/compose.yaml up -d --build --wait --wait-timeout 600`
-  - [ ] Assert the storefront returns 200 and is in Polish
-  - [ ] Assert the theme `ciocia` is active
-  - [ ] Print container logs when the job fails
+  - [ ] Run the smoke test script
+  - [ ] Print container status and logs when the job fails
   - [ ] Always run `down -v`
-- [ ] Update `ci-gate` so a skipped `smoke` counts as a pass (the current check already does) and add it to `needs`
-- [ ] When HTTPS lands: assert 301 from HTTP and 200 from HTTPS
+- [ ] Add `changes` and `smoke` to the `needs` of `ci-gate` (a skipped job already counts as a pass)
 
 ## Acceptance criteria
 - A PR that breaks `shop/Dockerfile` or `deploy/compose.yaml` fails `smoke`
-- A PR that changes only `docs/` skips it and `ci-gate` still passes
+- A PR that changes only `docs/` skips it and `ci-gate` still passes (shown on the next docs-only PR, since this one
+  changes `ci.yml`)
 - The job finishes in under 10 minutes
 ```
 
