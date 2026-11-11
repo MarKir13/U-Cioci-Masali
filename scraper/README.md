@@ -86,8 +86,9 @@ download fresh pages.
 store's limits ([scraper/images.py](scraper/images.py)). The source URLs are the `product_main_2x` size (1440 px), taken
 from the product pages by the crawl. Images are fetched through the same polite `HttpClient` as pages.
 
-Each image is saved as `scraper-results/images/<product id>-<number>.jpg` (`images/` is in `.gitignore`: the full set
-goes to a GitHub Release). Its path, relative to `scraper-results/`, is written to `local_path` of the image in
+Each image is saved as `scraper-results/images/<product id>-<image id>.jpg` (`images/` is in `.gitignore`: the full set
+goes to a GitHub Release). The image id is the number in the source URL (`/14452-product_main_2x/...`), so a file
+belongs to one source image even if the order of images in `products.jsonl` changes. Its path, relative to `scraper-results/`, is written to `local_path` of the image in
 `products.jsonl`.
 
 | Rule | Value |
@@ -100,12 +101,16 @@ A source image is not saved and is reported (a warning in the log, a line in the
 `scraper-results/image_problems.json`) when:
 
 - its longer side is below 800 px (`TooSmallImage`),
-- it cannot be read, e.g. the download was cut off or the server sent HTML (`CorruptImage`),
+- it was delivered as an image but cannot be read (`CorruptImage`),
 - it cannot get under 300 KB even at 800 px and quality 40 (`TooLargeImage`).
 
 `image_problems.json` is also the list of URLs a later run does not ask for again, since the same bytes would fail
-again. Download errors (HTTP error, network error) are not remembered, so they are tried again. At the end the log
+again. Download errors are not remembered, so they are tried again: an HTTP error, a network error, and a response
+whose `Content-Type` is not `image/*` (for example an HTML maintenance page with status 200). At the end the log
 lists products that have no usable image at all, because the project needs at least one for each product.
+
+The exit code is 1 if any download failed or any product has no usable image, so a script or CI step notices. A test
+run with `--limit` always exits with 0, because it leaves images for later on purpose.
 
 Stopping and resuming works like the crawl: a file is written under its final name only when complete, so an image
 that is on disk is skipped, and `products.jsonl` is rewritten (to a `.tmp` file, then renamed) every 50 downloaded

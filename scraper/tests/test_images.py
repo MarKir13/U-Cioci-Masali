@@ -159,8 +159,12 @@ def test_save_bytes_leaves_no_temporary_file(tmp_path):
 # ---------- ImageDownloader ----------
 
 
+IMAGE_IDS = {"a": 101, "b": 102, "c": 103}
+
+
 def url(name: str) -> str:
-    return f"{BASE}/{name}.jpg"
+    """Source URL in the shop's form; `name` is a letter standing for an image id."""
+    return f"{BASE}/{IMAGE_IDS[name]}-product_main_2x/{name}.jpg"
 
 
 def product(product_id: int, *names: str) -> dict:
@@ -172,7 +176,7 @@ def product(product_id: int, *names: str) -> dict:
 
 
 class FakeShop:
-    """Stands in for requests.Session: serves `files` (bytes), 404 for anything else."""
+    """Stands in for requests.Session: serves `files` (bytes, or (bytes, Content-Type)), 404 for anything else."""
 
     def __init__(self, files: dict):
         self.headers = {}
@@ -188,7 +192,11 @@ class FakeShop:
         data = self.files.get(target)
         if isinstance(data, BaseException):
             raise data
+        content_type = "image/jpeg"
+        if isinstance(data, tuple):  # (bytes, Content-Type)
+            data, content_type = data
         response.status_code = 404 if data is None else 200
+        response.headers["Content-Type"] = content_type
         response._content = data or b""
         return response
 
@@ -214,9 +222,9 @@ def test_images_are_saved_and_local_paths_filled_in(tmp_path):
 
     assert code == 0
     first, second = saved(results)
-    assert [i["local_path"] for i in first["images"]] == ["images/7-1.jpg", "images/7-2.jpg"]
-    assert second["images"][0]["local_path"] == "images/8-1.jpg"
-    for name in ("7-1.jpg", "7-2.jpg", "8-1.jpg"):
+    assert [i["local_path"] for i in first["images"]] == ["images/7-101.jpg", "images/7-102.jpg"]
+    assert second["images"][0]["local_path"] == "images/8-103.jpg"
+    for name in ("7-101.jpg", "7-102.jpg", "8-103.jpg"):
         data = (results / "images" / name).read_bytes()
         assert len(data) <= IMAGE_MAX_BYTES
         assert IMAGE_MIN_SIDE <= max(dimensions(data)) <= IMAGE_MAX_SIDE
@@ -231,7 +239,7 @@ def test_second_run_downloads_nothing(tmp_path):
 
     assert code == 0
     assert shop.calls == [f"{BASE}/robots.txt"]
-    assert saved(results)[0]["images"][0]["local_path"] == "images/7-1.jpg"
+    assert saved(results)[0]["images"][0]["local_path"] == "images/7-101.jpg"
 
 
 def test_run_after_an_interruption_continues_with_the_missing_images(tmp_path):
@@ -240,21 +248,21 @@ def test_run_after_an_interruption_continues_with_the_missing_images(tmp_path):
     products = [product(7, "a", "b")]
     # The first run is cut off after one image
     run_downloader(tmp_path, products, files, limit=1)
-    assert [i["local_path"] for i in saved(tmp_path / "results")[0]["images"]] == ["images/7-1.jpg", None]
+    assert [i["local_path"] for i in saved(tmp_path / "results")[0]["images"]] == ["images/7-101.jpg", None]
 
     _, shop, results = run_downloader(tmp_path, saved(tmp_path / "results"), files)
     assert shop.calls == [f"{BASE}/robots.txt", url("b")]
-    assert [i["local_path"] for i in saved(results)[0]["images"]] == ["images/7-1.jpg", "images/7-2.jpg"]
+    assert [i["local_path"] for i in saved(results)[0]["images"]] == ["images/7-101.jpg", "images/7-102.jpg"]
 
 
 def test_file_deleted_from_disk_is_downloaded_again(tmp_path):
     files = {url("a"): make_image((1000, 1000), noise=False)}
     _, _, results = run_downloader(tmp_path, [product(7, "a")], files)
-    (results / "images" / "7-1.jpg").unlink()
+    (results / "images" / "7-101.jpg").unlink()
 
     _, shop, results = run_downloader(tmp_path, saved(results), files)
     assert url("a") in shop.calls
-    assert (results / "images" / "7-1.jpg").exists()
+    assert (results / "images" / "7-101.jpg").exists()
 
 
 def test_too_small_image_is_logged_reported_and_not_requested_again(tmp_path, caplog):
@@ -264,9 +272,9 @@ def test_too_small_image_is_logged_reported_and_not_requested_again(tmp_path, ca
         _, _, results = run_downloader(tmp_path, [product(7, "a", "b")], files)
 
     assert "longer side is 500 px" in caplog.text
-    assert not (results / "images" / "7-1.jpg").exists()
+    assert not (results / "images" / "7-101.jpg").exists()
     first = saved(results)[0]["images"]
-    assert first[0]["local_path"] is None and first[1]["local_path"] == "images/7-2.jpg"
+    assert first[0]["local_path"] is None and first[1]["local_path"] == "images/7-102.jpg"
     problems = json.loads((results / "image_problems.json").read_text(encoding="utf-8"))
     assert list(problems) == [url("a")] and "TooSmallImage" in problems[url("a")]
 
@@ -279,9 +287,9 @@ def test_corrupted_image_is_logged_and_does_not_stop_the_run(tmp_path, caplog):
     with caplog.at_level(logging.WARNING):
         code, _, results = run_downloader(tmp_path, [product(7, "a"), product(8, "b")], files)
 
-    assert code == 0
+    assert code == 1  # product 7 has no image
     assert "cannot be read as an image" in caplog.text
-    assert (results / "images" / "8-1.jpg").exists()
+    assert (results / "images" / "8-102.jpg").exists()
 
 
 def test_product_without_any_usable_image_is_reported(tmp_path, caplog):
@@ -296,7 +304,7 @@ def test_download_error_is_retried_by_a_later_run_not_remembered(tmp_path):
     assert not (results / "image_problems.json").read_text(encoding="utf-8").strip("{}\n ")
 
     _, _, results = run_downloader(tmp_path, saved(results), {url("a"): good})
-    assert (results / "images" / "7-1.jpg").exists()
+    assert (results / "images" / "7-101.jpg").exists()
 
 
 def test_image_on_another_host_is_skipped_not_downloaded(tmp_path):
@@ -304,21 +312,113 @@ def test_image_on_another_host_is_skipped_not_downloaded(tmp_path):
     code, shop, results = run_downloader(
         tmp_path, [other], {"https://cdn.other.test/a.jpg": make_image((1000, 1000), noise=False)}
     )
-    assert code == 0
+    assert code == 1  # the product is left without an image
     assert "https://cdn.other.test/a.jpg" not in shop.calls
     assert saved(results)[0]["images"][0]["local_path"] is None
 
 
-def test_products_file_is_saved_during_the_run(tmp_path):
-    """After an interruption in the middle, finished images already have their paths in products.jsonl."""
+def test_ctrl_c_saves_the_paths_of_finished_images(tmp_path):
     good = make_image((1000, 1000), noise=False)
     products = [product(1, "a"), product(2, "b"), product(3, "c")]
     files = {url("a"): good, url("b"): KeyboardInterrupt(), url("c"): good}
     code, _, results = run_downloader(tmp_path, products, files)
 
     assert code == 130
-    paths = [p["images"][0]["local_path"] for p in saved(results)]
-    assert paths == ["images/1-1.jpg", None, None]
+    assert [p["images"][0]["local_path"] for p in saved(results)] == ["images/1-101.jpg", None, None]
+
+
+def test_products_file_is_saved_every_save_every_images(tmp_path):
+    """A crash that no handler catches must not lose the paths of images that are already on disk."""
+    good = make_image((1000, 1000), noise=False)
+    products = [product(1, "a"), product(2, "b"), product(3, "c")]
+    files = {url("a"): good, url("b"): good, url("c"): RuntimeError("bug")}
+    with pytest.raises(RuntimeError):
+        run_downloader(tmp_path, products, files, save_every=1)
+
+    paths = [p["images"][0]["local_path"] for p in saved(tmp_path / "results")]
+    assert paths == ["images/1-101.jpg", "images/2-102.jpg", None]
+
+
+def test_a_crash_without_periodic_saving_loses_the_paths(tmp_path):
+    """The same crash with a huge save_every: proves the test above really depends on the periodic save."""
+    good = make_image((1000, 1000), noise=False)
+    products = [product(1, "a"), product(2, "b"), product(3, "c")]
+    files = {url("a"): good, url("b"): good, url("c"): RuntimeError("bug")}
+    with pytest.raises(RuntimeError):
+        run_downloader(tmp_path, products, files, save_every=10**9)
+
+    assert [p["images"][0]["local_path"] for p in saved(tmp_path / "results")] == [None, None, None]
+
+
+# ---------- Not an image ----------
+
+
+def test_html_with_status_200_is_a_download_error_and_not_remembered(tmp_path, caplog):
+    html = (b"<html>maintenance</html>", "text/html; charset=utf-8")
+    with caplog.at_level(logging.ERROR):
+        code, _, results = run_downloader(tmp_path, [product(7, "a")], {url("a"): html})
+
+    assert code == 1
+    assert "is not an image" in caplog.text and "text/html" in caplog.text
+    assert json.loads((results / "image_problems.json").read_text(encoding="utf-8")) == {}
+
+    # The shop is back: the same URL is requested again and saved
+    good = make_image((1000, 1000), noise=False)
+    code, shop, results = run_downloader(tmp_path, saved(results), {url("a"): good})
+    assert code == 0 and url("a") in shop.calls
+
+
+def test_response_without_content_type_is_left_to_pillow(tmp_path):
+    good = make_image((1000, 1000), noise=False)
+    code, _, results = run_downloader(tmp_path, [product(7, "a")], {url("a"): (good, "")})
+    assert code == 0 and (results / "images" / "7-101.jpg").exists()
+
+
+# ---------- File names ----------
+
+
+def test_file_belongs_to_its_source_image_when_the_order_changes(tmp_path):
+    """products.jsonl rebuilt with the images in another order must not give a file to the wrong image."""
+    a, b = make_image((1000, 1000), noise=False), make_image((900, 900), noise=False)
+    files = {url("a"): a, url("b"): b}
+    _, _, results = run_downloader(tmp_path, [product(7, "a", "b")], files)
+    before = {name: (results / "images" / name).read_bytes() for name in ("7-101.jpg", "7-102.jpg")}
+
+    reordered = saved(results)
+    reordered[0]["images"].reverse()
+    for image in reordered[0]["images"]:
+        image["local_path"] = None
+    _, shop, results = run_downloader(tmp_path, reordered, files)
+
+    assert shop.calls == [f"{BASE}/robots.txt"]  # nothing downloaded again
+    paths = {i["source_url"]: i["local_path"] for i in saved(results)[0]["images"]}
+    assert paths == {url("a"): "images/7-101.jpg", url("b"): "images/7-102.jpg"}
+    assert {name: (results / "images" / name).read_bytes() for name in before} == before
+
+
+# ---------- Exit code ----------
+
+
+def test_exit_code_is_1_when_a_download_failed(tmp_path):
+    code, _, _ = run_downloader(tmp_path, [product(7, "a")], {})  # 404
+    assert code == 1
+
+
+def test_exit_code_is_0_for_a_test_run_that_left_images_for_later(tmp_path):
+    good = make_image((1000, 1000), noise=False)
+    code, _, _ = run_downloader(tmp_path, [product(7, "a"), product(8, "b")], {url("a"): good, url("b"): good}, limit=1)
+    assert code == 0
+
+
+def test_exit_code_is_1_when_a_product_has_no_usable_image(tmp_path):
+    code, _, _ = run_downloader(tmp_path, [product(7, "a")], {url("a"): make_image((300, 300), noise=False)})
+    assert code == 1
+
+
+def test_quality_is_logged_at_debug_level(caplog):
+    with caplog.at_level(logging.DEBUG, logger="scraper.images"):
+        process_image(make_image((900, 900), noise=False))
+    assert "quality 90" in caplog.text
 
 
 def test_no_products_file_is_an_error(tmp_path):
@@ -327,8 +427,14 @@ def test_no_products_file_is_an_error(tmp_path):
     assert ImageDownloader(client, results_dir=tmp_path).run() == 1
 
 
-def test_image_name():
-    assert image_name(12, 3) == "12-3.jpg"
+def test_image_name_uses_the_image_id_from_the_url():
+    assert image_name(12, f"{BASE}/14452-product_main_2x/olejek.jpg") == "12-14452.jpg"
+
+
+def test_image_name_without_an_image_id_uses_a_hash_of_the_url():
+    name = image_name(12, "https://shop.test/other/olejek.jpg")
+    assert name.startswith("12-") and name.endswith(".jpg") and name != "12-.jpg"
+    assert name == image_name(12, "https://shop.test/other/olejek.jpg")
 
 
 def test_images_command_is_registered(capsys):

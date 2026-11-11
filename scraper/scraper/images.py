@@ -1,18 +1,22 @@
 """Download product images and fit them to the store's limits.
 
 Every image listed in products.jsonl is downloaded from the shop (the `product_main_2x` size, 1440 px)
-and saved as images/<product id>-<number>.jpg, with the longer side between 800 and 1600 px and at most
-300 KB. The file name goes into `local_path` of the image in products.jsonl.
+and saved as images/<product id>-<image id>.jpg, with the longer side between 800 and 1600 px and at most
+300 KB. The image id is the number in the source URL (/14452-product_main_2x/...), so a file belongs to
+exactly one source image even if the order of images in products.jsonl changes. The file name goes into
+`local_path` of the image in products.jsonl.
 
 Resuming: a file that is already on disk is never downloaded again, and a source URL that gave a bad image
 (too small, corrupted) is remembered in image_problems.json. Files appear under their final name only when
 complete (`save_bytes`), and products.jsonl is rewritten the same way, so Ctrl+C at any moment is safe.
 """
 
+import hashlib
 import io
 import json
 import logging
 import os
+import re
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -62,21 +66,22 @@ def _encode(image: Image.Image, quality: int) -> bytes:
     return buffer.getvalue()
 
 
-def _best_quality(image: Image.Image, max_bytes: int) -> bytes | None:
-    """The highest quality whose JPEG fits in `max_bytes`, or None if even the lowest does not.
+def _best_quality(image: Image.Image, max_bytes: int) -> tuple[bytes, int] | None:
+    """The JPEG with the highest quality that fits in `max_bytes` and that quality, or None if even the lowest
+    does not fit.
 
     Size grows with quality, so a binary search needs about 6 encodings instead of 50.
     """
     data = _encode(image, config.IMAGE_QUALITY_START)
     if len(data) <= max_bytes:
-        return data
+        return data, config.IMAGE_QUALITY_START
     low, high = config.IMAGE_QUALITY_MIN, config.IMAGE_QUALITY_START - 1
     best = None
     while low <= high:
         middle = (low + high) // 2
         data = _encode(image, middle)
         if len(data) <= max_bytes:
-            best, low = data, middle + 1
+            best, low = (data, middle), middle + 1
         else:
             high = middle - 1
     return best
@@ -117,7 +122,10 @@ def process_image(
         candidate = image if side == longer else _scaled(image, side)
         result = _best_quality(candidate, max_bytes)
         if result is not None:
-            return result
+            data, quality = result
+            # With quality 40 as the floor it is worth knowing how many files went low (W2: sharp when zoomed)
+            log.debug("Encoded at %d px, quality %d, %d bytes", side, quality, len(data))
+            return data
         if side <= min_side:
             raise TooLargeImage(f"over {max_bytes} bytes even at {min_side} px and quality {config.IMAGE_QUALITY_MIN}")
         side = max(min_side, int(side * config.IMAGE_SHRINK_STEP))
@@ -141,8 +149,17 @@ def save_lines(path: Path, records: list[dict]) -> None:
     os.replace(temporary, path)
 
 
-def image_name(product_id: int, number: int) -> str:
-    return f"{product_id}-{number}.jpg"
+_IMAGE_ID = re.compile(r"/(\d+)-product_main_2x/")
+
+
+def image_name(product_id: int, source_url: str) -> str:
+    """File name tied to the source image: <product id>-<image id from the URL>.jpg.
+
+    A URL without the shop's image id (not expected) gets a short hash of the URL instead.
+    """
+    match = _IMAGE_ID.search(source_url)
+    image_id = match.group(1) if match else hashlib.sha1(source_url.encode()).hexdigest()[:10]
+    return f"{product_id}-{image_id}.jpg"
 
 
 # ---------- The run ----------
@@ -183,16 +200,19 @@ class ImageDownloader:
             self._save(products, problems)
             return 130
         self._save(products, problems)
-        self._report(products, problems, stats)
+        without = self._report(products, problems, stats)
+        # A test run (--limit) leaves images for later on purpose, so only a full run can fail
+        if self.limit is None and (stats["failed"] or without):
+            return 1
         return 0
 
     def _process(self, products: list[dict], problems: dict[str, str], stats: Counter) -> None:
         since_save = 0
         for product in products:
-            for number, image in enumerate(product["images"], start=1):
-                name = image_name(product["id"], number)
-                path = self.images_dir / name
+            for image in product["images"]:
                 url = image["source_url"]
+                name = image_name(product["id"], url)
+                path = self.images_dir / name
                 relative = f"{self.images_dir.name}/{name}"
 
                 if path.exists():
@@ -228,6 +248,14 @@ class ImageDownloader:
             stats["failed"] += 1
             return False
 
+        # A 200 with an HTML page (maintenance, bot protection) is a temporary problem, so it is an error like
+        # any other failed download and is not remembered. A missing header is left to Pillow to judge.
+        content_type = response.headers.get("Content-Type", "")
+        if content_type and not content_type.startswith("image/"):
+            log.error("Product %d: %s is not an image (Content-Type %r)", product_id, url, content_type)
+            stats["failed"] += 1
+            return False
+
         try:
             data = process_image(response.content)
         except ImageProblem as exc:
@@ -244,7 +272,8 @@ class ImageDownloader:
         save_lines(self.products_file, products)
         save_json(self.problems_file, problems)
 
-    def _report(self, products: list[dict], problems: dict[str, str], stats: Counter) -> None:
+    def _report(self, products: list[dict], problems: dict[str, str], stats: Counter) -> list[int]:
+        """Log the summary. Returns the ids of products without any usable image."""
         total = sum(len(product["images"]) for product in products)
         with_file = sum(1 for product in products for image in product["images"] if image["local_path"])
         log.info("Images: %d of %d have a file. %s", with_file, total, dict(stats))
@@ -258,3 +287,4 @@ class ImageDownloader:
             )
         for url, reason in problems.items():
             log.warning("Unusable source image %s: %s", url, reason)
+        return without
