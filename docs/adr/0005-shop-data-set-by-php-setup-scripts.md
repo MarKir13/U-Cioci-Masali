@@ -98,7 +98,7 @@ image, outside the web root:
   which loads PrestaShop and holds small helpers) and `configure-shop.php` for #47;
 - page text in `cms/<link_rewrite>.html`, with `{{name}}` placeholders filled from the settings, so
   the "Dostawa" and "Formy płatności" pages state the same carriers, fees and bank details that the
-  checkout uses.
+  checkout uses; `{{link:<link_rewrite>}}` links one page to another without fixed page IDs.
 
 Each script has a small wrapper in `shop/scripts/post-install/` (`20-shop-content.sh`,
 `30-configure-shop.sh`) that runs it as `www-data`; the number sets the order after
