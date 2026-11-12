@@ -10,8 +10,11 @@ import requests
 from . import config
 from .crawl import Crawler, PageCache
 from .http_client import HttpClient, SkippedURL, check_delay
+from .images import ImageDownloader
 from .logging_config import setup_logging
 from .models import export_schema
+from .publish import make_archive, make_samples
+from .verify import run as run_verify
 
 log = logging.getLogger("scraper")
 
@@ -77,6 +80,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     crawl.add_argument("--no-cache", action="store_true", help="do not read or write saved pages in scraper/cache/")
 
+    # Images subcommand
+    images = commands.add_parser(
+        "images", help="download product images into scraper-results/images/ and fit them to the store's limits"
+    )
+    images.add_argument("--limit", type=positive_int, metavar="N", help="test run: download at most N new images")
+
+    # Commands for the finished results (no network)
+    commands.add_parser("verify", help="check the results against the requirements and write verification-report.md")
+    sample = commands.add_parser(
+        "sample", help=f"copy {config.SAMPLE_COUNT} sample images to {config.SAMPLE_IMAGES_DIR.name}/ (committed)"
+    )
+    sample.add_argument("--seed", type=int, default=1, help="random seed, so the same selection can be repeated")
+    commands.add_parser("archive", help=f"pack all images into {config.IMAGES_ARCHIVE.name} for the GitHub Release")
+
     # Schema subcommand
     commands.add_parser("schema", help=f"write the JSON schema of the results to {config.SCHEMA_FILE.name}")
 
@@ -90,12 +107,20 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "schema":  # needs no network
         export_schema(config.SCHEMA_FILE)
         return 0
+    if args.command == "verify":
+        return run_verify()
+    if args.command == "sample":
+        return make_samples(seed=args.seed)
+    if args.command == "archive":
+        return make_archive()
     client = HttpClient(delay=args.delay)
     if args.command == "fetch":  # start fetching
         return fetch_page(client, args.url, args.output)
     if args.command == "crawl":
         cache = None if args.no_cache else PageCache(config.CACHE_DIR)
         return Crawler(client, cache=cache, limit=args.limit).run()
+    if args.command == "images":
+        return ImageDownloader(client, limit=args.limit).run()
     return 0
 
 

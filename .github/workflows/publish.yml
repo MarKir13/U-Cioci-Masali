@@ -1,0 +1,129 @@
+name: Publish images
+
+# Builds the shop and proxy images for linux/amd64 and pushes them to GitHub's registry (GHCR),
+# so the Stage 2 cluster can pull them. Only main and etap* tags push; pull requests and manual runs
+# from any other branch only build.
+on:
+  push:
+    branches: [main]
+    tags: ["etap*"]
+  pull_request:
+    paths:
+      - "shop/**"
+      - "deploy/proxy/**"
+      - ".github/workflows/publish.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  # A newer PR run replaces an older one. On main and tags a push is never cut off halfway;
+  # the newer run waits instead.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # One copy of this job per image, running side by side
+  build:
+    strategy:
+      # Each image finishes on its own: a failing proxy build does not cancel the shop build
+      # halfway, and the red job shows which image is missing. `verify` needs both.
+      fail-fast: false
+      matrix:
+        include:
+          - image: shop
+            context: shop
+          - image: proxy
+            context: deploy/proxy
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    env:
+      # Push only reviewed code: main or an etap* tag. On a pull request github.ref is
+      # refs/pull/<n>/merge, and a manual run from a feature branch has that branch's ref.
+      PUBLISH: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/etap') }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      # GITHUB_TOKEN is the token GitHub gives every run; with packages: write it may push to
+      # this repository's packages. No secret to create or store.
+      - name: Log in to GHCR
+        if: env.PUBLISH == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Tags: sha-<7 characters of the commit> always, plus `main` on main or the tag name
+      # (etap1) on a tag. latest=false: by default a tag push would also add `latest`.
+      - name: Image name, tags and labels
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          # Lowercase: GHCR rejects the owner's name as written (MarKir13)
+          images: ghcr.io/markir13/u-cioci-masali/${{ matrix.image }}
+          tags: |
+            type=sha
+            type=ref,event=branch
+            type=ref,event=tag
+          flavor: latest=false
+      - name: Build, and push on main or an etap* tag
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64
+          push: ${{ env.PUBLISH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # One plain image per tag. By default a provenance record (how the image was built) is
+          # attached too, which GHCR lists as a second platform "unknown/unknown".
+          provenance: false
+          # Keeps layers between runs (GitHub Actions cache), one cache per image
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  # On main only (a push or a manual run): pull the images just pushed, without logging in, and
+  # smoke-test them. This is how Stage 2 nodes get them, so the packages must be public.
+  # Skipped if either build failed, since `needs: build` waits for both.
+  verify:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      # The sha- tag of this commit (7 characters, as metadata-action makes it). Not `main`, which
+      # a newer push could move in the meantime. GITHUB_ENV passes the variables to later steps.
+      - name: Images of this commit
+        run: |
+          echo "SHOP_IMAGE=ghcr.io/markir13/u-cioci-masali/shop:sha-${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+          echo "PROXY_IMAGE=ghcr.io/markir13/u-cioci-masali/proxy:sha-${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+      - name: Pull without logging in
+        run: |
+          docker pull "$SHOP_IMAGE"
+          docker pull "$PROXY_IMAGE"
+      - name: Built for linux/amd64
+        run: |
+          for image in "$SHOP_IMAGE" "$PROXY_IMAGE"; do
+            platform=$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$image")
+            echo "$image: $platform"
+            test "$platform" = "linux/amd64"
+          done
+      - name: Configure as in the README
+        run: cp deploy/.env.example deploy/.env
+      # SHOP_IMAGE and PROXY_IMAGE from the environment win over deploy/.env. --no-build runs
+      # the pulled images instead of building from the repository.
+      - name: Start from the registry images and wait until ready
+        run: docker compose -f deploy/compose.yaml up -d --no-build --wait --wait-timeout 600
+      - name: Check the running shop
+        run: sh .github/scripts/smoke-test.sh
+      - name: Container status and logs
+        if: failure()
+        run: |
+          docker compose -f deploy/compose.yaml ps -a
+          docker compose -f deploy/compose.yaml logs --no-color
+      - name: Remove containers and volumes
+        if: always()
+        run: docker compose -f deploy/compose.yaml down -v

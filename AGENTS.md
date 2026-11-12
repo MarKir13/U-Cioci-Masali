@@ -47,6 +47,7 @@ Full findings: `docs/scraper-recon.md` (on PR #4 until it merges). The essential
 | E2E tests | Playwright 1.64.1, headless Chromium, pinned in `tests/package.json` (Selenium is not allowed) |
 | Test mail | Mailpit or MailHog in a container |
 | Linters | hadolint 2.15.1, shellcheck 0.11.0, `php -l` (`php:8.1.34-cli`), all as Docker images; ESLint 10.13.0 on Node 24, pinned in the root `package.json` (development tools only) |
+| Published images | `ghcr.io/markir13/u-cioci-masali/shop` and `.../proxy`, `linux/amd64`, built by `publish.yml`; tags `sha-<7 characters>`, `main`, `etap*` |
 
 | Path | Contents |
 |---|---|
@@ -70,7 +71,7 @@ Run from the repository root unless noted.
 | Build and start the shop | `docker compose -f deploy/compose.yaml up -d --build` |
 | Apply changes from `shop/` | same command as above |
 | Follow install logs (done at `Starting web server`) | `docker compose -f deploy/compose.yaml logs -f shop` |
-| Re-apply shop settings from `shop/config/shop-settings.php` (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop runuser -u www-data -- php /opt/ciocia/scripts/setup/configure-shop.php` |
+| Re-apply `shop/config/shop-settings.php` and shop content to a running shop, after a rebuild (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh`, then the same with `30-configure-shop.sh` |
 | Stop, keeping data | `docker compose -f deploy/compose.yaml down` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
 | Scraper lint | `ruff check .` and `ruff format --check .` |
@@ -84,6 +85,9 @@ Run from the repository root unless noted.
 | E2E setup, once (from `tests/`) | `npm ci` and `npx playwright install chromium` |
 | E2E tests (from `tests/`; another shop: `BASE_URL=https://host:port npm test`) | `npm test` |
 | Open the last E2E report (from `tests/`) | `npm run report` |
+| Smoke test of the running shop (ports from `HTTP_PORT`, `HTTPS_PORT`) | `sh .github/scripts/smoke-test.sh` |
+| Review the open PRs that wait for your review (Claude Code; prints review comments to paste, posts nothing) | `/review-prs`, or `/review-prs 67` for chosen PRs |
+| Run the published images instead of building (tags in README) | `SHOP_IMAGE=ghcr.io/markir13/u-cioci-masali/shop:main PROXY_IMAGE=ghcr.io/markir13/u-cioci-masali/proxy:main docker compose -f deploy/compose.yaml up -d --no-build` |
 
 Storefront: `https://localhost:8443` (HTTP on 8080 redirects there). Admin: `https://localhost:8443/admin-ciocia`.
 Shop e-mails: `http://localhost:8025` (Mailpit). A one-command data init is required but not built yet; update this
@@ -141,17 +145,25 @@ Documentation is in English, except `docs/AI_LOG.md`.
   theme and modules from `/opt/ciocia` on every start. A file in the image will not reach the running shop unless it
   goes through that path. The same script deletes `var/cache/prod` and `var/cache/dev` on every start, so new module
   template overrides need no manual cache clear.
-- Scripts in `shop/scripts/post-install/` run once, in name order, right after the automatic install, and never on
-  an existing install. Shop settings (currency, carriers, payments, e-mail) live in `shop/config/shop-settings.php`
-  and are applied by `shop/scripts/setup/configure-shop.php`, which must stay idempotent so it can be re-run by hand.
+- Shop content and settings live in the database. Set them in `shop/scripts/setup/` (ADR 0005), never only in the
+  back office. Scripts in `shop/scripts/post-install/` run once, in name order, right after the automatic install,
+  and never on an existing install; the image keeps starting if one fails: look for `[setup] FAILED` in the shop log.
+- All values (store details, currency, carriers, payments, e-mail) live in `shop/config/shop-settings.php`. Both
+  `shop-content.php` (CMS pages, footer links, store details) and `configure-shop.php` read it, so the pages match
+  the checkout. Setup scripts must stay idempotent so they can be re-run by hand, and must not rely on fixed CMS
+  page IDs.
 - `PS_COUNTRY` must be lowercase (`pl`): the installer loads `localization/<value>.xml`, and with `PL` it silently
   falls back to EUR/USD and no VAT rates.
 - Scripts run on Linux but are edited on Windows and macOS. `.gitattributes` forces LF for `*.sh`, `*.php`, Dockerfiles
   and YAML; keep new script types covered.
 - `.gitignore` excludes `*.crt`, `*.key`, `*.pem`, `*.zip` and `*.tar.gz`, so certificates and archives must be
   generated or downloaded at runtime.
-- Build images for `linux/amd64`. On Apple Silicon the default is `arm64`, which will not run on the Stage 2 cluster.
+- Images for the Stage 2 cluster come only from `publish.yml`, built on `amd64` runners. A local build on Apple Silicon
+  is `arm64`, which will not run there, so never push a locally built image. `compose.yaml` sets no `platform:`, so
+  local builds stay native and fast.
 - GHCR image names must be lowercase, while the repository owner is `MarKir13`.
+- Without `SHOP_IMAGE` and `PROXY_IMAGE`, every Compose project builds into the same tags `ciocia-shop:local` and
+  `ciocia-proxy:local`, whatever `-p` says. Set both to your own names for a second local stack.
 - Fix lint findings instead of silencing them. If a rule really does not fit, silence only that line and put the reason
   above it (as `# hadolint ignore=DL3018` in `deploy/proxy/Dockerfile`); never turn a rule off for the repository.
 - E2E tests take the shop address from `BASE_URL`, and its host must be the shop's domain (`PS_DOMAIN`): PrestaShop
