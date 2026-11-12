@@ -48,6 +48,9 @@ services:
       PS_FOLDER_INSTALL: install-dev
       ADMIN_MAIL: ${ADMIN_MAIL}
       ADMIN_PASSWD: ${ADMIN_PASSWORD}
+      # Key of the Webservice API, set up by post-install/40-webservice.sh. The importer calls the API
+      # at http://shop/api/ inside this network; the proxy blocks /api/ from outside.
+      PS_WEBSERVICE_KEY: ${PS_WEBSERVICE_KEY:?set PS_WEBSERVICE_KEY in deploy/.env (see .env.example)}
     volumes:
       - shop-data:/var/www/html
     # Healthy once Apache answers. The image starts Apache only after the install and our
