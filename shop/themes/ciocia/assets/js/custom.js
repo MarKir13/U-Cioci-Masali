@@ -516,9 +516,34 @@ document.addEventListener('DOMContentLoaded', function () {
     nav.querySelector('[data-steps-next-row]').hidden = !next;
   }
 
+  /*
+   * "Wróć do ..." from step 2 on, left of the step's main button ("Dalej", "Złóż zamówienie"). Both go in
+   * one row, put where the main button was, so it stays in its form and Classic's submit still works.
+   * On the payment step the row takes the whole #payment-confirmation: Classic handles and disables
+   * every button inside it, so the back button must stay outside.
+   * The label comes from data-back-<previous step id> in checkout.tpl.
+   */
+  function addBackButton(section, index) {
+    var previous = sections[index - 1];
+    var label = previous && nav.getAttribute('data-back-' + previous.id);
+    if (!label) return;
+    section.querySelectorAll('button.continue, #payment-confirmation').forEach(function (main) {
+      var row = document.createElement('div');
+      row.className = 'ciocia-step-actions';
+      var back = document.createElement('button');
+      back.type = 'button';
+      back.className = 'btn btn-outline-primary ciocia-step-back';
+      back.textContent = label;
+      back.addEventListener('click', function () { openStep(previous); });
+      main.before(row);
+      row.append(back, main);
+    });
+  }
+
   var observer = new MutationObserver(render);
-  sections.forEach(function (section) {
+  sections.forEach(function (section, index) {
     observer.observe(section, { attributes: true, attributeFilter: ['class'] });
+    addBackButton(section, index);
   });
   render();
   nav.hidden = false;

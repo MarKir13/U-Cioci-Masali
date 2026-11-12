@@ -9,13 +9,18 @@
  * the same state as Classic's checkout script, which switches steps in the browser without a reload.
  * Phones get the compact form of the source instead of the list: a progress ring "1 / 4", the current
  * step and the next one.
+ * data-back-<step id>: label of the "Wróć do ..." button that custom.js puts in the step after that one.
  *}
 {extends file='parent:checkout/checkout.tpl'}
 
 {block name='notifications'}
   {$smarty.block.parent}
   <div class="container">
-    <nav class="ciocia-steps" aria-label="Etapy zamówienia" data-complete-label="krok ukończony" hidden>
+    <nav class="ciocia-steps" aria-label="Etapy zamówienia" data-complete-label="krok ukończony"
+         data-back-checkout-personal-information-step="Wróć do danych osobowych"
+         data-back-checkout-addresses-step="Wróć do adresów"
+         data-back-checkout-delivery-step="Wróć do sposobu dostawy"
+         hidden>
       <ol class="ciocia-steps__list"></ol>
       <div class="ciocia-steps__compact">
         <span class="ciocia-steps__ring">
