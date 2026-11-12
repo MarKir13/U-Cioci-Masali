@@ -156,6 +156,10 @@ The shop address comes from `BASE_URL` (default `https://localhost:8443`); the s
 The host in `BASE_URL` must be the shop's own domain (`PS_DOMAIN`, set at install time), because PrestaShop
 redirects every other host name there. The smoke test fails if that happens.
 
+Step 4 also checks that the welcome e-mail reaches Mailpit, through its API at `MAILPIT_URL` (default
+`http://localhost:8025`). Set it to an empty value (`MAILPIT_URL= npm test`, PowerShell: `$env:MAILPIT_URL = ""`)
+to skip that check on a shop whose Mailpit the tests cannot reach.
+
 Reports are written on every run; both folders are ignored by git:
 
 | Report | Where |
