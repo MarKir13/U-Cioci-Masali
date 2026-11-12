@@ -60,6 +60,10 @@ generated into the `certs` volume, so they stay the same across `down` / `up` an
 only after `down -v`. They are never stored in the repository. Design notes:
 [ADR 0002](docs/adr/0002-https-proxy-with-self-signed-certificate.md).
 
+Inside the Docker network the containers talk plain HTTP (proxy to shop, shop to database, and the importer
+to the shop API, see [Webservice API](#webservice-api)). That traffic never leaves the machine, and the shop has
+no published port, so the only way in from outside is HTTPS through the proxy.
+
 > **Upgrading an existing install** (from before HTTPS): in `deploy/.env` replace `SHOP_PORT`
 > with `HTTP_PORT=8080` and `HTTPS_PORT=8443` (see `deploy/.env.example`), then reinstall once with
 > `docker compose -f deploy/compose.yaml down -v` and `up -d --build`. The shop domain and SSL
@@ -111,6 +115,50 @@ rewrites the `/tmp/...` path. Design notes: [ADR 0005](docs/adr/0005-shop-data-s
 > **Install made before these scripts existed** (prices in EUR, demo carriers, English demo pages):
 > run the commands above once. `configure-shop.php` also imports the Polish VAT groups that the old
 > install is missing.
+
+### Webservice API
+
+The product importer loads the scraped data through the PrestaShop Webservice API. A third setup script,
+[`webservice.php`](shop/scripts/setup/webservice.php), turns the API on and creates one key,
+`ciocia-importer`, from `PS_WEBSERVICE_KEY` in `deploy/.env` (32 characters, `A-Z` and `0-9`). The key can
+reach only what the import needs: categories, products, images, specific prices and stock (read and write),
+and taxes and languages (read only). The list is `PERMISSIONS` at the top of the script. Everything else,
+such as customers and orders, is refused.
+
+The API is reachable only inside the Docker network. The proxy answers 404 for `/api/` and `/webservice/`,
+so the placeholder key from `.env.example` cannot be used from outside. A container on the network calls
+the shop directly over plain HTTP, with the key as the Basic auth user and the two headers the proxy
+normally adds:
+
+```sh
+auth="$PS_WEBSERVICE_KEY:"   # the key as the user name, with an empty password after the colon
+curl -u "$auth" -H "Host: localhost:8443" -H "X-Forwarded-Proto: https" http://shop/api/products
+```
+
+The key goes into a variable first because the secret scan (gitleaks rule `curl-auth-user`) reports any
+`curl -u "...:..."` written out in a file, even when the value is only a variable name.
+
+The `Host` header is required: PrestaShop answers a request for any other host, such as `shop`, with a
+302 redirect to its own domain. `X-Forwarded-Proto` is not needed by the API, but keeps the request the same
+as one that came through the proxy. Never pass the key as `?ws_key=` in the URL: URLs are written to the
+access log. To try a request by hand, run it in the shop container, which has the key in its environment,
+so you never type or print it (in Git Bash put `MSYS_NO_PATHCONV=1` in front):
+
+```sh
+docker compose -f deploy/compose.yaml exec shop sh -c \
+  'auth="$PS_WEBSERVICE_KEY:"; curl -s -u "$auth" -H "Host: localhost:8443" -H "X-Forwarded-Proto: https" http://localhost/api/products'
+```
+
+The script runs after the first install, like the other two. After changing the key or the permissions,
+apply them to a running shop (the first command gives the container the new key):
+
+```sh
+docker compose -f deploy/compose.yaml up -d --build
+docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/40-webservice.sh
+```
+
+> **Install made before the API existed:** add `PS_WEBSERVICE_KEY` to your `deploy/.env` (copy the line from
+> `deploy/.env.example`; without it Compose stops with a message), then run the two commands above.
 
 ## Scraped data
 
@@ -178,7 +226,12 @@ The script checks, through the HTTPS proxy:
 - HTTP answers 301 to `https://localhost:<HTTPS_PORT>/`;
 - the home page answers 200 as UTF-8 HTML, in Polish (`lang="pl-PL"`), with the `ciocia` theme;
 - the header shows a free delivery threshold above 0, which is only there if `post-install/30-configure-shop.sh` ran.
-  A failed configuration script does not stop the shop: the container restarts and starts without it.
+  A failed configuration script does not stop the shop: the container restarts and starts without it;
+- `/api/` and `/webservice/` answer 404 through the proxy.
+
+Then, from inside the shop container (the way the importer calls the API), with the key from the container's
+environment: products and categories answer 200, customers and orders 401, and a request without a key or with
+a wrong key 401. This shows that `post-install/40-webservice.sh` ran and the key has only its permissions.
 
 It does not need product data, so it says nothing about product pages, the cart or checkout. On a failure, the job
 prints the container status and logs.

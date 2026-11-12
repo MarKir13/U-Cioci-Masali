@@ -72,6 +72,7 @@ Run from the repository root unless noted.
 | Apply changes from `shop/` | same command as above |
 | Follow install logs (done at `Starting web server`) | `docker compose -f deploy/compose.yaml logs -f shop` |
 | Re-apply `shop/config/shop-settings.php` and shop content to a running shop, after a rebuild (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh`, then the same with `30-configure-shop.sh` |
+| Re-apply the Webservice API key and its permissions (`PS_WEBSERVICE_KEY`) to a running shop, after `up -d` (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/40-webservice.sh` |
 | Stop, keeping data | `docker compose -f deploy/compose.yaml down` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
 | Scraper lint | `ruff check .` and `ruff format --check .` |
@@ -150,6 +151,15 @@ Documentation is in English, except `docs/AI_LOG.md`.
   page IDs.
 - `PS_COUNTRY` must be lowercase (`pl`): the installer loads `localization/<value>.xml`, and with `PL` it silently
   falls back to EUR/USD and no VAT rates.
+- The Webservice API is reachable only inside the Compose network: the proxy answers 404 for `/api/` and
+  `/webservice/`. Call `http://shop/api/...` with the key as the Basic auth user and the headers
+  `Host: localhost:<HTTPS_PORT>` (required, any other host gets 302) and `X-Forwarded-Proto: https` (as the proxy
+  sends it); never put the key in the URL (`?ws_key=`), since
+  URLs reach the access log. To try it by hand, run curl in the shop container with its own `$PS_WEBSERVICE_KEY`.
+  In committed files write `auth="$KEY:"` and then `curl -u "$auth"`: gitleaks (rule `curl-auth-user`) reports
+  `curl -u "...:..."` written out, even when the value is only a variable name.
+  The key's permissions are `PERMISSIONS` in `shop/scripts/setup/webservice.php`; add a resource there, not in the
+  back office.
 - Scripts run on Linux but are edited on Windows and macOS. `.gitattributes` forces LF for `*.sh`, `*.php`, Dockerfiles
   and YAML; keep new script types covered.
 - `.gitignore` excludes `*.crt`, `*.key`, `*.pem`, `*.zip` and `*.tar.gz`, so certificates and archives must be
