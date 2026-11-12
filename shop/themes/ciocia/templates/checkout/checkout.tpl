@@ -13,6 +13,12 @@
  *}
 {extends file='parent:checkout/checkout.tpl'}
 
+{* The trust card under the summary, as on the source and on the cart page. *}
+{block name='cart_summary'}
+  {$smarty.block.parent}
+  {include file='_partials/summary-trust.tpl'}
+{/block}
+
 {block name='notifications'}
   {$smarty.block.parent}
   <div class="container">

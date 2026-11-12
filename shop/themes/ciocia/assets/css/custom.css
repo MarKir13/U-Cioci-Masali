@@ -2399,3 +2399,263 @@ body#checkout .ciocia-step-actions #payment-confirmation .btn {
     width: 100%;
   }
 }
+
+/*
+ * Sticky summary (issue #44): from 992 px the summary column (summary card and trust block) of the cart
+ * and the checkout stays in view while the page scrolls, 1rem below the sticky header from #30, whose
+ * current height custom.js keeps in --ciocia-header-height. A column taller than the space under the
+ * header scrolls on its own, so its end stays reachable.
+ */
+@media (min-width: 992px) {
+  body#cart .cart-grid-right,
+  body#checkout .cart-grid-right {
+    position: sticky;
+    top: calc(var(--ciocia-header-height, 0px) + 1rem);
+    max-height: calc(100vh - var(--ciocia-header-height, 0px) - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+/*
+ * Summary card of the cart and checkout (issue #44), as on the source: a framed card, the product
+ * count in bold, "Pokaż szczegóły" and "Kod promocyjny" as full-width rows with a chevron, muted labels,
+ * shipping in copper and the total larger in burgundy. Classic takes the frame off in the checkout
+ * (body#checkout .cart-grid-right .card), hence the longer selector.
+ */
+#wrapper .cart-grid-right .card,
+body#checkout #wrapper .cart-grid-right .card {
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.75rem;
+  background: var(--ciocia-surface-light);
+  box-shadow: 0 0.25rem 1rem rgb(95 6 2 / 5%);
+}
+
+/*
+ * The card has the padding now; Classic's inner blocks only keep space above and below. Lines: one
+ * under the subtotals, above the total; the rows above and below draw the others.
+ */
+#wrapper .cart-grid-right .card .card-block,
+body#checkout #wrapper .cart-grid-right .card .card-block {
+  padding: 0.75rem 0;
+  border: 0;
+}
+
+#wrapper .cart-grid-right .card .cart-detailed-subtotals,
+#wrapper .cart-grid-right .card .cart-summary-subtotals-container,
+body#checkout #wrapper .cart-grid-right .card .cart-summary-subtotals-container {
+  border-bottom: 1px solid var(--ciocia-border);
+}
+
+#wrapper .ciocia-summary-title {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 1.25rem;
+}
+
+#wrapper .ciocia-summary-count {
+  margin: 0.75rem 0;
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+#wrapper .ciocia-summary-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.75rem 0;
+  border: 0;
+  border-top: 1px solid var(--ciocia-border);
+  background: none;
+  color: var(--ciocia-primary);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The products row closes off the count; the promo row closes off the card. */
+#wrapper .cart-summary-products .ciocia-summary-toggle,
+#wrapper .cart-voucher .ciocia-summary-toggle {
+  border-bottom: 1px solid var(--ciocia-border);
+}
+
+#wrapper .ciocia-summary-toggle .material-icons {
+  transition: transform 0.2s;
+}
+
+#wrapper .ciocia-summary-toggle[aria-expanded="true"] .material-icons {
+  transform: rotate(180deg);
+}
+
+/* Bootstrap rings every focused button; keep the ring for the keyboard only (#wrapper button:focus-visible). */
+#wrapper .ciocia-summary-toggle:focus:not(:focus-visible) {
+  outline: 0;
+}
+
+#wrapper .cart-grid-right .cart-summary-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/*
+ * A third item would push the amount to the middle: Classic's clearfix, and on the cart page the
+ * box for shipping details under the shipping line (hook displayCheckoutSubtotalDetails), which goes
+ * to a line of its own.
+ */
+#wrapper .cart-grid-right .cart-summary-line::after {
+  content: none;
+}
+
+#wrapper .cart-grid-right #cart-subtotal-shipping > div {
+  flex-basis: 100%;
+}
+
+#wrapper .cart-grid-right .cart-summary-line .label,
+body#checkout #wrapper .cart-grid-right .card .cart-summary-subtotals-container .cart-summary-line .label {
+  color: var(--ciocia-text-muted);
+  font-size: 0.9375rem;
+  font-weight: 400;
+}
+
+#wrapper .cart-grid-right .cart-summary-line .value {
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+#wrapper .cart-grid-right #cart-subtotal-shipping .value {
+  color: var(--ciocia-link);
+}
+
+/* The total: label in the text colour, amount larger in burgundy. */
+#wrapper .cart-grid-right .cart-summary-line.cart-total {
+  align-items: center;
+  margin-bottom: 0;
+  padding: 0;
+  border-top: 0;
+  background: none;
+}
+
+#wrapper .cart-grid-right .cart-total .label {
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+#wrapper .cart-grid-right .cart-total .value {
+  color: var(--ciocia-primary);
+  font-size: 1.25rem;
+}
+
+/* Promo code form, opened from its row. */
+#wrapper .cart-grid-right .block-promo .promo-code {
+  padding: 0.75rem 0;
+  background: none;
+}
+
+#wrapper .cart-grid-right .block-promo .promo-code form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+#wrapper .cart-grid-right .block-promo .promo-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  height: auto;
+}
+
+#wrapper .cart-grid-right .block-promo .promo-code .alert-danger {
+  margin: 0.75rem 0 0;
+}
+
+/* An added code: Classic's orange (#f49d6e, 2.2:1) in our colours, the bin as a muted icon. */
+#wrapper .cart-grid-right .promo-name .cart-summary-line {
+  margin-bottom: 0;
+}
+
+#wrapper .cart-grid-right .promo-name .cart-summary-line span {
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+#wrapper .cart-grid-right .promo-name .cart-summary-line .label {
+  color: var(--ciocia-text-muted);
+  font-weight: 400;
+}
+
+#wrapper .cart-grid-right .promo-name .float-xs-right {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+#wrapper .cart-grid-right .promo-name a {
+  color: var(--ciocia-text-muted);
+}
+
+#wrapper .cart-grid-right .promo-name a:hover,
+#wrapper .cart-grid-right .product-name a:hover {
+  color: var(--ciocia-link-hover);
+}
+
+#wrapper .cart-grid-right .cart-detailed-actions .btn {
+  width: 100%;
+}
+
+/*
+ * Trust card under the summary (templates/_partials/summary-trust.tpl): icons in warm circles, a bold
+ * title and a muted line, rows split by a line, as on the source.
+ */
+#wrapper .ciocia-summary-trust {
+  margin-top: 1.25rem;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.75rem;
+  background: var(--ciocia-surface-light);
+  box-shadow: 0 0.25rem 1rem rgb(95 6 2 / 5%);
+}
+
+#wrapper .ciocia-summary-trust__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#wrapper .ciocia-summary-trust__list li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 0;
+}
+
+#wrapper .ciocia-summary-trust__list li + li {
+  border-top: 1px solid var(--ciocia-border);
+}
+
+#wrapper .ciocia-summary-trust__icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-primary);
+}
+
+#wrapper .ciocia-summary-trust__title {
+  display: block;
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+#wrapper .ciocia-summary-trust__text {
+  display: block;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
