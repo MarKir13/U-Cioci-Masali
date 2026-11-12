@@ -41,4 +41,9 @@
   </div>
 </div>
 
+{* The source shop has no bottom bar on checkout. checkout/_partials/footer.tpl includes this file too. *}
+{if $page.page_name != 'checkout'}
+  {include file='_partials/bottom-nav.tpl'}
+{/if}
+{* After the bar on purpose: CSS lifts the cookie tab with ".ciocia-bottom-nav ~ .ciocia-cookie-reopen". *}
 {include file='_partials/cookie-notice.tpl'}
