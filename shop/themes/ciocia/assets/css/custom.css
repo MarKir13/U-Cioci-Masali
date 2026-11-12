@@ -182,25 +182,26 @@ body#cart #wrapper .breadcrumb[data-depth="1"] {
   color: var(--ciocia-link-hover);
 }
 
-/* "Continue shopping" is an outline button on the source. */
-body#cart .cart-grid-body > a.label {
+/* "Continue shopping" is an outline button on the source (templates/checkout/_partials/continue-shopping.tpl). */
+body#cart .ciocia-continue-shopping {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  margin-top: 1rem;
   padding: 0.375rem 0.75rem;
   border: 1px solid var(--ciocia-primary);
   border-radius: 0.25rem;
   color: var(--ciocia-primary);
 }
 
-body#cart .cart-grid-body > a.label:hover,
-body#cart .cart-grid-body > a.label:focus {
+body#cart .ciocia-continue-shopping:hover,
+body#cart .ciocia-continue-shopping:focus {
   background: var(--ciocia-primary);
   color: #fff;
   text-decoration: none;
 }
 
-body#cart .cart-grid-body > a.label .material-icons {
+body#cart .ciocia-continue-shopping .material-icons {
   color: inherit;
 }
 
@@ -2448,8 +2449,9 @@ body#checkout #wrapper .cart-grid-right .card .cart-summary-subtotals-container 
   border-bottom: 1px solid var(--ciocia-border);
 }
 
+/* Above the summary card on the cart page, as on the source; 1rem down, level with "Koszyk". */
 #wrapper .ciocia-summary-title {
-  margin: 0.75rem 0 0.25rem;
+  margin: 1rem 0 0.75rem;
   font-size: 1.25rem;
 }
 
@@ -2658,4 +2660,266 @@ body#checkout #wrapper .cart-grid-right .card .cart-summary-subtotals-container 
   display: block;
   color: var(--ciocia-text-muted);
   font-size: 0.875rem;
+}
+
+/*
+ * Cart page list (issue #44): no inner card, as on the source; the heading, the products, the
+ * "Kontynuuj zakupy" button and the info box sit right on the page card, products split by lines.
+ * The checkout keeps its cards.
+ */
+body#cart #wrapper .cart-grid-body .cart-container {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+body#cart #wrapper .cart-grid-body .cart-container .card-block,
+body#cart #wrapper .cart-grid-body .cart-overview {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+/* "Koszyk" as large as the other page titles (#main .page-header h1). */
+body#cart #wrapper .cart-container h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  line-height: 1.2;
+}
+
+body#cart .cart-container .separator,
+body#cart .cart-items .cart-item {
+  border-color: var(--ciocia-border);
+}
+
+body#cart .cart-items .cart-item,
+body#cart .cart-items .cart-item:last-child {
+  border-bottom: 1px solid var(--ciocia-border);
+}
+
+/*
+ * Cart info box (checkout/_partials/cart-info.tpl): free delivery with the amount still missing,
+ * payment methods, ordering without an account. A light framed box with burgundy icons, as on the source.
+ */
+body#cart .ciocia-cart-info {
+  margin: 1.25rem 0 0.5rem;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.75rem;
+  background: var(--ciocia-surface-light);
+}
+
+body#cart .ciocia-cart-info__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body#cart .ciocia-cart-info__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+}
+
+body#cart .ciocia-cart-info__list li > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+body#cart .ciocia-cart-info .material-icons {
+  flex: none;
+  color: var(--ciocia-primary);
+}
+
+body#cart .ciocia-cart-info__title {
+  display: block;
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+body#cart .ciocia-cart-info__text {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+/*
+ * Cart product line (issue #44, checkout/_partials/cart-detailed-product-line.tpl), as on the source:
+ * image | name, delivery time, price, attributes, "Usuń" | quantity "− 1 +" with the line total under it.
+ * On phones the quantity and total go under the description.
+ */
+body#cart .ciocia-line {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+  gap: 0.75rem 1.25rem;
+  align-items: start;
+}
+
+body#cart .ciocia-line__image img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+body#cart .ciocia-line__name {
+  display: block;
+  color: var(--ciocia-link);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+body#cart .ciocia-line__name:hover {
+  color: var(--ciocia-link-hover);
+}
+
+body#cart .ciocia-line__delivery {
+  margin: 0.25rem 0 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.8125rem;
+}
+
+body#cart .ciocia-line .product-price {
+  margin: 0.375rem 0 0;
+}
+
+body#cart .ciocia-line .product-discount {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+body#cart .ciocia-line .regular-price {
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Classic's badge is white on #f39d72 (2.1:1); burgundy passes. */
+body#cart .ciocia-line .has-discount .discount {
+  margin: 0;
+  padding: 0 0.375rem;
+  border-radius: 0.25rem;
+  background: var(--ciocia-primary);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+body#cart .ciocia-line .current-price .price,
+body#cart .ciocia-line__total {
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+body#cart .ciocia-line__attribute {
+  font-size: 0.875rem;
+}
+
+body#cart .ciocia-line__remove {
+  display: inline-block;
+  margin-top: 0.625rem;
+  color: var(--ciocia-link);
+  font-size: 0.9375rem;
+}
+
+body#cart .ciocia-line__remove:hover {
+  color: var(--ciocia-link-hover);
+  text-decoration: underline;
+}
+
+body#cart .ciocia-line__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.625rem;
+}
+
+/*
+ * Quantity: Classic's TouchSpin stacks small arrows right of the field. Here its two buttons sit on
+ * both sides ("−" first), 2.5rem square, with Material Icons' remove / add instead of the arrows.
+ */
+body#cart .ciocia-line .bootstrap-touchspin {
+  display: inline-flex;
+  float: none;
+  width: auto;
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .input-group-btn-vertical {
+  display: contents;
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .btn-touchspin {
+  display: flex;
+  order: 1;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ciocia-field-border);
+  border-radius: 0 0.375rem 0.375rem 0;
+  background: var(--ciocia-surface-light);
+  color: var(--ciocia-text);
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .bootstrap-touchspin-down {
+  order: -1;
+  border-radius: 0.375rem 0 0 0.375rem;
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .btn-touchspin:hover {
+  background: var(--ciocia-surface-warm);
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .btn-touchspin:focus:not(:focus-visible) {
+  outline: 0;
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .btn-touchspin i {
+  position: static;
+  font-size: 1.25rem;
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .touchspin-up::after {
+  content: "\E145";
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .touchspin-down::after {
+  content: "\E15B";
+}
+
+body#cart .ciocia-line .bootstrap-touchspin input.form-control {
+  order: 0;
+  width: 3.5rem;
+  height: 2.5rem;
+  padding: 0 0.25rem;
+  border: 1px solid var(--ciocia-field-border);
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  color: var(--ciocia-text);
+  text-align: center;
+  appearance: textfield;
+}
+
+body#cart .ciocia-line .bootstrap-touchspin input::-webkit-inner-spin-button,
+body#cart .ciocia-line .bootstrap-touchspin input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+@media (max-width: 575.98px) {
+  body#cart .ciocia-line {
+    grid-template-columns: 5rem minmax(0, 1fr);
+  }
+
+  body#cart .ciocia-line__actions {
+    flex-direction: row;
+    grid-column: 2;
+    align-items: center;
+    justify-content: space-between;
+  }
 }

@@ -549,3 +549,28 @@ document.addEventListener('DOMContentLoaded', function () {
   nav.hidden = false;
   document.body.classList.add('ciocia-has-steps-bar');
 })();
+
+/*
+ * Cart quantity buttons (templates/checkout/_partials/cart-detailed-product-line.tpl, issue #44).
+ * Classic's TouchSpin draws "+" and "−" as buttons holding only an icon, on load and after every cart
+ * change. Each gets a name from data-label-up / data-label-down on its field ("Zwiększ ilość: <product>"),
+ * so screen readers can tell them apart. Watches the cart list, which Classic rebuilds after a change.
+ */
+(function () {
+  var list = document.querySelector('#cart .cart-grid-body');
+  if (!list) return;
+
+  function nameButtons() {
+    list.querySelectorAll('.bootstrap-touchspin').forEach(function (spin) {
+      var field = spin.querySelector('input[name="product-quantity-spin"]');
+      if (!field) return;
+      [['.bootstrap-touchspin-up', 'labelUp'], ['.bootstrap-touchspin-down', 'labelDown']].forEach(function (pair) {
+        var button = spin.querySelector(pair[0]);
+        if (button && !button.hasAttribute('aria-label')) button.setAttribute('aria-label', field.dataset[pair[1]]);
+      });
+    });
+  }
+
+  new MutationObserver(nameButtons).observe(list, { childList: true, subtree: true });
+  nameButtons();
+})();
