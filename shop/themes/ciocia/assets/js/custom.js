@@ -33,12 +33,15 @@
  * Desktop (992 px+): the header sticks to the top (CSS). After 100 px of scroll, .is-compact folds
  * away the top bar and the category row, leaving logo, search and cart; at 60 px or less they come
  * back. The gap between the two values stops flicker on slow scroll.
+ * Folded rows are visibility: hidden, so Tab skips them: once the header is compact, the top bar and
+ * the category menu are out of reach of the keyboard until the page is scrolled back up (Home key).
+ * The source shop behaves the same, and the search and cart stay reachable. A row with focus inside
+ * it does not fold.
  * CSS cannot animate to or from height: auto, so this script measures each folding row and passes
  * its height as --ciocia-row-height. It also sets on <html>:
  *   --ciocia-header-collapsed: how much shorter the compact header is. The margin under the header
  *     grows by this much while the rows shrink, so the page below does not move.
  *   --ciocia-header-height: the header's height now, for scroll-margin on focused fields.
- *   --ciocia-header-compact-height: for other sticky elements, such as the checkout summary.
  */
 (function () {
   var header = document.getElementById('header');
@@ -60,7 +63,7 @@
   function measure() {
     if (!desktop.matches) {
       rows.forEach(function (row) { row.style.removeProperty('--ciocia-row-height'); });
-      ['--ciocia-header-height', '--ciocia-header-compact-height', '--ciocia-header-collapsed']
+      ['--ciocia-header-height', '--ciocia-header-collapsed']
         .forEach(function (name) { root.style.removeProperty(name); });
       return;
     }
@@ -78,7 +81,6 @@
     header.classList.toggle('is-compact', compact);
 
     rows.forEach(function (row, i) { row.style.setProperty('--ciocia-row-height', rowHeights[i] + 'px'); });
-    root.style.setProperty('--ciocia-header-compact-height', compactHeight + 'px');
     root.style.setProperty('--ciocia-header-collapsed', (fullHeight - compactHeight) + 'px');
     setCompact(compact);
     // Apply the new values while transitions are still off, so nothing animates from the old ones.
