@@ -114,13 +114,14 @@ rewrites the `/tmp/...` path. Design notes: [ADR 0005](docs/adr/0005-shop-data-s
 
 ## Continuous integration
 
-GitHub Actions runs three workflows:
+GitHub Actions runs four workflows:
 
 | Workflow | When | What it checks |
 |---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and the theme's JavaScript. `ci-gate`: passes only if all jobs passed |
+| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and the theme's JavaScript. `smoke`: a clean install of the shop, only when `changes` finds a change in `shop/`, `deploy/` or the smoke test itself. `ci-gate`: passes only if all jobs passed or were skipped |
 | [`pr-policy.yml`](.github/workflows/pr-policy.yml) | A pull request is opened, updated or relabelled | `ai-log`: a PR labelled `ai-assisted` must add or update a row in `docs/AI_LOG.md` |
 | [`secret-scan.yml`](.github/workflows/secret-scan.yml) | Nightly, or by hand from the Actions tab | Secrets and repository limits over every branch, the way the lecturer measures it |
+| [`publish.yml`](.github/workflows/publish.yml) | Every push to `main`, tags `etap*`, by hand; pull requests that change `shop/` or `deploy/proxy/` | `build`: the shop and proxy images for `linux/amd64`, pushed to GHCR only from `main` or an `etap*` tag; pull requests and manual runs on other branches only build. `verify` (on `main` only): pulls them without logging in, checks they are `amd64` and runs the smoke test on them. Not a required check |
 
 A pull request must have passing `ci-gate` and `ai-log` checks before it is merged.
 
@@ -156,6 +157,48 @@ Fix a finding rather than silencing it. If a rule really does not fit, silence t
 above it, as `deploy/proxy/Dockerfile` does for `# hadolint ignore=DL3018`. Never turn a rule off for the whole
 repository. The reasons are in [ADR 0003](docs/adr/0003-ci-checks-and-merge-policy.md).
 
+`smoke` starts the shop the way the README tells to: it copies `deploy/.env.example` to `deploy/.env`,
+runs `docker compose up -d --build --wait`, which waits until the shop container's healthcheck passes, then runs
+[`.github/scripts/smoke-test.sh`](.github/scripts/smoke-test.sh) against it and removes everything with `down -v`.
+The script checks, through the HTTPS proxy:
+
+- HTTP answers 301 to `https://localhost:<HTTPS_PORT>/`;
+- the home page answers 200 as UTF-8 HTML, in Polish (`lang="pl-PL"`), with the `ciocia` theme;
+- the header shows a free delivery threshold above 0, which is only there if `post-install/30-configure-shop.sh` ran.
+  A failed configuration script does not stop the shop: the container restarts and starts without it.
+
+It does not need product data, so it says nothing about product pages, the cart or checkout. On a failure, the job
+prints the container status and logs.
+
+### Published images
+
+`publish.yml` builds the two images on GitHub's `amd64` runners, which matches the Stage 2 cluster, and pushes them
+to GitHub's registry (GHCR). Both packages are public, so they can be pulled without logging in. The reasons are in
+[ADR 0006](docs/adr/0006-image-build-and-distribution.md).
+
+| Image | Built from |
+|---|---|
+| `ghcr.io/markir13/u-cioci-masali/shop` | `shop/` |
+| `ghcr.io/markir13/u-cioci-masali/proxy` | `deploy/proxy/` |
+
+| Tag | Points to |
+|---|---|
+| `sha-<7 characters of the commit>` | The image built from that commit of `main`; never moves |
+| `main` | The newest `main` |
+| `etap1` | The version handed in, once the tag `etap1` exists |
+
+There is no `latest`. To run the published images instead of building, set `SHOP_IMAGE` and `PROXY_IMAGE` (in
+`deploy/.env`, or in front of the command) and start without `--build`:
+
+```sh
+SHOP_IMAGE=ghcr.io/markir13/u-cioci-masali/shop:main PROXY_IMAGE=ghcr.io/markir13/u-cioci-masali/proxy:main \
+  docker compose -f deploy/compose.yaml up -d --no-build
+```
+
+Without these variables, nothing changes: `up -d --build` builds both images locally as `ciocia-shop:local` and
+`ciocia-proxy:local`. Setting them to your own names, such as `ciocia-shop:test`, also keeps a second local stack (with
+`-p` and other ports) from replacing the images of your main one.
+
 To run the same checks locally, install the tools once. The linters run in Docker; ESLint needs Node.js 20.19+, 22.13+
 or 24+:
 
@@ -178,6 +221,7 @@ npm ci
 | Compose file (prints nothing when valid) | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
 | JavaScript | `npx eslint` |
+| Smoke test of the running shop (ports from `HTTP_PORT` and `HTTPS_PORT`, default 8080 and 8443) | `sh .github/scripts/smoke-test.sh` |
 
 In Git Bash on Windows, put `MSYS_NO_PATHCONV=1` in front of `docker run`, or in front of `xargs` where the command
 uses it, otherwise the `/repo` path is rewritten. `--all` also covers your local branches, so it can report something
