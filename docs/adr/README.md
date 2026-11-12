@@ -11,7 +11,7 @@ as "Superseded by NNNN".
 - [0003. CI checks and merge policy](0003-ci-checks-and-merge-policy.md)
 - [0004. Crawl sources and category assignment](0004-crawl-sources-and-category-assignment.md)
 - [0005. Shop content and settings set by PHP setup scripts](0005-shop-data-set-by-php-setup-scripts.md)
-- [0006. Products left out on purpose, and publishing the images](0006-rejected-products-and-image-publishing.md)
+- [0007. Products left out on purpose, and publishing the images](0007-rejected-products-and-image-publishing.md)
 
 ## Template
 
