@@ -3,10 +3,10 @@ import js from "@eslint/js";
 import globals from "globals";
 
 export default [
-   // HTML reports bundle the trace viewer's scripts; never lint them
+  // HTML reports bundle the trace viewer's scripts; never lint them
   { ignores: ["tests/playwright-report/", "tests/test-results/"] },
   {
-    // Only the child theme's scripts for now; add "tests/**/*.js" once the Playwright suite exists.
+
     files: ["shop/themes/ciocia/assets/js/**/*.js"],
     ...js.configs.recommended,
     languageOptions: {
@@ -37,5 +37,3 @@ export default [
     },
   },
 ];
-
-

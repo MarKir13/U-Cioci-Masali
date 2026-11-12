@@ -53,7 +53,6 @@ Full findings: `docs/scraper-recon.md` (on PR #4 until it merges). The essential
 | `shop/` | Dockerfile, PHP config, child theme `ciocia`, own modules. PrestaShop itself is not stored here |
 | `scraper/` | Scraper source and unit tests |
 | `scraper-results/` | Scraped data in UTF-8 with source image URLs, plus up to 20 sample images |
-| `tests/` | Playwright E2E tests: specs in `tests/`, page helpers in `pages/`, shared code in `support/`; own `package.json` |
 | `deploy/` | `compose.yaml`, `.env.example`, scripts for install, data init, backup and restore |
 | `docs/` | `AI_LOG.md`, ADRs in `adr/`, [ci-cd-plan.md](docs/ci-cd-plan.md), other documentation |
 | `tests/` | Playwright E2E tests: specs in `e2e/`, page helpers in `pages/`, shared code in `support/`; own `package.json` |
