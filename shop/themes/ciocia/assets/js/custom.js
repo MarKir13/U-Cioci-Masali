@@ -325,3 +325,95 @@ document.addEventListener('DOMContentLoaded', function () {
     items.forEach(function (item) { setOpen(item, false); });
   });
 });
+
+/*
+ * Cookie notice (templates/_partials/cookie-notice.tpl). The choice is saved in localStorage, so the
+ * panel shows only until the visitor picks an option; after that only the "Cookies" tab is shown.
+ * Runs at once: this file loads after the footer, so the panel appears without a late jump.
+ */
+(function () {
+  var STORAGE_KEY = 'ciocia_cookie_consent';
+  var notice = document.getElementById('ciocia-cookie-notice');
+  var reopen = document.getElementById('ciocia-cookie-reopen');
+  if (!notice || !reopen) return;
+  var details = document.getElementById('ciocia-cookie-details');
+  var customize = notice.querySelector('[data-cookie-customize]');
+  var analytics = notice.querySelector('[data-cookie-analytics]');
+  var ads = notice.querySelector('[data-cookie-ads]');
+
+  // Storage can be blocked (private mode, site data off); then the panel simply shows again.
+  function readChoice() {
+    try {
+      return JSON.parse(window.localStorage.getItem(STORAGE_KEY));
+    } catch {
+      return null;
+    }
+  }
+  function saveChoice(choice) {
+    choice.date = new Date().toISOString();
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(choice));
+    } catch { /* keep working for this page view */ }
+  }
+
+  // Leave room under the page for the fixed panel or tab, so they never hide its last content.
+  function reserveSpace() {
+    var visible = notice.hidden ? reopen : notice;
+    document.body.style.paddingBottom = visible.offsetHeight + 'px';
+  }
+
+  function setDetails(open) {
+    details.hidden = !open;
+    customize.setAttribute('aria-expanded', String(open));
+    reserveSpace();
+  }
+
+  // As on the source: the first visit shows the short panel, the "Cookies" tab opens it with the
+  // options already expanded, set to the saved choice.
+  function showNotice(withDetails) {
+    var choice = readChoice() || {};
+    analytics.checked = Boolean(choice.analytics);
+    ads.checked = Boolean(choice.ads);
+    setDetails(withDetails);
+    notice.hidden = false;
+    reopen.hidden = true;
+    reserveSpace();
+  }
+
+  function closeNotice(choice) {
+    if (choice) saveChoice(choice);
+    // Only a keyboard user (focus ring shown in the panel) gets focus moved to the "Cookies" tab;
+    // after a mouse click the tab would otherwise show a focus ring nobody asked for.
+    var keyboardFocus = Boolean(notice.querySelector(':focus-visible'));
+    notice.hidden = true;
+    reopen.hidden = false;
+    reserveSpace();
+    // The focused button disappears with the panel; hand focus to the control that brings it back.
+    if (keyboardFocus) reopen.focus();
+  }
+
+  notice.querySelector('[data-cookie-accept]').addEventListener('click', function () {
+    closeNotice({ necessary: true, analytics: true, ads: true });
+  });
+  notice.querySelector('[data-cookie-necessary]').addEventListener('click', function () {
+    closeNotice({ necessary: true, analytics: false, ads: false });
+  });
+  notice.querySelector('[data-cookie-save]').addEventListener('click', function () {
+    closeNotice({ necessary: true, analytics: analytics.checked, ads: ads.checked });
+  });
+  customize.addEventListener('click', function () {
+    setDetails(details.hidden);
+  });
+  reopen.addEventListener('click', function () {
+    showNotice(true);
+    notice.querySelector('[data-cookie-accept]').focus();
+  });
+  // Escape closes a reopened panel without changing the saved choice; the first choice must be made.
+  notice.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && readChoice()) closeNotice(null);
+  });
+  window.addEventListener('resize', reserveSpace);
+
+  if (readChoice()) closeNotice(null);
+  else showNotice(false);
+})();

@@ -30,6 +30,7 @@
   --ciocia-surface-light: #fffaf6;
   --ciocia-gold: #f9d28f;
   --ciocia-primary: #5f0602;
+  --ciocia-primary-hover: #7a1006;
   --ciocia-primary-dark: #2c0001;
   --ciocia-secondary: #6c757d;
   --ciocia-secondary-dark: #5c636a;
@@ -1938,5 +1939,195 @@ body#checkout #footer:has(> .ciocia-trust) {
 @media (min-width: 992px) {
   #footer .ciocia-footer-columns {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/*
+ * Cookie notice (templates/_partials/cookie-notice.tpl), as on the source shop. Under Bootstrap
+ * modals (1050) and the mobile menu (1000), so checkout dialogs and the drawer stay on top.
+ */
+.ciocia-cookie {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 990;
+}
+
+.ciocia-cookie[hidden],
+.ciocia-cookie-reopen[hidden],
+.ciocia-cookie__details[hidden] {
+  display: none;
+}
+
+.ciocia-cookie__panel {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1rem 1.125rem 1.125rem;
+  border-top: 1px solid var(--ciocia-border);
+  background: var(--ciocia-card-bg);
+  box-shadow: 0 -0.5rem 1.5rem rgba(44, 0, 1, 0.18);
+  color: var(--ciocia-text);
+  font-family: var(--ciocia-font);
+}
+
+.ciocia-cookie__title {
+  margin: 0 0 0.35rem;
+  color: var(--ciocia-page-top);
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.ciocia-cookie__text {
+  margin: 0 0 0.875rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.ciocia-cookie__link {
+  color: var(--ciocia-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.ciocia-cookie__link:hover,
+.ciocia-cookie__link:focus-visible {
+  color: var(--ciocia-link);
+}
+
+.ciocia-cookie__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ciocia-cookie__btn {
+  padding: 0.65rem 0.95rem;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.ciocia-cookie__btn--primary {
+  background: var(--ciocia-primary);
+  color: #fff;
+}
+
+.ciocia-cookie__btn--primary:hover,
+.ciocia-cookie__btn--primary:focus-visible {
+  background: var(--ciocia-primary-hover);
+}
+
+.ciocia-cookie__btn--ghost {
+  border-color: var(--ciocia-border);
+  background: transparent;
+  color: var(--ciocia-page-top);
+}
+
+.ciocia-cookie__btn--ghost:hover,
+.ciocia-cookie__btn--ghost:focus-visible {
+  border-color: var(--ciocia-link);
+  color: var(--ciocia-link-hover);
+}
+
+.ciocia-cookie__btn--text {
+  padding-right: 0.35rem;
+  padding-left: 0.35rem;
+  background: transparent;
+  color: var(--ciocia-text-muted);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.ciocia-cookie__btn--save {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.ciocia-cookie__details {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--ciocia-border);
+}
+
+.ciocia-cookie__opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0;
+  color: var(--ciocia-text);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.ciocia-cookie__opt input {
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+  accent-color: var(--ciocia-primary);
+}
+
+.ciocia-cookie__opt strong {
+  color: var(--ciocia-page-top);
+  font-weight: 600;
+}
+
+.ciocia-cookie-reopen {
+  position: fixed;
+  bottom: 0;
+  left: 0.75rem;
+  z-index: 990;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--ciocia-border);
+  border-bottom: 0;
+  border-radius: 0.35rem 0.35rem 0 0;
+  background: var(--ciocia-card-bg);
+  box-shadow: 0 -0.15rem 0.6rem rgba(44, 0, 1, 0.12);
+  color: var(--ciocia-page-top);
+  font-family: var(--ciocia-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.ciocia-cookie-reopen:hover,
+.ciocia-cookie-reopen:focus-visible {
+  background: #fff;
+  color: var(--ciocia-primary);
+}
+
+.ciocia-cookie__btn:focus-visible,
+.ciocia-cookie__link:focus-visible,
+.ciocia-cookie__opt input:focus-visible,
+.ciocia-cookie-reopen:focus-visible {
+  outline: 2px solid var(--ciocia-primary);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .ciocia-cookie__panel {
+    border: 1px solid var(--ciocia-border);
+    border-bottom: 0;
+    border-radius: 0.75rem 0.75rem 0 0;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .ciocia-cookie__actions {
+    flex-direction: column;
+  }
+
+  .ciocia-cookie__btn--primary,
+  .ciocia-cookie__btn--ghost {
+    width: 100%;
   }
 }

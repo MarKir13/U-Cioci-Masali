@@ -47,6 +47,7 @@ Full findings: `docs/scraper-recon.md` (on PR #4 until it merges). The essential
 | E2E tests | Playwright, headless (Selenium is not allowed) |
 | Test mail | Mailpit or MailHog in a container |
 | Linters | hadolint 2.15.1, shellcheck 0.11.0, `php -l` (`php:8.1.34-cli`), all as Docker images; ESLint 10.13.0 on Node 24, pinned in the root `package.json` (development tools only) |
+| Published images | `ghcr.io/markir13/u-cioci-masali/shop` and `.../proxy`, `linux/amd64`, built by `publish.yml`; tags `sha-<7 characters>`, `main`, `etap*` |
 
 | Path | Contents |
 |---|---|
@@ -81,6 +82,9 @@ Run from the repository root unless noted.
 | Compose check, must print nothing. Never drop `--quiet` or use `deploy/.env` | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
 | JavaScript lint (after `npm ci` once) | `npx eslint` |
+| Smoke test of the running shop (ports from `HTTP_PORT`, `HTTPS_PORT`) | `sh .github/scripts/smoke-test.sh` |
+| Review the open PRs that wait for your review (Claude Code; prints review comments to paste, posts nothing) | `/review-prs`, or `/review-prs 67` for chosen PRs |
+| Run the published images instead of building (tags in README) | `SHOP_IMAGE=ghcr.io/markir13/u-cioci-masali/shop:main PROXY_IMAGE=ghcr.io/markir13/u-cioci-masali/proxy:main docker compose -f deploy/compose.yaml up -d --no-build` |
 
 Storefront: `https://localhost:8443` (HTTP on 8080 redirects there). Admin: `https://localhost:8443/admin-ciocia`.
 Shop e-mails: `http://localhost:8025` (Mailpit). A one-command data init is required but not built yet; update this
@@ -151,8 +155,12 @@ Documentation is in English, except `docs/AI_LOG.md`.
   and YAML; keep new script types covered.
 - `.gitignore` excludes `*.crt`, `*.key`, `*.pem`, `*.zip` and `*.tar.gz`, so certificates and archives must be
   generated or downloaded at runtime.
-- Build images for `linux/amd64`. On Apple Silicon the default is `arm64`, which will not run on the Stage 2 cluster.
+- Images for the Stage 2 cluster come only from `publish.yml`, built on `amd64` runners. A local build on Apple Silicon
+  is `arm64`, which will not run there, so never push a locally built image. `compose.yaml` sets no `platform:`, so
+  local builds stay native and fast.
 - GHCR image names must be lowercase, while the repository owner is `MarKir13`.
+- Without `SHOP_IMAGE` and `PROXY_IMAGE`, every Compose project builds into the same tags `ciocia-shop:local` and
+  `ciocia-proxy:local`, whatever `-p` says. Set both to your own names for a second local stack.
 - Fix lint findings instead of silencing them. If a rule really does not fit, silence only that line and put the reason
   above it (as `# hadolint ignore=DL3018` in `deploy/proxy/Dockerfile`); never turn a rule off for the repository.
 

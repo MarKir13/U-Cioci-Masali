@@ -1,0 +1,962 @@
+[
+  {
+    "id": 8,
+    "name": "Kosmetyki",
+    "url": "https://www.magiczne-indie.pl/8-kosmetyki",
+    "parent_id": null
+  },
+  {
+    "id": 36,
+    "name": "Higiena i akcesoria",
+    "url": "https://www.magiczne-indie.pl/36-higiena-i-akcesoria",
+    "parent_id": 8
+  },
+  {
+    "id": 37,
+    "name": "Do ciała",
+    "url": "https://www.magiczne-indie.pl/37-do-ciala",
+    "parent_id": 8
+  },
+  {
+    "id": 38,
+    "name": "Do włosów",
+    "url": "https://www.magiczne-indie.pl/38-kosmetyki-do-wlosow",
+    "parent_id": 8
+  },
+  {
+    "id": 39,
+    "name": "Dabur",
+    "url": "https://www.magiczne-indie.pl/39-kosmetyki-dabur",
+    "parent_id": null
+  },
+  {
+    "id": 45,
+    "name": "Do twarzy",
+    "url": "https://www.magiczne-indie.pl/45-kosmetyki-do-twarzy",
+    "parent_id": 8
+  },
+  {
+    "id": 46,
+    "name": "Do kąpieli",
+    "url": "https://www.magiczne-indie.pl/46-kosmetyki-do-kapieli",
+    "parent_id": 36
+  },
+  {
+    "id": 48,
+    "name": "Maści",
+    "url": "https://www.magiczne-indie.pl/48-masci",
+    "parent_id": 37
+  },
+  {
+    "id": 50,
+    "name": "Nowości",
+    "url": "https://www.magiczne-indie.pl/50-nowosci",
+    "parent_id": null
+  },
+  {
+    "id": 52,
+    "name": "Henny i farby do włosów",
+    "url": "https://www.magiczne-indie.pl/52-henny-i-farby-do-wlosow",
+    "parent_id": 38
+  },
+  {
+    "id": 54,
+    "name": "Olejki aromaterapeutyczne",
+    "url": "https://www.magiczne-indie.pl/54-olejki-aromaterapeutyczne",
+    "parent_id": 233
+  },
+  {
+    "id": 55,
+    "name": "Suplementy",
+    "url": "https://www.magiczne-indie.pl/55-suplementy",
+    "parent_id": 80
+  },
+  {
+    "id": 56,
+    "name": "Mydła, mydełka",
+    "url": "https://www.magiczne-indie.pl/56-mydla-mydelka",
+    "parent_id": 46
+  },
+  {
+    "id": 57,
+    "name": "Pasty do zębów",
+    "url": "https://www.magiczne-indie.pl/57-pasty-do-zebow",
+    "parent_id": 36
+  },
+  {
+    "id": 58,
+    "name": "Szampony",
+    "url": "https://www.magiczne-indie.pl/58-szampony-do-wlosow",
+    "parent_id": 38
+  },
+  {
+    "id": 59,
+    "name": "Odżywki",
+    "url": "https://www.magiczne-indie.pl/59-odzywki-do-wlosow",
+    "parent_id": 38
+  },
+  {
+    "id": 60,
+    "name": "Do skóry podrażnionej i z łupieżem",
+    "url": "https://www.magiczne-indie.pl/60-do-skory-podraznionej-i-z-lupiezem",
+    "parent_id": 58
+  },
+  {
+    "id": 61,
+    "name": "Odżywcze i Proteinowe",
+    "url": "https://www.magiczne-indie.pl/61-odzywcze-i-proteinowe",
+    "parent_id": 58
+  },
+  {
+    "id": 62,
+    "name": "Przeciw wypadaniu włosów",
+    "url": "https://www.magiczne-indie.pl/62-przeciw-wypadaniu-wlosow",
+    "parent_id": 58
+  },
+  {
+    "id": 64,
+    "name": "Balsamy i masła",
+    "url": "https://www.magiczne-indie.pl/64-balsamy-i-masla",
+    "parent_id": 37
+  },
+  {
+    "id": 65,
+    "name": "Do masażu",
+    "url": "https://www.magiczne-indie.pl/65-kosmetyki-do-masazu",
+    "parent_id": 37
+  },
+  {
+    "id": 67,
+    "name": "Maseczki",
+    "url": "https://www.magiczne-indie.pl/67-maseczki-do-twarzy",
+    "parent_id": 45
+  },
+  {
+    "id": 69,
+    "name": "Sesa",
+    "url": "https://www.magiczne-indie.pl/69-sesa",
+    "parent_id": null
+  },
+  {
+    "id": 70,
+    "name": "Herbaty Indyjskie",
+    "url": "https://www.magiczne-indie.pl/70-herbaty-indyjskie-yogi-tea-samahan",
+    "parent_id": 193
+  },
+  {
+    "id": 71,
+    "name": "Herbaty Sypane",
+    "url": "https://www.magiczne-indie.pl/71-herbaty-sypane",
+    "parent_id": 70
+  },
+  {
+    "id": 72,
+    "name": "Herbaty Zielone",
+    "url": "https://www.magiczne-indie.pl/72-herbaty-zielone",
+    "parent_id": 70
+  },
+  {
+    "id": 73,
+    "name": "Herbaty dla kobiet",
+    "url": "https://www.magiczne-indie.pl/73-herbaty-dla-kobiet",
+    "parent_id": 70
+  },
+  {
+    "id": 74,
+    "name": "Herbaty Zdrowotne",
+    "url": "https://www.magiczne-indie.pl/74-herbaty-zdrowotne",
+    "parent_id": 70
+  },
+  {
+    "id": 80,
+    "name": "Zdrowie",
+    "url": "https://www.magiczne-indie.pl/80-zdrowie",
+    "parent_id": null
+  },
+  {
+    "id": 81,
+    "name": "Herbaty Dla mężczyzn",
+    "url": "https://www.magiczne-indie.pl/81-herbaty-dla-mezczyzn",
+    "parent_id": 70
+  },
+  {
+    "id": 82,
+    "name": "Herbaty Dla Vata",
+    "url": "https://www.magiczne-indie.pl/82-herbaty-dla-doshy-vata",
+    "parent_id": 70
+  },
+  {
+    "id": 83,
+    "name": "Herbaty Dla Pitta",
+    "url": "https://www.magiczne-indie.pl/83-herbaty-dla-doshy-pitta",
+    "parent_id": 70
+  },
+  {
+    "id": 84,
+    "name": "Herbaty Dla Kapha",
+    "url": "https://www.magiczne-indie.pl/84-herbaty-dla-doshy-kapha",
+    "parent_id": 70
+  },
+  {
+    "id": 85,
+    "name": "Przyprawy",
+    "url": "https://www.magiczne-indie.pl/85-przyprawy-indyjskie",
+    "parent_id": 193
+  },
+  {
+    "id": 92,
+    "name": "Zioła Ajurwedyjskie",
+    "url": "https://www.magiczne-indie.pl/92-ajurwedyjskie-ziola",
+    "parent_id": 80
+  },
+  {
+    "id": 93,
+    "name": "Szminki i pomadki",
+    "url": "https://www.magiczne-indie.pl/93-szminki-i-pomadki",
+    "parent_id": 45
+  },
+  {
+    "id": 94,
+    "name": "Kremy i serum",
+    "url": "https://www.magiczne-indie.pl/94-kremy-i-serum",
+    "parent_id": 45
+  },
+  {
+    "id": 95,
+    "name": "Akcesoria do Jogi i Medytacji",
+    "url": "https://www.magiczne-indie.pl/95-akcesoria-do-jogi-i-medytacji",
+    "parent_id": 232
+  },
+  {
+    "id": 96,
+    "name": "Woda różana",
+    "url": "https://www.magiczne-indie.pl/96-woda-rozana",
+    "parent_id": null
+  },
+  {
+    "id": 97,
+    "name": "Amla",
+    "url": "https://www.magiczne-indie.pl/97-amla",
+    "parent_id": null
+  },
+  {
+    "id": 99,
+    "name": "Pielęgnacja okolic oczu",
+    "url": "https://www.magiczne-indie.pl/99-pielegnacja-okolic-oczu-",
+    "parent_id": 8
+  },
+  {
+    "id": 100,
+    "name": "PUKKA",
+    "url": "https://www.magiczne-indie.pl/100-pukka",
+    "parent_id": 70
+  },
+  {
+    "id": 103,
+    "name": "Żele i toniki do mycia twarzy",
+    "url": "https://www.magiczne-indie.pl/103-zele-i-toniki-do-mycia-twarzy",
+    "parent_id": 45
+  },
+  {
+    "id": 104,
+    "name": "Olejki do włosów",
+    "url": "https://www.magiczne-indie.pl/104-olejki-do-wlosow",
+    "parent_id": 38
+  },
+  {
+    "id": 113,
+    "name": "Oleje i Ghee",
+    "url": "https://www.magiczne-indie.pl/113-oleje-i-ghee",
+    "parent_id": 193
+  },
+  {
+    "id": 115,
+    "name": "Olejki i wody kwiatowe",
+    "url": "https://www.magiczne-indie.pl/115-olejki-i-wody-kwiatowe",
+    "parent_id": 45
+  },
+  {
+    "id": 172,
+    "name": "AJURWEDA: VATA, PITTA I KAPHA",
+    "url": "https://www.magiczne-indie.pl/172-ajurweda-vata-pitta-i-kapha",
+    "parent_id": null
+  },
+  {
+    "id": 174,
+    "name": "Suplementy Organic India",
+    "url": "https://www.magiczne-indie.pl/174-suplementy-organic-india",
+    "parent_id": 55
+  },
+  {
+    "id": 177,
+    "name": "Soil and Earth",
+    "url": "https://www.magiczne-indie.pl/177-soil-and-earth",
+    "parent_id": null
+  },
+  {
+    "id": 179,
+    "name": "Olejki do ciała",
+    "url": "https://www.magiczne-indie.pl/179-olejki-do-ciala",
+    "parent_id": 37
+  },
+  {
+    "id": 180,
+    "name": "Żele do mycia ciała",
+    "url": "https://www.magiczne-indie.pl/180-zele-do-mycia-ciala",
+    "parent_id": 46
+  },
+  {
+    "id": 181,
+    "name": "Organic India",
+    "url": "https://www.magiczne-indie.pl/181-organic-india",
+    "parent_id": 70
+  },
+  {
+    "id": 182,
+    "name": "Włosy przetłuszczające się",
+    "url": "https://www.magiczne-indie.pl/182-wlosy-przetluszczajace-sie",
+    "parent_id": 58
+  },
+  {
+    "id": 183,
+    "name": "Gąbki i myjki",
+    "url": "https://www.magiczne-indie.pl/183-gabki-i-myjki",
+    "parent_id": 46
+  },
+  {
+    "id": 185,
+    "name": "Shoti Maa",
+    "url": "https://www.magiczne-indie.pl/185-shoti-maa",
+    "parent_id": 70
+  },
+  {
+    "id": 186,
+    "name": "Ałuny potasowe i dezodoranty",
+    "url": "https://www.magiczne-indie.pl/186-aluny-potasowe-i-dezodoranty",
+    "parent_id": 36
+  },
+  {
+    "id": 189,
+    "name": "Sole i minerały do kąpieli",
+    "url": "https://www.magiczne-indie.pl/189-sole-i-mineraly-do-kapieli",
+    "parent_id": 46
+  },
+  {
+    "id": 191,
+    "name": "NUMI Organic Tea",
+    "url": "https://www.magiczne-indie.pl/191-numi-organic-tea",
+    "parent_id": 70
+  },
+  {
+    "id": 192,
+    "name": "Herbaty Yogi Tea",
+    "url": "https://www.magiczne-indie.pl/192-yogi-tea",
+    "parent_id": 70
+  },
+  {
+    "id": 193,
+    "name": "Żywność",
+    "url": "https://www.magiczne-indie.pl/193-zywnosc",
+    "parent_id": null
+  },
+  {
+    "id": 197,
+    "name": "Kadzidła indyjskie, tybetańskie i japońskie",
+    "url": "https://www.magiczne-indie.pl/197-kadzidla-indyjskie-tybetanskie-i-japonskie",
+    "parent_id": 233
+  },
+  {
+    "id": 198,
+    "name": "Perfumy w Olejku roll-on 5ml i 10ml",
+    "url": "https://www.magiczne-indie.pl/198-perfumy-w-olejku-roll-on-5ml-i-10ml",
+    "parent_id": 395
+  },
+  {
+    "id": 202,
+    "name": "Kajale",
+    "url": "https://www.magiczne-indie.pl/202-kajale",
+    "parent_id": 99
+  },
+  {
+    "id": 209,
+    "name": "Olejki do nosa",
+    "url": "https://www.magiczne-indie.pl/209-olejki-do-nosa",
+    "parent_id": 45
+  },
+  {
+    "id": 211,
+    "name": "Do stóp",
+    "url": "https://www.magiczne-indie.pl/211-do-stop",
+    "parent_id": 37
+  },
+  {
+    "id": 213,
+    "name": "Grzebienie do włosów",
+    "url": "https://www.magiczne-indie.pl/213-grzebienie-do-wlosow",
+    "parent_id": 36
+  },
+  {
+    "id": 216,
+    "name": "Superfoods",
+    "url": "https://www.magiczne-indie.pl/216-superfoods",
+    "parent_id": 193
+  },
+  {
+    "id": 223,
+    "name": "Napoje",
+    "url": "https://www.magiczne-indie.pl/223-napoje",
+    "parent_id": 193
+  },
+  {
+    "id": 232,
+    "name": "Różności",
+    "url": "https://www.magiczne-indie.pl/232-roznosci",
+    "parent_id": null
+  },
+  {
+    "id": 233,
+    "name": "Aromaterapia i Masaż",
+    "url": "https://www.magiczne-indie.pl/233-aromaterapia-i-masaz",
+    "parent_id": null
+  },
+  {
+    "id": 234,
+    "name": "Świece zapachowe i świeczniki",
+    "url": "https://www.magiczne-indie.pl/234-swiece-zapachowe-i-swieczniki",
+    "parent_id": 233
+  },
+  {
+    "id": 240,
+    "name": "Perfumy w balsamie (w drewnie lub kamieniu)",
+    "url": "https://www.magiczne-indie.pl/240-perfumy-w-balsamie-w-drewnie-lub-kamieniu",
+    "parent_id": 395
+  },
+  {
+    "id": 241,
+    "name": "Odporność",
+    "url": "https://www.magiczne-indie.pl/241-odpornosc",
+    "parent_id": 92
+  },
+  {
+    "id": 242,
+    "name": "Dla Kobiet",
+    "url": "https://www.magiczne-indie.pl/242-dla-kobiet",
+    "parent_id": 92
+  },
+  {
+    "id": 243,
+    "name": "Dla mężczyzn",
+    "url": "https://www.magiczne-indie.pl/243-dla-mezczyzn",
+    "parent_id": 92
+  },
+  {
+    "id": 244,
+    "name": "Pamięć i koncentracja",
+    "url": "https://www.magiczne-indie.pl/244-pamiec-i-koncentracja",
+    "parent_id": 92
+  },
+  {
+    "id": 245,
+    "name": "Odchudzanie",
+    "url": "https://www.magiczne-indie.pl/245-odchudzanie",
+    "parent_id": 92
+  },
+  {
+    "id": 246,
+    "name": "Dobre Trawienie",
+    "url": "https://www.magiczne-indie.pl/246-dobre-trawienie",
+    "parent_id": 92
+  },
+  {
+    "id": 247,
+    "name": "Witalność i Energia",
+    "url": "https://www.magiczne-indie.pl/247-witalnosc-i-energia",
+    "parent_id": 92
+  },
+  {
+    "id": 248,
+    "name": "Oczyszczanie",
+    "url": "https://www.magiczne-indie.pl/248-oczyszczanie",
+    "parent_id": 92
+  },
+  {
+    "id": 249,
+    "name": "Stres",
+    "url": "https://www.magiczne-indie.pl/249-stres",
+    "parent_id": 92
+  },
+  {
+    "id": 250,
+    "name": "Przeziębienie",
+    "url": "https://www.magiczne-indie.pl/250-przeziebienie",
+    "parent_id": 92
+  },
+  {
+    "id": 251,
+    "name": "Stawy, mięśnie",
+    "url": "https://www.magiczne-indie.pl/251-stawy-miesnie",
+    "parent_id": 92
+  },
+  {
+    "id": 252,
+    "name": "Zdrowie Psychiczne",
+    "url": "https://www.magiczne-indie.pl/252-zdrowie-psychiczne",
+    "parent_id": 92
+  },
+  {
+    "id": 253,
+    "name": "Nerki i Układ moczowy",
+    "url": "https://www.magiczne-indie.pl/253-nerki-i-uklad-moczowy",
+    "parent_id": 92
+  },
+  {
+    "id": 254,
+    "name": "Ochrona Wątroby",
+    "url": "https://www.magiczne-indie.pl/254-ochrona-watroby",
+    "parent_id": 92
+  },
+  {
+    "id": 255,
+    "name": "Środki czystości",
+    "url": "https://www.magiczne-indie.pl/255-srodki-czystosci",
+    "parent_id": 232
+  },
+  {
+    "id": 277,
+    "name": "Maski do włosów",
+    "url": "https://www.magiczne-indie.pl/277-maski-do-wlosow",
+    "parent_id": 38
+  },
+  {
+    "id": 290,
+    "name": "Perfumy dla mężczyzn",
+    "url": "https://www.magiczne-indie.pl/290-perfumy-dla-mezczyzn",
+    "parent_id": 233
+  },
+  {
+    "id": 295,
+    "name": "Cosmoveda - z Tulsi, Moringą i innymi ziołami indyjskimi",
+    "url": "https://www.magiczne-indie.pl/295-cosmoveda-z-tulsi-moringa-i-innymi-ziolami-indyjskimi",
+    "parent_id": 70
+  },
+  {
+    "id": 313,
+    "name": "Włosy cienkie i suche",
+    "url": "https://www.magiczne-indie.pl/313-wlosy-cienkie-i-suche",
+    "parent_id": 58
+  },
+  {
+    "id": 314,
+    "name": "Włosy farbowane lub zniszczone",
+    "url": "https://www.magiczne-indie.pl/314-wlosy-farbowane-lub-zniszczone",
+    "parent_id": 58
+  },
+  {
+    "id": 319,
+    "name": "Misy tybetańskie, gongi, dzwonki i cymbałki",
+    "url": "https://www.magiczne-indie.pl/319-misy-tybetanskie-gongi-dzwonki-i-cymbalki",
+    "parent_id": 232
+  },
+  {
+    "id": 321,
+    "name": "Serce i układ krążenia",
+    "url": "https://www.magiczne-indie.pl/321-serce-i-uklad-krazenia",
+    "parent_id": 92
+  },
+  {
+    "id": 322,
+    "name": "Cholesterol",
+    "url": "https://www.magiczne-indie.pl/322-cholesterol",
+    "parent_id": 92
+  },
+  {
+    "id": 323,
+    "name": "Układ oddechowy",
+    "url": "https://www.magiczne-indie.pl/323-uklad-oddechowy",
+    "parent_id": 92
+  },
+  {
+    "id": 324,
+    "name": "Kominki do olejków zapachowych",
+    "url": "https://www.magiczne-indie.pl/324-kominki-do-olejkow-zapachowych",
+    "parent_id": 233
+  },
+  {
+    "id": 325,
+    "name": "Odświeżacze powietrza",
+    "url": "https://www.magiczne-indie.pl/325-odswiezacze-powietrza",
+    "parent_id": 233
+  },
+  {
+    "id": 333,
+    "name": "Olejki do masażu i kąpieli",
+    "url": "https://www.magiczne-indie.pl/333-olejki-do-masazu-i-kapieli",
+    "parent_id": 233
+  },
+  {
+    "id": 335,
+    "name": "Suplementy Himalaya Herbals, Himalaya Herbs",
+    "url": "https://www.magiczne-indie.pl/335-suplementy-himalaya-herbals-himalaya-herbs",
+    "parent_id": 55
+  },
+  {
+    "id": 346,
+    "name": "Maści",
+    "url": "https://www.magiczne-indie.pl/346-masci",
+    "parent_id": 80
+  },
+  {
+    "id": 347,
+    "name": "Kremy do rąk",
+    "url": "https://www.magiczne-indie.pl/347-kremy-do-rak",
+    "parent_id": 37
+  },
+  {
+    "id": 351,
+    "name": "Suplementy Cosmoveda",
+    "url": "https://www.magiczne-indie.pl/351-suplementy-cosmoveda",
+    "parent_id": 55
+  },
+  {
+    "id": 352,
+    "name": "Bezsenność",
+    "url": "https://www.magiczne-indie.pl/352-bezsennosc",
+    "parent_id": 92
+  },
+  {
+    "id": 353,
+    "name": "Cukrzyca",
+    "url": "https://www.magiczne-indie.pl/353-cukrzyca",
+    "parent_id": 92
+  },
+  {
+    "id": 356,
+    "name": "Mydełka",
+    "url": "https://www.magiczne-indie.pl/356-mydelka",
+    "parent_id": 37
+  },
+  {
+    "id": 357,
+    "name": "Mydła w kostce",
+    "url": "https://www.magiczne-indie.pl/357-mydla-w-kostce",
+    "parent_id": 356
+  },
+  {
+    "id": 358,
+    "name": "Mydła płynne",
+    "url": "https://www.magiczne-indie.pl/358-mydla-plynne",
+    "parent_id": 356
+  },
+  {
+    "id": 359,
+    "name": "Dla Mężczyzn",
+    "url": "https://www.magiczne-indie.pl/359-dla-mezczyzn",
+    "parent_id": 8
+  },
+  {
+    "id": 360,
+    "name": "Kosmetyki BIO",
+    "url": "https://www.magiczne-indie.pl/360-kosmetyki-bio",
+    "parent_id": 8
+  },
+  {
+    "id": 362,
+    "name": "Zwiększające objętość",
+    "url": "https://www.magiczne-indie.pl/362-zwiekszajace-objetosc",
+    "parent_id": 58
+  },
+  {
+    "id": 366,
+    "name": "Eliksiry Ziołowe",
+    "url": "https://www.magiczne-indie.pl/366-eliksiry-ziolowe",
+    "parent_id": 80
+  },
+  {
+    "id": 369,
+    "name": "Suplementy BIO Inne",
+    "url": "https://www.magiczne-indie.pl/369-suplementy-bio-inne",
+    "parent_id": 55
+  },
+  {
+    "id": 371,
+    "name": "Podstawki i kadzielnice",
+    "url": "https://www.magiczne-indie.pl/371-podstawki-i-kadzielnice",
+    "parent_id": 233
+  },
+  {
+    "id": 377,
+    "name": "Akcesoria",
+    "url": "https://www.magiczne-indie.pl/377-akcesoria",
+    "parent_id": 80
+  },
+  {
+    "id": 385,
+    "name": "Suplementy Maharishi",
+    "url": "https://www.magiczne-indie.pl/385-suplementy-maharishi",
+    "parent_id": 55
+  },
+  {
+    "id": 393,
+    "name": "Figurki i ozdoby",
+    "url": "https://www.magiczne-indie.pl/393-figurki-i-ozdoby",
+    "parent_id": 232
+  },
+  {
+    "id": 394,
+    "name": "Akcesoria do kadzideł",
+    "url": "https://www.magiczne-indie.pl/394-akcesoria-do-kadzidel",
+    "parent_id": 233
+  },
+  {
+    "id": 395,
+    "name": "Perfumy Indyjskie",
+    "url": "https://www.magiczne-indie.pl/395-perfumy-indyjskie",
+    "parent_id": 233
+  },
+  {
+    "id": 397,
+    "name": "Kadzidła sypkie, żywice, drewienka palo santo",
+    "url": "https://www.magiczne-indie.pl/397-kadzidla-sypkie-zywice-drewienka-palo-santo",
+    "parent_id": 233
+  },
+  {
+    "id": 399,
+    "name": "Miedziane naczynia do wody",
+    "url": "https://www.magiczne-indie.pl/399-miedziane-naczynia-do-wody",
+    "parent_id": 232
+  },
+  {
+    "id": 401,
+    "name": "Kadzidła w pęczku do smużenia - biała szałwia",
+    "url": "https://www.magiczne-indie.pl/401-kadzidla-w-peczku-do-smuzenia-biala-szalwia",
+    "parent_id": 233
+  },
+  {
+    "id": 402,
+    "name": "Kadzidła w patyczkach",
+    "url": "https://www.magiczne-indie.pl/402-kadzidla-w-patyczkach",
+    "parent_id": 197
+  },
+  {
+    "id": 403,
+    "name": "Kadzidła w stożkach",
+    "url": "https://www.magiczne-indie.pl/403-kadzidla-w-stozkach",
+    "parent_id": 197
+  },
+  {
+    "id": 404,
+    "name": "Kadzidła w tabletkach",
+    "url": "https://www.magiczne-indie.pl/404-kadzidla-w-tabletkach",
+    "parent_id": 197
+  },
+  {
+    "id": 405,
+    "name": "Biżuteria i kamienie szlachetne",
+    "url": "https://www.magiczne-indie.pl/405-bizuteria-i-kamienie-szlachetne",
+    "parent_id": 232
+  },
+  {
+    "id": 408,
+    "name": "Kajale z Indii",
+    "url": "https://www.magiczne-indie.pl/408-kajale-z-indii",
+    "parent_id": 202
+  },
+  {
+    "id": 409,
+    "name": "Mehandi",
+    "url": "https://www.magiczne-indie.pl/409-mehandi",
+    "parent_id": 37
+  },
+  {
+    "id": 410,
+    "name": "Olejki zapachowe",
+    "url": "https://www.magiczne-indie.pl/410-olejki-zapachowe",
+    "parent_id": 54
+  },
+  {
+    "id": 411,
+    "name": "Olejki eteryczne",
+    "url": "https://www.magiczne-indie.pl/411-olejki-eteryczne",
+    "parent_id": 54
+  },
+  {
+    "id": 413,
+    "name": "Odpromienniki i wahadełka",
+    "url": "https://www.magiczne-indie.pl/413-odpromienniki-i-wahadelka",
+    "parent_id": 232
+  },
+  {
+    "id": 414,
+    "name": "Akcesoria - pałki i puduszki do mis",
+    "url": "https://www.magiczne-indie.pl/414-akcesoria-palki-i-puduszki-do-mis",
+    "parent_id": 319
+  },
+  {
+    "id": 418,
+    "name": "Butelki do wody",
+    "url": "https://www.magiczne-indie.pl/418-butelki-do-wody",
+    "parent_id": 95
+  },
+  {
+    "id": 419,
+    "name": "Male do medytacji",
+    "url": "https://www.magiczne-indie.pl/419-male-do-medytacji",
+    "parent_id": 95
+  },
+  {
+    "id": 425,
+    "name": "Oczyszczanie jamy ustnej",
+    "url": "https://www.magiczne-indie.pl/425-oczyszczanie-jamy-ustnej",
+    "parent_id": 36
+  },
+  {
+    "id": 426,
+    "name": "Olejki zapachowe do ciała w sprayu",
+    "url": "https://www.magiczne-indie.pl/426-olejki-zapachowe-do-ciala-w-sprayu",
+    "parent_id": 37
+  },
+  {
+    "id": 427,
+    "name": "Perfumy w sprayu",
+    "url": "https://www.magiczne-indie.pl/427-perfumy-w-sprayu",
+    "parent_id": 395
+  },
+  {
+    "id": 428,
+    "name": "Kadzidła w saszetkach 50g i 100g - Song of India",
+    "url": "https://www.magiczne-indie.pl/428-kadzidla-w-saszetkach-50g-i-100g-song-of-india",
+    "parent_id": 397
+  },
+  {
+    "id": 430,
+    "name": "Palo Santo",
+    "url": "https://www.magiczne-indie.pl/430-palo-santo",
+    "parent_id": 397
+  },
+  {
+    "id": 432,
+    "name": "Kadzidła sypkie w pojemnikach",
+    "url": "https://www.magiczne-indie.pl/432-kadzidla-sypkie-w-pojemnikach",
+    "parent_id": 397
+  },
+  {
+    "id": 434,
+    "name": "Biała Szałwia",
+    "url": "https://www.magiczne-indie.pl/434-biala-szalwia",
+    "parent_id": 397
+  },
+  {
+    "id": 435,
+    "name": "Kadzidła w pęczkach i kulach",
+    "url": "https://www.magiczne-indie.pl/435-kadzidla-w-peczkach-i-kulach",
+    "parent_id": 397
+  },
+  {
+    "id": 437,
+    "name": "Soil & Earth",
+    "url": "https://www.magiczne-indie.pl/437-soil-earth",
+    "parent_id": 52
+  },
+  {
+    "id": 438,
+    "name": "Bransoletki i pierścionki",
+    "url": "https://www.magiczne-indie.pl/438-bransoletki-i-pierscionki",
+    "parent_id": 405
+  },
+  {
+    "id": 439,
+    "name": "Kolczyki",
+    "url": "https://www.magiczne-indie.pl/439-kolczyki",
+    "parent_id": 405
+  },
+  {
+    "id": 440,
+    "name": "Naszyjniki i Mala",
+    "url": "https://www.magiczne-indie.pl/440-naszyjniki-i-mala",
+    "parent_id": 405
+  },
+  {
+    "id": 441,
+    "name": "Zawieszki i amulety",
+    "url": "https://www.magiczne-indie.pl/441-zawieszki-i-amulety",
+    "parent_id": 405
+  },
+  {
+    "id": 442,
+    "name": "Pozostałe",
+    "url": "https://www.magiczne-indie.pl/442-pozostale",
+    "parent_id": 405
+  },
+  {
+    "id": 443,
+    "name": "Akcesoria do herbaty",
+    "url": "https://www.magiczne-indie.pl/443-akcesoria-do-herbaty",
+    "parent_id": 232
+  },
+  {
+    "id": 444,
+    "name": "Misy Nepalskie",
+    "url": "https://www.magiczne-indie.pl/444-misy-nepalskie",
+    "parent_id": 319
+  },
+  {
+    "id": 449,
+    "name": "Cymbałki i dzwonki",
+    "url": "https://www.magiczne-indie.pl/449-cymbalki-i-dzwonki",
+    "parent_id": 319
+  },
+  {
+    "id": 450,
+    "name": "Henny w rożku",
+    "url": "https://www.magiczne-indie.pl/450-henny-w-rozku",
+    "parent_id": 409
+  },
+  {
+    "id": 452,
+    "name": "Henny w proszku",
+    "url": "https://www.magiczne-indie.pl/452-henny-w-proszku",
+    "parent_id": 409
+  },
+  {
+    "id": 455,
+    "name": "Dla zwierząt",
+    "url": "https://www.magiczne-indie.pl/455-dla-zwierzat",
+    "parent_id": 232
+  },
+  {
+    "id": 457,
+    "name": "Fontanny wodne",
+    "url": "https://www.magiczne-indie.pl/457-fontanny-wodne",
+    "parent_id": 232
+  },
+  {
+    "id": 458,
+    "name": "NA PREZENT",
+    "url": "https://www.magiczne-indie.pl/458-na-wyjatkowy-prezent",
+    "parent_id": null
+  },
+  {
+    "id": 459,
+    "name": "Wygładzające i regenerujące",
+    "url": "https://www.magiczne-indie.pl/459-wygladzajace-i-regenerujace",
+    "parent_id": 58
+  },
+  {
+    "id": 462,
+    "name": "Dzbanki miedziane",
+    "url": "https://www.magiczne-indie.pl/462-dzbanki-miedziane",
+    "parent_id": 399
+  },
+  {
+    "id": 463,
+    "name": "Butelki miedziane",
+    "url": "https://www.magiczne-indie.pl/463-butelki-miedziane",
+    "parent_id": 399
+  },
+  {
+    "id": 464,
+    "name": "Kubki i szklanki miedziane",
+    "url": "https://www.magiczne-indie.pl/464-kubki-i-szklanki-miedziane",
+    "parent_id": 399
+  }
+]
