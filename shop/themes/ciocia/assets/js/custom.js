@@ -32,14 +32,26 @@
 /* Keep Classic's responsive module relocation; own the mobile drawer interaction. */
 document.addEventListener('DOMContentLoaded', function () {
   var toggle = document.getElementById('menu-icon');
+  var bottomToggle = document.querySelector('[data-bottom-nav-categories]');
   var menu = document.getElementById('mobile_top_menu_wrapper');
   var backdrop = document.querySelector('.ciocia-menu-backdrop');
   var closeButton = menu && menu.querySelector('.ciocia-menu-close');
   // Only bind to the ciocia header markup; leave any other header untouched.
   if (!toggle || !menu || !backdrop || !closeButton) return;
 
+  // Every button that opens the drawer. The bottom bar is missing on checkout, so filter it out.
+  var openers = [toggle, bottomToggle].filter(Boolean);
+  // The button that opened the drawer; it gets focus back when the drawer closes.
+  var opener = toggle;
+
+  function isOpen() {
+    return getComputedStyle(menu).display !== 'none';
+  }
+
   function updateExpandedState() {
-    toggle.setAttribute('aria-expanded', String(getComputedStyle(menu).display !== 'none'));
+    openers.forEach(function (button) {
+      button.setAttribute('aria-expanded', String(isOpen()));
+    });
   }
 
   new MutationObserver(updateExpandedState).observe(menu, {
@@ -50,9 +62,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var previousOverflow;
   var inertElements = [];
-  function setDrawer(open) {
-    if (open === (toggle.getAttribute('aria-expanded') === 'true')) return;
+  function setDrawer(open, from) {
+    if (open === isOpen()) return;
     if (open) {
+      opener = from || toggle;
       previousOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       inertElements = Array.from(document.querySelectorAll('#wrapper, #footer')).filter(function (el) { return !el.inert; });
@@ -71,14 +84,21 @@ document.addEventListener('DOMContentLoaded', function () {
     backdrop.hidden = !open;
     updateExpandedState();
     if (open) closeButton.focus();
-    else toggle.focus();
+    else opener.focus();
   }
   // Capture before Classic's delegated click handler, which hides page content.
   toggle.addEventListener('click', function (event) {
     event.preventDefault();
     event.stopImmediatePropagation();
-    setDrawer(toggle.getAttribute('aria-expanded') !== 'true');
+    setDrawer(!isOpen(), toggle);
   }, true);
+  // The bar sits in #footer, which is inert while the drawer is open, so this only ever opens it.
+  if (bottomToggle) {
+    bottomToggle.addEventListener('click', function () {
+      setDrawer(true, bottomToggle);
+    });
+  }
+
   closeButton.addEventListener('click', function () { setDrawer(false); });
   backdrop.addEventListener('click', function () { setDrawer(false); });
   menu.addEventListener('keydown', function (event) {
@@ -221,10 +241,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // Escape also closes the complete mobile menu when no submenu is open.
   menu.addEventListener('keydown', function (event) {
     if (event.key === 'Escape' && !categoryMenu.querySelector('.ciocia-submenu-toggle[aria-expanded="true"]')) {
-      if (!event.defaultPrevented && toggle.getAttribute('aria-expanded') === 'true') {
+      if (!event.defaultPrevented && isOpen()) {
         event.preventDefault();
-        toggle.click();
-        toggle.focus();
+        setDrawer(false);
       }
     }
   });
@@ -323,4 +342,63 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (readChoice()) closeNotice(null);
   else showNotice(false);
+})();
+
+/*
+ * Search dialog opened by "Szukaj" in the bottom bar (templates/_partials/bottom-nav.tpl).
+ * showModal() traps focus and closes on Escape by itself; the close button uses method="dialog".
+ */
+(function () {
+  var dialog = document.getElementById('ciocia-search-dialog');
+  var openButton = document.querySelector('[data-bottom-nav-search]');
+  if (!dialog || !openButton) return;
+  var input = dialog.querySelector('input[name="s"]');
+
+  openButton.addEventListener('click', function () {
+    dialog.showModal();
+    input.focus();
+  });
+
+  // A click on the dark backdrop lands on the dialog element itself, outside its box.
+  dialog.addEventListener('click', function (event) {
+    if (event.target !== dialog) return;
+    var box = dialog.getBoundingClientRect();
+    var inside = event.clientX >= box.left && event.clientX <= box.right &&
+      event.clientY >= box.top && event.clientY <= box.bottom;
+    if (!inside) dialog.close();
+  });
+
+  dialog.addEventListener('close', function () {
+    openButton.focus();
+  });
+
+  // The bar does not exist from 768 px up, so the dialog must not stay open there.
+  window.matchMedia('(min-width: 768px)').addEventListener('change', function (event) {
+    if (event.matches && dialog.open) dialog.close();
+  });
+})();
+
+/*
+ * Bottom bar cart count. ps_shoppingcart re-renders the header cart after every cart change
+ * (Classic's updateCart event), so copy the count from there instead of asking the server again.
+ * The whole header is watched because Classic moves the cart between #_desktop_cart and
+ * #_mobile_cart when the window crosses 768 px.
+ */
+(function () {
+  var header = document.getElementById('header');
+  var badge = document.querySelector('.ciocia-bottom-nav__badge');
+  if (!header || !badge) return;
+
+  function syncCartCount() {
+    var headerBadge = header.querySelector('.blockcart .ciocia-cart-badge');
+    if (!headerBadge) return;
+    var count = parseInt(headerBadge.textContent, 10) || 0;
+    // Both the visible badge and the screen reader text carry data-cart-count.
+    document.querySelectorAll('[data-cart-count]').forEach(function (el) {
+      el.textContent = count;
+    });
+    badge.hidden = count === 0;
+  }
+
+  new MutationObserver(syncCartCount).observe(header, { childList: true, subtree: true });
 })();
