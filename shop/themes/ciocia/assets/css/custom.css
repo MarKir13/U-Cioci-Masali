@@ -2257,6 +2257,16 @@ body#checkout .ciocia-steps__compact {
   display: none;
 }
 
+/*
+ * Tablets (576-991 px): the bar's own container uses the whole page width, with Classic's 15 px gutter,
+ * while the checkout under it keeps Classic's narrower 540 / 720 px container, as on the source.
+ */
+@media (min-width: 576px) and (max-width: 991.98px) {
+  body#checkout #wrapper .container:has(> .ciocia-steps) {
+    width: auto;
+  }
+}
+
 @media (max-width: 767.98px) {
   /* The strip sits right under the header, as on the source (Classic leaves 1.563rem there). */
   body#checkout #wrapper {
@@ -2934,13 +2944,13 @@ body#cart .ciocia-line .bootstrap-touchspin input::-webkit-outer-spin-button {
 }
 
 /*
- * Tablets (576-991 px), cart and checkout: Classic's container stays 540 / 720 px wide there, which
- * leaves up to 136 px empty on each side at 991 px. The page card (and the checkout steps bar) use the
- * whole width instead, with Classic's 15 px gutter. The header keeps its own widths.
+ * Tablets (576-991 px), cart only: Classic's container stays 540 / 720 px wide there, which leaves up
+ * to 136 px empty on each side at 991 px. The cart card uses the whole width instead, with Classic's
+ * 15 px gutter. The checkout keeps Classic's narrower container, as on the source; the header keeps its
+ * own widths.
  */
 @media (min-width: 576px) and (max-width: 991.98px) {
-  body#cart #wrapper .container,
-  body#checkout #wrapper .container {
+  body#cart #wrapper .container {
     width: auto;
   }
 }
