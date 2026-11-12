@@ -3205,24 +3205,24 @@ body#checkout #wrapper .input-group .input-group-btn > [data-action="show-passwo
 }
 
 /*
- * Forms in the personal information step (guest form and "Zaloguj się"), as on the source: the label
- * above a full-width field, a burgundy "*" after required labels, a small hint under the field, larger
- * checkbox text with the description in grey, and the chosen checkbox in Bootstrap's blue with a white
- * tick. Classic puts the label, field and note in three columns of one row.
+ * Forms in the personal information and address steps (guest form, "Zaloguj się", addresses), as on
+ * the source: the label above a full-width field, a burgundy "*" after required labels, a small hint
+ * under the field, larger checkbox text with the description in grey, and the chosen checkbox in
+ * Bootstrap's blue with a white tick. Classic puts the label, field and note in three columns of one row.
  */
-body#checkout #checkout-personal-information-step .form-group.row {
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .form-group.row {
   display: block;
   margin: 0 0 1.25rem;
 }
 
-body#checkout #checkout-personal-information-step .form-group.row > [class*="col-md-"] {
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .form-group.row > [class*="col-md-"] {
   float: none;
   width: 100%;
   max-width: 100%;
   padding: 0;
 }
 
-body#checkout #wrapper #checkout-personal-information-step .form-control-label {
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .form-control-label {
   display: block;
   margin: 0 0 0.5rem;
   padding: 0;
@@ -3232,29 +3232,29 @@ body#checkout #wrapper #checkout-personal-information-step .form-control-label {
 }
 
 /* The "*" is decoration: the field itself is required, which screen readers announce. */
-body#checkout #wrapper #checkout-personal-information-step .form-control-label.required::after {
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .form-control-label.required::after {
   content: " *" / "";
   color: var(--ciocia-primary);
 }
 
 /* Classic gives each checkbox an empty label column. */
-body#checkout #wrapper #checkout-personal-information-step .form-group.row:has(.custom-checkbox) > .form-control-label {
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .form-group.row:has(.custom-checkbox) > .form-control-label {
   display: none;
 }
 
-body#checkout #wrapper #checkout-personal-information-step .js-input-column > .form-control-comment {
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .js-input-column > .form-control-comment {
   display: block;
   margin-top: 0.25rem;
   color: var(--ciocia-text);
   font-size: 0.8125rem;
 }
 
-body#checkout #wrapper #checkout-personal-information-step .form-control {
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .form-control {
   min-height: 2.5rem;
   font-size: 1rem;
 }
 
-body#checkout #checkout-personal-information-step .custom-checkbox label {
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox label {
   position: relative;
   display: block;
   margin: 0;
@@ -3265,8 +3265,8 @@ body#checkout #checkout-personal-information-step .custom-checkbox label {
   cursor: pointer;
 }
 
-body#checkout #checkout-personal-information-step .custom-checkbox input[type="checkbox"],
-body#checkout #wrapper #checkout-personal-information-step .custom-checkbox input[type="checkbox"] + span {
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox input[type="checkbox"],
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox input[type="checkbox"] + span {
   position: absolute;
   top: 0.1875rem;
   left: 0;
@@ -3276,24 +3276,24 @@ body#checkout #wrapper #checkout-personal-information-step .custom-checkbox inpu
 }
 
 /* Before the label text: the box and the field are taken out of the flow, so this is the first thing on the line. */
-body#checkout #checkout-personal-information-step .custom-checkbox label:has(input[required])::before {
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox label:has(input[required])::before {
   content: "* " / "";
   color: var(--ciocia-primary);
 }
 
-body#checkout #wrapper #checkout-personal-information-step .custom-checkbox input[type="checkbox"]:checked + span {
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox input[type="checkbox"]:checked + span {
   border-color: #0d6efd;
   background: #0d6efd;
 }
 
-body#checkout #checkout-personal-information-step .custom-checkbox .checkbox-checked {
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox .checkbox-checked {
   margin: 0;
   color: #fff;
   font-size: 1rem;
   line-height: 1;
 }
 
-body#checkout #checkout-personal-information-step .custom-checkbox em {
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox em {
   color: var(--ciocia-text-muted);
   font-size: 0.9375rem;
   font-style: normal;
@@ -3315,7 +3315,7 @@ body#checkout #checkout-personal-information-step .ciocia-create-account__option
   font-size: 0.9375rem;
 }
 
-body#checkout #checkout-personal-information-step .form-footer .btn-primary {
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .form-footer .btn-primary {
   min-width: 12rem;
   padding: 0.5rem 1.5rem;
 }
@@ -3324,4 +3324,197 @@ body#checkout #checkout-personal-information-step .form-footer .btn-primary {
 body#checkout #checkout-personal-information-step #customer-form,
 body#checkout #checkout-personal-information-step #login-form {
   margin-left: 0;
+}
+
+/*
+ * Address step (checkout/_partials/address-form.tpl, issue #44), as on the source. For the first address:
+ * "Kupuję na firmę" opens NIP / VAT UE, the "Opcjonalne" note under Firma and "Użyj tego adresu także do
+ * dostawy"; clearing that box opens the delivery address that custom.js adds (.ciocia-delivery-section).
+ */
+body#checkout #checkout-addresses-step .js-address-form form {
+  margin-left: 0;
+}
+
+body#checkout #checkout-addresses-step .ciocia-company-toggle,
+body#checkout #checkout-addresses-step .ciocia-same-address {
+  margin: 0 0 1.25rem;
+}
+
+body#checkout #wrapper #checkout-addresses-step .ciocia-address-heading {
+  margin: 0 0 1rem;
+  color: var(--ciocia-text);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+body#checkout #checkout-addresses-step .ciocia-delivery-section .ciocia-address-heading {
+  margin-top: 0.5rem;
+}
+
+body#checkout #checkout-addresses-step form:has(#ciocia-company:checked) .ciocia-company-toggle + .ciocia-address-heading,
+body#checkout #checkout-addresses-step form:has(#ciocia-company):not(:has(#ciocia-company:checked)) .ciocia-vat-field,
+body#checkout #checkout-addresses-step form:has(#ciocia-company):not(:has(#ciocia-company:checked)) .ciocia-same-address {
+  display: none;
+}
+
+/* Classic's "Opcjonalne" notes are gone, apart from the one under Firma for a company, as on the source. */
+body#checkout #wrapper #checkout-addresses-step .form-group.row > .form-control-comment {
+  display: none;
+}
+
+body#checkout #wrapper #checkout-addresses-step form:has(#ciocia-company:checked) .form-group.row:has(#field-company) > .form-control-comment {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--ciocia-text);
+  font-size: 0.8125rem;
+}
+
+body#checkout #checkout-addresses-step .ciocia-delivery-error {
+  margin: 0 0 1.25rem;
+}
+
+/*
+ * Under the address form: "Dalej" on the right, "Wróć do danych osobowych" under it on the left, as on
+ * the source (with saved addresses both stay in one row). Phones keep the full-width buttons from the
+ * step navigation section.
+ */
+@media (min-width: 576px) {
+  body#checkout #checkout-addresses-step .form-footer .ciocia-step-actions {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 1.5rem;
+  }
+
+  body#checkout #checkout-addresses-step .form-footer .ciocia-step-actions .ciocia-step-back {
+    align-self: flex-start;
+  }
+}
+
+/* Select fields (Kraj) with a thin chevron, as on the source, instead of Classic's filled triangle. */
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .form-control-select {
+  padding-right: 2.5rem;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23333' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 1rem center / 1rem 0.75rem;
+}
+
+/*
+ * Saved addresses (checkout/_partials/address-selector-block.tpl, steps/addresses.tpl), as on the source:
+ * light cards with a blue frame and the blue radio on the chosen one, the alias as a title, "Edytuj" and
+ * "Usuń" as text links, "+ Dodaj nowy adres" as an outline button.
+ */
+body#checkout #checkout-addresses-step .address-selector {
+  gap: 1rem;
+  justify-content: flex-start;
+  margin-top: 0;
+}
+
+/* Two cards in a row, up to 17.5rem each, as on the source; one full-width card per row on phones. */
+body#checkout #wrapper #checkout-addresses-step .address-item {
+  flex: 0 1 calc(50% - 0.5rem);
+  max-width: 17.5rem;
+  margin: 0;
+  border: 1px solid var(--ciocia-field-border);
+  border-radius: 0.5rem;
+  background: #f8f9fa;
+}
+
+@media (max-width: 575.98px) {
+  body#checkout #wrapper #checkout-addresses-step .address-item {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+
+/* Classic's "Zapisz" for browsers without JavaScript sits in a paragraph that would add a gap. */
+body#checkout #checkout-addresses-step .address-selector > p {
+  display: contents;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item:has(input:checked) {
+  border-color: #0d6efd;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item > header {
+  min-height: 0;
+  margin: 0;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item .radio-block {
+  display: block;
+  margin: 0;
+  padding: 1.25rem 1rem 0.75rem;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item .address-alias {
+  margin: 0 0 0 0.5rem;
+  color: var(--ciocia-text);
+  font-size: 1.25rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item .address {
+  margin: 0.75rem 0 0;
+  color: var(--ciocia-text);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item .custom-radio:has(input:checked) {
+  border-color: #0d6efd;
+  background: #0d6efd;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item .custom-radio input[type="radio"]:checked + span {
+  top: 4px;
+  left: 4px;
+  width: 8px;
+  height: 8px;
+  background-color: #fff;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-footer {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.25rem 1rem 1.25rem;
+  text-align: left;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-footer .edit-address {
+  color: var(--ciocia-text);
+}
+
+/* The source's pink "Usuń" is too pale on the card; #b02a37 is 6.2:1. */
+body#checkout #wrapper #checkout-addresses-step .address-footer .delete-address {
+  color: #b02a37;
+}
+
+body#checkout #wrapper #checkout-addresses-step .add-address {
+  margin: 1.25rem 0 0;
+}
+
+body#checkout #wrapper #checkout-addresses-step .add-address .ciocia-add-address {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ciocia-primary);
+  font-size: 1rem;
+}
+
+body#checkout #wrapper #checkout-addresses-step .add-address .ciocia-add-address:hover,
+body#checkout #wrapper #checkout-addresses-step .add-address .ciocia-add-address:focus-visible {
+  color: #fff;
+}
+
+body#checkout #wrapper #checkout-addresses-step .add-address .ciocia-add-address i {
+  font-size: 1.25rem;
+}
+
+body#checkout #wrapper #checkout-addresses-step .ciocia-invoice-link {
+  margin: 1.5rem 0 0;
+}
+
+/* "Adres do faktury" under the delivery cards needs room above it. */
+body#checkout #wrapper #checkout-addresses-step form > .ciocia-address-heading:not(:first-child) {
+  margin-top: 1.75rem;
 }

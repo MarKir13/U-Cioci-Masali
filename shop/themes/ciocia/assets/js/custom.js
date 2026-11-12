@@ -621,3 +621,184 @@ document.addEventListener('DOMContentLoaded', function () {
     button.textContent = 'Pokaż hasło';
   });
 })();
+
+/*
+ * "Kupuję na firmę" in the address step (checkout/_partials/address-form.tpl, issue #44), as on the
+ * source. Ticked, the form is the company's invoice address with NIP / VAT UE; clearing "Użyj tego adresu
+ * także do dostawy" opens a second address for delivery, built here from a copy of the fields, without
+ * names so the browser never sends it with the form.
+ * PrestaShop saves one address per request and the delivery address first (CheckoutAddressesStep), so
+ * with two addresses "Dalej" does what Classic's two forms would do:
+ * 1. sends the delivery address in the background, as Classic's delivery form without use_same_address.
+ *    PrestaShop answers with its invoice form and the new address chosen in the delivery list;
+ * 2. sends this form as that invoice form (saveAddress=invoice, the delivery address id and
+ *    confirm-addresses), which completes the step.
+ * Errors from 1 are shown under the copied fields. Errors from 2 come back on Classic's invoice form,
+ * with the delivery address already saved, so nothing is saved twice.
+ */
+(function () {
+  var company = document.getElementById('ciocia-company');
+  if (!company) return;
+  var form = company.form;
+  var same = form.querySelector('#use_same_address');
+  var vat = form.querySelector('[name="vat_number"]');
+  var fields = form.querySelector('.ciocia-address-fields');
+  var submitButton = form.querySelector('button[name="confirm-addresses"]');
+  if (!same || !fields || !submitButton) return;
+
+  var section = document.createElement('div');
+  section.className = 'ciocia-delivery-section';
+  var heading = document.createElement('h2');
+  heading.className = 'ciocia-address-heading';
+  heading.textContent = fields.dataset.deliveryHeading;
+  var errorBox = document.createElement('div');
+  errorBox.className = 'alert alert-danger ciocia-delivery-error';
+  errorBox.setAttribute('role', 'alert');
+  errorBox.tabIndex = -1;
+  errorBox.hidden = true;
+  var copy = fields.cloneNode(true);
+  copy.querySelectorAll('.ciocia-vat-field').forEach(function (element) {
+    element.remove();
+  });
+  var copiedFields = copy.querySelectorAll('input, select');
+  copiedFields.forEach(function (field) {
+    var id = 'ciocia-delivery-' + field.name;
+    var label = copy.querySelector('label[for="' + field.id + '"]');
+    if (label) label.htmlFor = id;
+    field.dataset.name = field.name;
+    field.removeAttribute('name');
+    field.id = id;
+    // Classic reloads the whole address form when a .js-country select changes
+    field.classList.remove('js-country');
+  });
+  section.append(heading, errorBox, copy);
+  same.closest('.ciocia-same-address').after(section);
+
+  function sync() {
+    if (!company.checked) same.checked = true;
+    if (vat) vat.disabled = !company.checked;
+    var separate = company.checked && !same.checked;
+    section.hidden = !separate;
+    copiedFields.forEach(function (field) {
+      field.disabled = !separate;
+    });
+  }
+  company.addEventListener('change', sync);
+  same.addEventListener('change', sync);
+  sync();
+
+  function clearErrors() {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+    copy.querySelectorAll('.ciocia-field-error').forEach(function (note) {
+      note.remove();
+    });
+    copiedFields.forEach(function (field) {
+      field.removeAttribute('aria-invalid');
+      field.removeAttribute('aria-describedby');
+      field.closest('.form-group').classList.remove('has-error');
+    });
+  }
+
+  // Errors as Classic prints them (form-errors.tpl), taken from PrestaShop's answer to request 1
+  function showErrors(page) {
+    var general = [];
+    var firstField = null;
+    if (page) {
+      page.querySelectorAll('#delivery-address .form-group').forEach(function (group) {
+        var source = group.querySelector('[name]');
+        var messages = Array.from(group.querySelectorAll('.help-block li'), function (item) {
+          return item.textContent.trim();
+        });
+        if (!source || !messages.length) return;
+        var field = copy.querySelector('[data-name="' + source.getAttribute('name') + '"]');
+        if (!field) {
+          general = general.concat(messages);
+          return;
+        }
+        var note = document.createElement('div');
+        note.className = 'help-block ciocia-field-error';
+        note.id = field.id + '-error';
+        var list = document.createElement('ul');
+        messages.forEach(function (message) {
+          var item = document.createElement('li');
+          item.className = 'alert alert-danger';
+          item.textContent = message;
+          list.append(item);
+        });
+        note.append(list);
+        field.closest('.js-input-column').append(note);
+        field.closest('.form-group').classList.add('has-error');
+        field.setAttribute('aria-invalid', 'true');
+        field.setAttribute('aria-describedby', note.id);
+        firstField = firstField || field;
+      });
+      page.querySelectorAll('#delivery-address .js-address-form > .help-block li, #notifications .alert-danger li').forEach(function (item) {
+        general.push(item.textContent.trim());
+      });
+    }
+    if (!firstField && !general.length) general.push('Nie udało się zapisać adresu dostawy. Spróbuj ponownie.');
+    if (general.length) {
+      errorBox.textContent = general.join(' ');
+      errorBox.hidden = false;
+    }
+    (firstField || errorBox).focus();
+  }
+
+  function addHidden(name, value) {
+    var input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = value;
+    form.append(input);
+  }
+
+  var sending = false;
+  form.addEventListener('submit', function (event) {
+    if (!company.checked || same.checked) return;
+    event.preventDefault();
+    if (sending) return;
+    clearErrors();
+
+    var body = new FormData();
+    form.querySelectorAll('input[type="hidden"][name="token"], input[type="hidden"][name="back"]').forEach(function (input) {
+      body.append(input.name, input.value);
+    });
+    copiedFields.forEach(function (field) {
+      body.append(field.dataset.name, field.value);
+    });
+    body.append('saveAddress', 'delivery');
+    body.append('submitAddress', '1');
+
+    sending = true;
+    submitButton.disabled = true;
+    fetch(form.action, { method: 'POST', body: body, credentials: 'same-origin' })
+      .then(function (response) {
+        return response.text();
+      })
+      .then(function (html) {
+        var page = new DOMParser().parseFromString(html, 'text/html');
+        var delivery = page.querySelector('#invoice-address') &&
+          page.querySelector('#delivery-addresses input[name="id_address_delivery"][checked]');
+        if (!delivery) {
+          showErrors(page);
+          return false;
+        }
+        form.querySelector('input[name="saveAddress"]').value = 'invoice';
+        addHidden('id_address_delivery', delivery.value);
+        addHidden('confirm-addresses', '1');
+        // The prototype's submit sends the form without running this handler again
+        HTMLFormElement.prototype.submit.call(form);
+        return true;
+      })
+      .catch(function () {
+        showErrors(null);
+        return false;
+      })
+      .then(function (sent) {
+        if (sent) return;
+        sending = false;
+        submitButton.disabled = false;
+      });
+  });
+})();
