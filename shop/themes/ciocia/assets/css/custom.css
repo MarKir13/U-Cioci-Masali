@@ -3122,7 +3122,7 @@ body#checkout #wrapper .ciocia-guest-info .ciocia-guest-info__text {
 body#checkout #wrapper .ciocia-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
+  gap: 1.25rem;
   margin: 0 0 1.25rem;
   padding: 0;
 }
@@ -3136,12 +3136,192 @@ body#checkout #wrapper .ciocia-tabs .nav-link {
   border: 0;
   border-bottom: 2px solid transparent;
   border-radius: 0;
-  color: var(--ciocia-link);
+  /* The closed tab is a plain blue link on the source; #0b5ed7 is 5.2:1 on the card. */
+  color: #0b5ed7;
   font-size: 1.0625rem;
+  font-weight: 400;
+}
+
+body#checkout #wrapper .ciocia-tabs .nav-link:focus:not(:focus-visible) {
+  outline: 0;
 }
 
 body#checkout #wrapper .ciocia-tabs .nav-link.active {
   border-bottom-color: var(--ciocia-primary);
   color: var(--ciocia-primary);
   font-weight: 600;
+}
+
+/*
+ * "Stwórz konto" in the checkout customer form (checkout/_partials/customer-form.tpl): the password
+ * opens only while the box is ticked. custom.js disables the field while it is hidden.
+ */
+body#checkout .ciocia-create-account:not(:has(#ciocia-create-account:checked)) .ciocia-account-password {
+  display: none;
+}
+
+/* The password is needed once the box is ticked, so Classic's "Opcjonalne" note would be wrong. */
+body#checkout .ciocia-account-password .form-group > .form-control-comment {
+  display: none;
+}
+
+/*
+ * Show password in the checkout as an eye, as on the source (Material Icons' visibility, and
+ * visibility_off while the password is shown). The button's text stays its name for screen readers
+ * ("Pokaż hasło" / "Ukryj hasło", set in custom.js); Classic swaps it on every click.
+ */
+body#checkout #wrapper .input-group .input-group-btn > [data-action="show-password"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 100%;
+  min-height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--ciocia-primary);
+  background: var(--ciocia-primary);
+  color: #fff;
+  font-size: 0;
+}
+
+body#checkout #wrapper .input-group .input-group-btn > [data-action="show-password"]::before {
+  content: "\E8F4";
+  font-family: "Material Icons";
+  font-size: 1.375rem;
+  line-height: 1;
+}
+
+body#checkout #wrapper .input-group:has(input.js-visible-password[type="text"]) .input-group-btn > [data-action="show-password"]::before {
+  content: "\E8F5";
+}
+
+body#checkout #wrapper .input-group .input-group-btn > [data-action="show-password"]:hover {
+  border-color: var(--ciocia-primary-hover);
+  background: var(--ciocia-primary-hover);
+}
+
+body#checkout #wrapper .input-group .input-group-btn > [data-action="show-password"]:focus:not(:focus-visible) {
+  outline: 0;
+}
+
+/*
+ * Forms in the personal information step (guest form and "Zaloguj się"), as on the source: the label
+ * above a full-width field, a burgundy "*" after required labels, a small hint under the field, larger
+ * checkbox text with the description in grey, and the chosen checkbox in Bootstrap's blue with a white
+ * tick. Classic puts the label, field and note in three columns of one row.
+ */
+body#checkout #checkout-personal-information-step .form-group.row {
+  display: block;
+  margin: 0 0 1.25rem;
+}
+
+body#checkout #checkout-personal-information-step .form-group.row > [class*="col-md-"] {
+  float: none;
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+}
+
+body#checkout #wrapper #checkout-personal-information-step .form-control-label {
+  display: block;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  color: var(--ciocia-text);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+/* The "*" is decoration: the field itself is required, which screen readers announce. */
+body#checkout #wrapper #checkout-personal-information-step .form-control-label.required::after {
+  content: " *" / "";
+  color: var(--ciocia-primary);
+}
+
+/* Classic gives each checkbox an empty label column. */
+body#checkout #wrapper #checkout-personal-information-step .form-group.row:has(.custom-checkbox) > .form-control-label {
+  display: none;
+}
+
+body#checkout #wrapper #checkout-personal-information-step .js-input-column > .form-control-comment {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--ciocia-text);
+  font-size: 0.8125rem;
+}
+
+body#checkout #wrapper #checkout-personal-information-step .form-control {
+  min-height: 2.5rem;
+  font-size: 1rem;
+}
+
+body#checkout #checkout-personal-information-step .custom-checkbox label {
+  position: relative;
+  display: block;
+  margin: 0;
+  padding-left: 1.875rem;
+  color: var(--ciocia-text);
+  font-size: 1rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+body#checkout #checkout-personal-information-step .custom-checkbox input[type="checkbox"],
+body#checkout #wrapper #checkout-personal-information-step .custom-checkbox input[type="checkbox"] + span {
+  position: absolute;
+  top: 0.1875rem;
+  left: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+}
+
+/* Before the label text: the box and the field are taken out of the flow, so this is the first thing on the line. */
+body#checkout #checkout-personal-information-step .custom-checkbox label:has(input[required])::before {
+  content: "* " / "";
+  color: var(--ciocia-primary);
+}
+
+body#checkout #wrapper #checkout-personal-information-step .custom-checkbox input[type="checkbox"]:checked + span {
+  border-color: #0d6efd;
+  background: #0d6efd;
+}
+
+body#checkout #checkout-personal-information-step .custom-checkbox .checkbox-checked {
+  margin: 0;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+body#checkout #checkout-personal-information-step .custom-checkbox em {
+  color: var(--ciocia-text-muted);
+  font-size: 0.9375rem;
+  font-style: normal;
+}
+
+/* Classic makes every span in a checkout checkbox absolute (meant for the box); these two are text. */
+body#checkout #checkout-personal-information-step .custom-checkbox .ciocia-create-account__title,
+body#checkout #checkout-personal-information-step .custom-checkbox .ciocia-create-account__optional {
+  position: static;
+  margin: 0;
+}
+
+body#checkout #checkout-personal-information-step .ciocia-create-account__title {
+  font-weight: 700;
+}
+
+body#checkout #checkout-personal-information-step .ciocia-create-account__optional {
+  color: var(--ciocia-text-muted);
+  font-size: 0.9375rem;
+}
+
+body#checkout #checkout-personal-information-step .form-footer .btn-primary {
+  min-width: 12rem;
+  padding: 0.5rem 1.5rem;
+}
+
+/* Classic moves these forms 5px right; here they line up with the tabs, as on the source. */
+body#checkout #checkout-personal-information-step #customer-form,
+body#checkout #checkout-personal-information-step #login-form {
+  margin-left: 0;
 }

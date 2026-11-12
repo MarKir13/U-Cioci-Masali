@@ -592,3 +592,32 @@ document.addEventListener('DOMContentLoaded', function () {
     observer.observe(tab, { attributes: true, attributeFilter: ['class'] });
   });
 })();
+
+/*
+ * "Stwórz konto" in the checkout customer form (checkout/_partials/customer-form.tpl, issue #44).
+ * custom.css shows the password only while the box is ticked; here the field is also disabled while
+ * hidden, so the browser does not send it and the order goes on as a guest, and required once shown.
+ */
+(function () {
+  var box = document.getElementById('ciocia-create-account');
+  var field = document.querySelector('#ciocia-account-password input[name="password"]');
+  if (!box || !field) return;
+  function sync() {
+    field.disabled = !box.checked;
+    field.required = box.checked;
+  }
+  box.addEventListener('change', sync);
+  sync();
+})();
+
+/*
+ * The show-password buttons in the checkout are an eye icon (custom.css), so their text, which Classic
+ * swaps on every click, must name the field. Set before the first click: Classic reads these once.
+ */
+(function () {
+  document.querySelectorAll('body#checkout [data-action="show-password"]').forEach(function (button) {
+    button.setAttribute('data-text-show', 'Pokaż hasło');
+    button.setAttribute('data-text-hide', 'Ukryj hasło');
+    button.textContent = 'Pokaż hasło';
+  });
+})();
