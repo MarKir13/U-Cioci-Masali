@@ -419,3 +419,108 @@ document.addEventListener('DOMContentLoaded', function () {
   if (readChoice()) closeNotice(null);
   else showNotice(false);
 })();
+
+/*
+ * Checkout steps bar (templates/checkout/checkout.tpl, issue #44). Built from the step sections,
+ * whose classes Classic's checkout script sets: -current, -complete, -unreachable, and -clickable on
+ * the current step and those before it. Any class change rebuilds the bar, so it follows Classic
+ * however the step changed. .ciocia-has-steps-bar on <body> then shows only the current step.
+ * A completed step is a link that clicks that step's (now hidden) title, so Classic's own handler
+ * switches the step. Focus then moves to the new step's heading, so the next Tab lands in its form.
+ * Runs at once: this file loads after the checkout, so the bar shows without a late jump.
+ */
+(function () {
+  var nav = document.querySelector('.ciocia-steps');
+  if (!nav) return;
+  var list = nav.querySelector('.ciocia-steps__list');
+  var sections = Array.from(document.querySelectorAll('#checkout section.checkout-step'));
+  if (!sections.length) return;
+
+  // Step name without Classic's number, tick and "Edytuj".
+  function stepName(section) {
+    var title = section.querySelector('.step-title').cloneNode(true);
+    title.querySelectorAll('.step-number, .step-edit, .material-icons').forEach(function (el) { el.remove(); });
+    return title.textContent.trim();
+  }
+
+  function openStep(section) {
+    var title = section.querySelector('.step-title');
+    title.click();
+    title.setAttribute('tabindex', '-1');
+    title.focus();
+  }
+
+  function stepState(section, index, current) {
+    var classes = section.classList;
+    if (index === current) return 'current';
+    // Classic adds -clickable once its script starts; until then, being before the current step means the same.
+    var isComplete = classes.contains('-complete') && !classes.contains('-unreachable') &&
+      (classes.contains('-clickable') || index < current);
+    return isComplete ? 'complete' : 'todo';
+  }
+
+  function createItem(section, index, state) {
+    var isCurrent = state === 'current';
+    var isComplete = state === 'complete';
+    var item = document.createElement('li');
+    item.className = 'ciocia-steps__item is-' + state;
+    var step = document.createElement(isComplete ? 'a' : 'span');
+    step.className = 'ciocia-steps__step';
+    var number = document.createElement('span');
+    number.className = 'ciocia-steps__number';
+    number.textContent = index + 1;
+    var name = document.createElement('span');
+    name.className = 'ciocia-steps__label';
+    name.textContent = stepName(section);
+    step.append(number, name);
+
+    if (isCurrent) step.setAttribute('aria-current', 'step');
+    if (isComplete) {
+      step.href = '#' + section.id;
+      var status = document.createElement('span');
+      status.className = 'sr-only';
+      status.textContent = ', ' + nav.dataset.completeLabel;
+      step.append(status);
+      step.addEventListener('click', function (event) {
+        event.preventDefault();
+        openStep(section);
+      });
+    }
+    item.append(step);
+    return item;
+  }
+
+  // Classic also changes classes that do not change the bar (-clickable at start, for one). Rebuilding
+  // then would only throw away the link that has keyboard focus, so the bar changes with the states only.
+  var shownStates = '';
+  function render() {
+    var current = sections.findIndex(function (section) { return section.classList.contains('-current'); });
+    var states = sections.map(function (section, index) { return stepState(section, index, current); });
+    if (states.join() === shownStates) return;
+    shownStates = states.join();
+    list.replaceChildren.apply(list, sections.map(function (section, index) {
+      return createItem(section, index, states[index]);
+    }));
+    renderCompact(current);
+  }
+
+  // Phones: "1 / 4" in a ring filled to the same share, the current step and the next one.
+  function renderCompact(current) {
+    if (current < 0) return;
+    var next = sections[current + 1];
+    nav.querySelector('[data-steps-position]').textContent = current + 1;
+    nav.querySelector('[data-steps-count]').textContent = sections.length;
+    nav.querySelector('.ciocia-steps__ring').style.setProperty('--ciocia-steps-progress', (current + 1) / sections.length);
+    nav.querySelector('[data-steps-current]').textContent = stepName(sections[current]);
+    nav.querySelector('[data-steps-next]').textContent = next ? stepName(next) : '';
+    nav.querySelector('[data-steps-next-row]').hidden = !next;
+  }
+
+  var observer = new MutationObserver(render);
+  sections.forEach(function (section) {
+    observer.observe(section, { attributes: true, attributeFilter: ['class'] });
+  });
+  render();
+  nav.hidden = false;
+  document.body.classList.add('ciocia-has-steps-bar');
+})();

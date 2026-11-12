@@ -2131,3 +2131,210 @@ body#checkout #footer:has(> .ciocia-trust) {
     width: 100%;
   }
 }
+
+
+/*
+ * Checkout steps bar (issue #44), templates/checkout/checkout.tpl: a card of its own above the
+ * checkout card, as on the source, with numbered circles joined by lines. custom.js builds it and
+ * then adds .ciocia-has-steps-bar to <body>: only the current step is shown, under its title as a
+ * heading. Without JavaScript Classic's list of steps stays as it was.
+ * Colours on the cream card: current #5f0602, completed #9a5a3f (the source's copper #b06d52 is
+ * 4.1:1 under white digits; this one is 5.4:1), not reached yet #666 (5.2:1).
+ */
+body#checkout .ciocia-steps {
+  margin-bottom: 1.25rem;
+  padding: 1.25rem 0.5rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.5rem;
+  background: var(--ciocia-card-bg);
+}
+
+body#checkout .ciocia-steps__list {
+  display: flex;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+body#checkout .ciocia-steps__item {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}
+
+/* The line from the previous circle to this one, leaving a small gap at both circles. */
+body#checkout .ciocia-steps__item + .ciocia-steps__item::before {
+  content: "";
+  position: absolute;
+  top: calc(0.875rem - 1px);
+  right: calc(50% + 1.25rem);
+  left: calc(-50% + 1.25rem);
+  height: 2px;
+  background: var(--ciocia-border);
+}
+
+body#checkout .ciocia-steps__item.is-complete + .ciocia-steps__item::before {
+  background: var(--ciocia-link);
+}
+
+body#checkout .ciocia-steps__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.25rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+
+body#checkout .ciocia-steps__number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--ciocia-border);
+  color: var(--ciocia-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+body#checkout .ciocia-steps__item.is-current .ciocia-steps__step {
+  color: var(--ciocia-primary);
+  font-weight: 600;
+}
+
+body#checkout .ciocia-steps__item.is-current .ciocia-steps__number {
+  background: var(--ciocia-primary);
+  color: #fff;
+}
+
+body#checkout .ciocia-steps__item.is-complete .ciocia-steps__step {
+  color: var(--ciocia-link);
+}
+
+body#checkout .ciocia-steps__item.is-complete .ciocia-steps__number {
+  background: var(--ciocia-link);
+  color: #fff;
+}
+
+body#checkout a.ciocia-steps__step:hover,
+body#checkout a.ciocia-steps__step:focus {
+  color: var(--ciocia-link-hover);
+  text-decoration: none;
+}
+
+body#checkout a.ciocia-steps__step:hover .ciocia-steps__label {
+  text-decoration: underline;
+}
+
+body#checkout a.ciocia-steps__step:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid var(--ciocia-primary);
+  outline-offset: 2px;
+}
+
+/*
+ * Phones, as on the source: a progress ring "1 / 4", the current step and the next one, on a strip
+ * from edge to edge (the negative margin cancels the container's 15 px). No links back here; the
+ * "Wróć do ..." buttons in the steps do that.
+ */
+body#checkout .ciocia-steps__compact {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  /* The strip sits right under the header, as on the source (Classic leaves 1.563rem there). */
+  body#checkout #wrapper {
+    padding-top: 0;
+  }
+
+  body#checkout .ciocia-steps {
+    margin: 0 -15px 1.25rem;
+    padding: 1rem 1.25rem;
+    border-width: 0 0 1px;
+  }
+
+  body#checkout .ciocia-steps__list {
+    display: none;
+  }
+
+  body#checkout .ciocia-steps__compact {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+}
+
+/*
+ * The ring: a conic gradient filled to the current share, its middle covered by a card-coloured disc.
+ * Green as on the source (Bootstrap's success colour), 4.2:1 on the card.
+ */
+body#checkout .ciocia-steps__ring {
+  --ciocia-steps-ring: #198754;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, var(--ciocia-card-bg) calc(100% - 5px), transparent calc(100% - 4px)),
+    conic-gradient(var(--ciocia-steps-ring) calc(var(--ciocia-steps-progress, 0) * 1turn), var(--ciocia-border) 0);
+  color: var(--ciocia-text);
+  white-space: pre;
+}
+
+body#checkout .ciocia-steps__summary {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+body#checkout .ciocia-steps__current {
+  color: var(--ciocia-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+body#checkout .ciocia-steps__next {
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Only the current step, its title as the heading of the form, as on the source. */
+body#checkout.ciocia-has-steps-bar section.checkout-step:not(.-current) {
+  display: none;
+}
+
+body#checkout.ciocia-has-steps-bar section.checkout-step.-current {
+  padding: 1.25rem;
+}
+
+body#checkout.ciocia-has-steps-bar section.checkout-step.-current .step-title {
+  margin-bottom: 1rem;
+  padding: 0 0 0.75rem;
+  border-top: 0;
+  border-bottom: 1px solid var(--ciocia-border);
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  line-height: 1.2;
+  cursor: default;
+}
+
+/* Classic's number, tick and "Edytuj" belong to its list of steps, which the bar replaces. */
+body#checkout.ciocia-has-steps-bar section.checkout-step.-current .step-title .step-number,
+body#checkout.ciocia-has-steps-bar section.checkout-step.-current .step-title .done,
+body#checkout.ciocia-has-steps-bar section.checkout-step.-current .step-title .step-edit {
+  display: none;
+}
+
+/* Classic indents the form to line up with the title text after its number; now there is none. */
+body#checkout.ciocia-has-steps-bar section.checkout-step.-current .content {
+  padding: 0;
+}
