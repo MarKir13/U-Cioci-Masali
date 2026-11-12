@@ -6,7 +6,9 @@ COPY config/php.ini /usr/local/etc/php/conf.d/zz-shop.ini
 
 # Behind the HTTPS proxy: treat X-Forwarded-Proto: https as a secure request
 COPY config/apache-https-proxy.conf /etc/apache2/conf-available/https-proxy.conf
-RUN a2enconf https-proxy
+# Access log without the Basic auth user, which for the Webservice API is the key
+COPY config/apache-access-log.conf /etc/apache2/conf-available/access-log.conf
+RUN a2enconf https-proxy access-log
 
 # Our theme and modules are kept in /opt/ciocia and copied into the shop files by sync-code.sh
 # (before install and on every start), because /var/www/html lives in a volume.
@@ -23,5 +25,6 @@ COPY --chown=www-data:www-data scripts/setup/ /opt/ciocia/scripts/setup/
 
 # Run once after the automatic install, in name order: 10 enables our child theme,
 # 20 puts our content into the database (scripts/setup/shop-content.php),
-# 30 configures the shop (scripts/setup/configure-shop.php)
+# 30 configures the shop (scripts/setup/configure-shop.php),
+# 40 turns on the Webservice API with the importer's key (scripts/setup/webservice.php)
 COPY --chmod=755 scripts/post-install/ /tmp/post-install-scripts/
