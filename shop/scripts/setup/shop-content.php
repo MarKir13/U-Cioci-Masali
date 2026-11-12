@@ -83,6 +83,12 @@ const FORM_TEXTS = [
     'NW_CONDITIONS' => 'Wypiszesz się w każdej chwili — link znajdziesz w stopce każdego maila.',
 ];
 
+// Contact form (module contactform, issue #45). The source form has only e-mail and message: the
+// "Temat" select shows only with more than one contact, and "Załącznik" only with file upload on.
+// The installer adds two contacts; the technical one is deleted.
+const CONTACT_NAME = 'Biuro obsługi klienta';
+const DELETED_CONTACTS = ['Webmaster'];
+
 function setStoreDetails(array $shop): void
 {
     // Shown in the footer and on the contact page (module ps_contactinfo), and used as the sender
@@ -307,6 +313,37 @@ function saveFooterBlocks(array $cmsIds): void
     }
 }
 
+/** One contact that receives messages from the contact form, at the store e-mail, and no attachments. */
+function setContactForm(array $shop): void
+{
+    Configuration::updateValue('PS_CUSTOMER_SERVICE_FILE_UPLOAD', 0);
+
+    $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+    foreach (Contact::getContacts($idLang) as $row) {
+        if (in_array($row['name'], DELETED_CONTACTS, true)) {
+            mustSave((new Contact((int) $row['id_contact']))->delete(), 'deletion of contact ' . $row['name']);
+            say('Deleted contact ' . $row['name']);
+        }
+    }
+
+    // After the deletion a fresh install has one contact left: customer service. Name it as on the source.
+    $contacts = Contact::getContacts($idLang);
+    if (!$contacts) {
+        throw new RuntimeException('No contact left for the contact form; add one in the back office');
+    }
+    if (count($contacts) > 1) {
+        say('Warning: ' . count($contacts) . ' contacts left, the contact form shows a subject select;'
+            . ' only the customer service contact is renamed');
+        $contacts = array_values(array_filter($contacts, fn (array $row) => (bool) $row['customer_service'])) ?: $contacts;
+    }
+    $contact = new Contact((int) $contacts[0]['id_contact']);
+    $contact->name = forAllLanguages(CONTACT_NAME);
+    $contact->email = $shop['email'];
+    $contact->customer_service = true;
+    mustSave($contact->update(), 'contact ' . CONTACT_NAME);
+    say('Contact form: "' . CONTACT_NAME . '" <' . $shop['email'] . '>, no attachments');
+}
+
 function setPageTitles(): void
 {
     foreach (PAGE_TITLES as $pageName => $title) {
@@ -352,6 +389,7 @@ try {
     Configuration::updateValue('CIOCIA_PRIVACY_CMS_ID', $cmsIds[PRIVACY_PAGE]);
     deleteDemoCmsPages();
     saveFooterBlocks($cmsIds);
+    setContactForm($settings['store']);
     setPageTitles();
     setFormTexts();
     disableDemoContent();
