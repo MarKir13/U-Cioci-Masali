@@ -9,7 +9,7 @@ from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
-from .models import Category, Product, validate_record
+from .models import Category, Product, has_visible_text, validate_record
 
 log = logging.getLogger(__name__)
 
@@ -177,8 +177,24 @@ def parse_weight(url: str, ld_data: dict) -> dict | None:
     return {"value": weight["value"], "unit": unit}
 
 
-def parse_product(url: str, html: str) -> Product | None:
-    """Extracts product data from data-product, JSON-LD, and HTML to build a validated Product."""
+def description_from(data: dict) -> str | None:
+    """The long description, or the short one when the long one is empty (some products only have the short one).
+
+    Only text the shop itself shows is used. The JSON-LD description is not: for products without any
+    description it repeats the product name.
+    """
+    for key in ("description", "description_short"):
+        value = data.get(key)
+        if isinstance(value, str) and has_visible_text(value):
+            return value
+    return data.get("description")  # nothing usable: validation reports it
+
+
+def parse_product(url: str, html: str, problems: list[str] | None = None) -> Product | None:
+    """Extracts product data from data-product, JSON-LD, and HTML to build a validated Product.
+
+    If `problems` is given, the reason for an invalid record is appended to it.
+    """
     soup = BeautifulSoup(html, "html.parser")
 
     details_div = soup.select_one("div.js-product-details")
@@ -201,7 +217,7 @@ def parse_product(url: str, html: str) -> Product | None:
         "id": data.get("id"),
         "url": url,
         "name": data.get("name"),
-        "description": data.get("description"),
+        "description": description_from(data),
         # Both prices are rounded the same way, so rounding cannot put price above regular_price
         "price": round_price(data.get("price_amount")),
         "regular_price": round_price(data.get("price_without_reduction")),
@@ -251,4 +267,4 @@ def parse_product(url: str, html: str) -> Product | None:
         if href and href not in product_dict["family"]:
             product_dict["family"].append(href)
 
-    return validate_record(model=Product, data=product_dict, url=url)
+    return validate_record(model=Product, data=product_dict, url=url, problems=problems)

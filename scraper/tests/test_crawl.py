@@ -63,8 +63,11 @@ def category_page(category_id: int, products: list[int], next_page: str | None =
     )
 
 
-def product_page(product_id: int) -> str:
-    """A product page with the data-product JSON and the breadcrumb of its default category."""
+def product_page(product_id: int, overrides: dict | None = None, with_breadcrumb: bool = True) -> str:
+    """A product page with the data-product JSON and the breadcrumb of its default category.
+
+    `overrides` replaces fields of the data-product JSON; `with_breadcrumb=False` leaves the breadcrumb out.
+    """
     default_category = PRODUCTS[product_id]
     data = {
         "id": product_id,
@@ -77,8 +80,10 @@ def product_page(product_id: int) -> str:
         "id_category_default": default_category,
         "images": [{"bySize": {"product_main_2x": {"url": f"{BASE}/{product_id}0-product_main_2x/p.jpg"}}}],
     }
+    data.update(overrides or {})
     items = [*category_path(default_category), (data["name"], product_url(product_id))]
-    return f"<div class=\"js-product-details\" data-product='{html.escape(json.dumps(data))}'></div>{breadcrumb(items)}"
+    crumbs = breadcrumb(items) if with_breadcrumb else ""
+    return f"<div class=\"js-product-details\" data-product='{html.escape(json.dumps(data))}'></div>{crumbs}"
 
 
 def shop_pages() -> dict[str, str]:
@@ -367,6 +372,155 @@ def test_failed_listing_page_is_tried_again_next_run(tmp_path):
     crawler, shop = make_crawler(shop_pages(), tmp_path)
     crawler.run()
     assert f"{category_url(50)}?page=2" in shop.calls
+
+
+# ---------- Descriptions ----------
+
+
+def test_short_description_is_used_when_the_long_one_is_empty(tmp_path):
+    pages = shop_pages()
+    pages[product_url(102)] = product_page(
+        102, {"description": "<p></p>\r\n<p></p>", "description_short": "<p>Krótki</p>"}
+    )
+    make_crawler(pages, tmp_path)[0].run()
+    assert saved_products(tmp_path)[102]["description"] == "<p>Krótki</p>"
+
+
+def test_long_description_wins_over_the_short_one(tmp_path):
+    pages = shop_pages()
+    pages[product_url(102)] = product_page(102, {"description": "<p>Długi</p>", "description_short": "<p>Krótki</p>"})
+    make_crawler(pages, tmp_path)[0].run()
+    assert saved_products(tmp_path)[102]["description"] == "<p>Długi</p>"
+
+
+def test_product_without_any_description_is_rejected_with_the_reason(tmp_path):
+    pages = shop_pages()
+    pages[product_url(102)] = product_page(102, {"description": "", "description_short": ""})
+    make_crawler(pages, tmp_path)[0].run()
+
+    assert 102 not in saved_products(tmp_path)
+    rejected = json.loads((tmp_path / "results" / "rejected.json").read_text(encoding="utf-8"))
+    assert [(entry["id"], entry["url"]) for entry in rejected] == [(102, product_url(102))]
+    assert "description" in rejected[0]["reason"]
+
+
+# ---------- Categories that are not in the shop ----------
+
+
+def test_category_ids_the_shop_does_not_have_are_dropped(tmp_path):
+    """Default category 99 has no page in the sitemap; the breadcrumb still gives the real categories."""
+    pages = shop_pages()
+    pages[product_url(102)] = product_page(102, {"id_category_default": 99})
+    make_crawler(pages, tmp_path)[0].run()
+    assert saved_products(tmp_path)[102]["category_ids"] == [10, 11]  # the breadcrumb, without 99
+
+
+def test_product_in_no_real_category_is_rejected(tmp_path, caplog):
+    pages = shop_pages()
+    pages[category_url(10)] = category_page(10, [101, 103])  # 102 is on no listing either
+    pages[product_url(102)] = product_page(102, {"id_category_default": 99}, with_breadcrumb=False)
+    with caplog.at_level(logging.WARNING):
+        make_crawler(pages, tmp_path)[0].run()
+
+    assert sorted(saved_products(tmp_path)) == [101, 103, 104]
+    rejected = json.loads((tmp_path / "results" / "rejected.json").read_text(encoding="utf-8"))
+    assert [entry["id"] for entry in rejected] == [102]
+    assert "[99]" in rejected[0]["reason"]
+    assert "not categories of the shop" not in caplog.text  # nothing was left of it to keep
+
+
+def test_products_saved_by_an_earlier_run_are_cleaned_too(tmp_path):
+    """Before this check existed a full run saved category ids 1 and 99; the next run fixes them."""
+    pages = shop_pages()
+    pages[category_url(10)] = category_page(10, [101, 103])  # 102 is on no listing
+    pages[product_url(102)] = product_page(102, {"id_category_default": 99}, with_breadcrumb=False)
+    make_crawler(pages, tmp_path)[0].run()
+    assert 102 not in saved_products(tmp_path)  # this run already leaves it out
+
+    # Put back what the old version would have saved
+    products_file = tmp_path / "results" / "products.jsonl"
+    records = load_lines(products_file)
+    for record in records:
+        if record["id"] == 101:
+            record["category_ids"].append(1)
+    records.append({**records[0], "id": 102, "url": product_url(102), "category_ids": [99]})
+    products_file.write_text("".join(json.dumps(r) + "\n" for r in records), encoding="utf-8")
+    images = tmp_path / "results" / "images"
+    images.mkdir()
+    (images / "102-1.jpg").write_bytes(b"x")
+    (images / "101-1.jpg").write_bytes(b"x")
+
+    make_crawler(pages, tmp_path)[0].run()
+    products = saved_products(tmp_path)
+    assert products[101]["category_ids"] == [11, 10, 50]
+    assert 102 not in products
+    assert not (images / "102-1.jpg").exists()  # the image of a removed product goes too
+    assert (images / "101-1.jpg").exists()
+
+
+def test_a_test_run_does_not_touch_category_ids(tmp_path):
+    """With --limit only some categories are saved, so ids of the others are not "unknown"."""
+    crawler, _ = make_crawler(shop_pages(), tmp_path, limit=1)
+    crawler.run()
+    assert crawler.known_categories is None
+    assert not (tmp_path / "results" / "rejected.json").exists()
+
+
+# ---------- Empty categories ----------
+
+
+def test_empty_categories_helper_keeps_the_parent_of_a_filled_subcategory():
+    from scraper.crawl import empty_categories
+
+    categories = {
+        1: {"id": 1, "parent_id": None},
+        2: {"id": 2, "parent_id": 1},
+        3: {"id": 3, "parent_id": None},
+        4: {"id": 4, "parent_id": 3},
+    }
+    products = {10: {"category_ids": [2]}}
+    assert empty_categories(categories, products) == [3, 4]
+
+
+def add_empty_category(tmp_path) -> None:
+    path = tmp_path / "results" / "categories.json"
+    categories = json.loads(path.read_text(encoding="utf-8"))
+    categories.append({"id": 12, "name": "Pusta", "url": f"{BASE}/12-pusta", "parent_id": 10})
+    path.write_text(json.dumps(categories), encoding="utf-8")
+
+
+def test_category_without_products_is_removed(tmp_path, caplog):
+    make_crawler(shop_pages(), tmp_path)[0].run()
+    add_empty_category(tmp_path)
+    with caplog.at_level(logging.WARNING):
+        make_crawler(shop_pages(), tmp_path)[0].run()
+    assert sorted(saved_categories(tmp_path)) == [10, 11, 50]
+    assert "Category 12 Pusta has no products, removing it" in caplog.text
+
+
+def test_no_category_is_removed_while_a_product_page_failed_to_download(tmp_path, caplog):
+    """The failed product may be the only one in a category, so the category only looks empty."""
+    make_crawler(shop_pages(), tmp_path)[0].run()
+    add_empty_category(tmp_path)
+    products_file = tmp_path / "results" / "products.jsonl"
+    records = [r for r in load_lines(products_file) if r["id"] != 103]
+    products_file.write_text("".join(json.dumps(r) + "\n" for r in records), encoding="utf-8")
+    pages = shop_pages()
+    pages[product_url(103)] = requests.ConnectionError("connection reset")
+
+    with caplog.at_level(logging.WARNING):
+        make_crawler(pages, tmp_path)[0].run()
+    assert 12 in saved_categories(tmp_path)
+    assert "no empty category is removed" in caplog.text
+
+
+def test_known_empty_category_is_skipped_without_an_error(tmp_path, caplog):
+    crawler, shop = make_crawler(shop_pages(), tmp_path, empty_category_ids=(11,))
+    with caplog.at_level(logging.INFO):
+        crawler.run()
+    assert category_url(11) not in shop.calls
+    assert "Skipping category 11" in caplog.text
+    assert "ERROR" not in [record.levelname for record in caplog.records]
 
 
 # ---------- Command line ----------

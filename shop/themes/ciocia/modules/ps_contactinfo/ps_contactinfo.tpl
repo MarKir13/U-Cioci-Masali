@@ -16,7 +16,12 @@
     {if $contact_infos.company}
       <p class="ciocia-contact-company">{$contact_infos.company}</p>
     {/if}
-    <address>{$contact_infos.address.formatted nofilter}</address>
+    {* Built from parts: the formatted address repeats the shop name above and adds the country. *}
+    <address>
+      {$contact_infos.address.address1}
+      {if $contact_infos.address.address2}<br>{$contact_infos.address.address2}{/if}
+      <br>{$contact_infos.address.postcode} {$contact_infos.address.city}
+    </address>
     {if $contact_infos.phone}
       <p class="ciocia-contact-line">
         <i class="material-icons" aria-hidden="true">phone</i>

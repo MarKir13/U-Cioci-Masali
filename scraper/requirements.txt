@@ -5,6 +5,8 @@ Protego==0.7.0
 pydantic==2.14.2
 # HTML parsing (category pages)
 beautifulsoup4==4.15.0
+# Resizing and recompressing product images
+Pillow==12.3.0
 
 # Tests
 pytest==9.2.0

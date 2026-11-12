@@ -27,10 +27,14 @@ from pydantic.json_schema import models_json_schema
 log = logging.getLogger(__name__)
 
 
-def _require_visible_text(value: str) -> str:
+def has_visible_text(value: str) -> bool:
     """Descriptions are HTML, so `<p>&nbsp;</p>` counts as empty too."""
     # delete HTML tags [^>] means whatever other than '>' and * means however long => '<tag>text</tag>' becomes 'text'
-    if not html.unescape(re.sub(r"<[^>]*>", "", value)).strip():  # then check if empty
+    return bool(html.unescape(re.sub(r"<[^>]*>", "", value)).strip())
+
+
+def _require_visible_text(value: str) -> str:
+    if not has_visible_text(value):
         raise ValueError("no visible text")
     return value
 
@@ -152,15 +156,18 @@ class Product(Record):
         return images
 
 
-def validate_record[T: Record](model: type[T], data: dict, url: str) -> T | None:
-    """Return the validated record, or log why it is invalid and return None so that the run can go on."""
+def validate_record[T: Record](model: type[T], data: dict, url: str, problems: list[str] | None = None) -> T | None:
+    """Return the validated record, or log why it is invalid and return None so that the run can go on.
+
+    If `problems` is given, the reason is also appended to it (the crawl saves it in rejected.json).
+    """
     try:
         return model.model_validate(data)
     except ValidationError as exc:
-        problems = "; ".join(
-            f"{'.'.join(str(part) for part in error['loc'])}: {error['msg']}" for error in exc.errors()
-        )
-        log.error("Invalid %s at %s: %s", model.__name__, url, problems)
+        reason = "; ".join(f"{'.'.join(str(part) for part in error['loc'])}: {error['msg']}" for error in exc.errors())
+        log.error("Invalid %s at %s: %s", model.__name__, url, reason)
+        if problems is not None:
+            problems.append(reason)
         return None
 
 

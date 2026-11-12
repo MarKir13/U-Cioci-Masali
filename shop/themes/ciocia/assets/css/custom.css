@@ -16,6 +16,491 @@
   src: url("../fonts/open-sans-semibold.ttf") format("truetype");
 }
 
+/*
+ * Global styles: colours, page shell, typography, links, buttons and forms from the source shop.
+ * This section comes before the header and footer sections, so their own rules still win there.
+ */
+:root {
+  --ciocia-page-top: #2c0001;
+  --ciocia-page-bg: #4a0d0d;
+  --ciocia-page-gradient: radial-gradient(ellipse at 50% 0%, #5a1210 0%, #4a0d0d 45%, #3a0606 100%);
+  --ciocia-card-bg: #faf4e4;
+  --ciocia-border: #e7dbc0;
+  --ciocia-surface-warm: #f5eedd;
+  --ciocia-surface-light: #fffaf6;
+  --ciocia-gold: #f9d28f;
+  --ciocia-primary: #5f0602;
+  --ciocia-primary-hover: #7a1006;
+  --ciocia-primary-dark: #2c0001;
+  --ciocia-secondary: #6c757d;
+  --ciocia-secondary-dark: #5c636a;
+  --ciocia-text: #333;
+  --ciocia-text-muted: #666;
+  /* The source uses #c87f60 / #b06d52 (2.87:1 and 3.71:1 on the card). The same hue, darker, passes 4.5:1. */
+  --ciocia-link: #9a5a3f;
+  --ciocia-link-hover: #8f4f36;
+  /* Field focus as on the source (Bootstrap's default blue). */
+  --ciocia-field-border: #dee2e6;
+  --ciocia-field-focus-border: #85b4fb;
+  --ciocia-field-focus-ring: 0 0 0 0.25rem rgba(11, 105, 246, 0.25);
+  --ciocia-font: "Open Sans", system-ui, -apple-system, sans-serif;
+}
+
+/* Page shell: dark background, 985 px content column. */
+html {
+  background: var(--ciocia-page-top);
+}
+
+/* Classic fixes body at the window height, so the gradient would stop there on long pages. */
+body {
+  height: auto;
+  min-height: 100%;
+  font-family: var(--ciocia-font);
+  background: var(--ciocia-page-bg) var(--ciocia-page-gradient) fixed;
+}
+
+#wrapper {
+  max-width: 61.5625rem;
+  margin: 0 auto;
+  padding-bottom: 2rem;
+  background: transparent;
+  color: var(--ciocia-text);
+  line-height: 1.5;
+  /* Native checkboxes and radios that Classic does not restyle. */
+  accent-color: var(--ciocia-primary);
+}
+
+/*
+ * The source puts the page title and content on one cream card. In Classic that is the row holding
+ * the columns. Classic's columns already add 15 px on each side, so the card adds only the rest.
+ */
+#wrapper > .container > .row {
+  margin-right: 0;
+  margin-left: 0;
+  padding: 1.25rem calc(1.25rem - 15px);
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.5rem;
+  background: var(--ciocia-card-bg);
+}
+
+/*
+ * Blocks inside the card (cart, checkout steps, order summary, order confirmation) are lighter
+ * cards, as on the source: white for the main content, warm white for the summary column.
+ */
+#wrapper .card,
+body#checkout section.checkout-step,
+#wrapper .blockreassurance_product {
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 0.25rem 1rem rgb(95 6 2 / 5%);
+}
+
+#wrapper .cart-grid-right .card,
+#wrapper .blockreassurance_product {
+  background: var(--ciocia-surface-light);
+}
+
+body#checkout section.checkout-step {
+  margin-bottom: 0.75rem;
+}
+
+/* Classic drops the summary's inner padding on phones; with a border the text would touch it. */
+@media (max-width: 767px) {
+  #wrapper .cart-grid-right .card {
+    padding: 0.75rem 1rem;
+  }
+}
+
+body#checkout section.checkout-step .step-title {
+  border-color: var(--ciocia-border);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* Source: burgundy number for the current step, copper for completed steps. */
+body#checkout section.checkout-step.-reachable.-current .step-number {
+  background-color: var(--ciocia-primary);
+}
+
+body#checkout section.checkout-step .done {
+  color: var(--ciocia-link);
+}
+
+/*
+ * On forms and text pages the source has no inner card, so Classic's white blocks are removed there.
+ * Order confirmation keeps them: the source shows its sections as inner cards.
+ */
+body:not(#order-confirmation) #main .page-content.card,
+#main .page-content.page-cms,
+#pagenotfound .page-not-found,
+#products .page-not-found,
+#wrapper .contact-form {
+  padding-right: 0;
+  padding-left: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+/* Classic hides a one-level breadcrumb; the source shows "Strona główna" above the cart. */
+body#cart #wrapper .breadcrumb[data-depth="1"] {
+  display: block;
+}
+
+/* Breadcrumb sits on the dark background: white links, gold current page. */
+#wrapper .breadcrumb {
+  font-size: 0.875rem;
+}
+
+#wrapper .breadcrumb li a {
+  color: #fff;
+}
+
+#wrapper .breadcrumb li a:hover,
+#wrapper .breadcrumb li:last-child {
+  color: var(--ciocia-gold);
+}
+
+#wrapper .breadcrumb li::after {
+  content: "›";
+  color: var(--ciocia-gold);
+}
+
+#wrapper .breadcrumb li a:focus-visible {
+  outline: 2px solid var(--ciocia-gold);
+  outline-offset: 2px;
+}
+
+#wrapper .blockreassurance_product {
+  padding: 1rem;
+}
+
+#wrapper .cart-grid-body a.label:hover {
+  color: var(--ciocia-link-hover);
+}
+
+/* "Continue shopping" is an outline button on the source. */
+body#cart .cart-grid-body > a.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--ciocia-primary);
+  border-radius: 0.25rem;
+  color: var(--ciocia-primary);
+}
+
+body#cart .cart-grid-body > a.label:hover,
+body#cart .cart-grid-body > a.label:focus {
+  background: var(--ciocia-primary);
+  color: #fff;
+  text-decoration: none;
+}
+
+body#cart .cart-grid-body > a.label .material-icons {
+  color: inherit;
+}
+
+/* Typography */
+#wrapper p,
+#wrapper .page-content.page-cms ul {
+  color: inherit;
+}
+
+#wrapper h1, #wrapper h2, #wrapper h3, #wrapper h4, #wrapper h5, #wrapper h6,
+#wrapper .h1, #wrapper .h2, #wrapper .h3, #wrapper .h4, #wrapper .h5, #wrapper .h6 {
+  color: var(--ciocia-text);
+  font-weight: 600;
+  text-transform: none;
+}
+
+#main .page-header h1 {
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  line-height: 1.2;
+}
+
+/* Classic's grey #7a7a7a is 3.9:1 on the card; the source's muted grey passes. */
+#wrapper .form-control-comment,
+#wrapper .sitemap h2,
+#wrapper .nav-item .nav-link,
+#wrapper #products,
+#wrapper .products-selection p,
+#wrapper .products-selection .sort-by,
+body#checkout section.checkout-step.-unreachable .step-title {
+  color: var(--ciocia-text-muted);
+}
+
+/* Classic fades steps that are not reachable yet to 50 %, which drops them below 3:1. */
+body#checkout section.checkout-step.-unreachable .step-title {
+  opacity: 1;
+}
+
+#wrapper .up .btn-secondary {
+  color: #fff;
+}
+
+#wrapper .nav-item .nav-link.active,
+#wrapper .cart-summary-line .label {
+  color: var(--ciocia-text);
+}
+
+/* My account tiles */
+.page-my-account #content .links a {
+  color: var(--ciocia-text);
+  font-weight: 600;
+  text-transform: none;
+}
+
+.page-my-account #content .links a span.link-item {
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.5rem;
+}
+
+.page-my-account #content .links a:hover,
+.page-my-account #content .links a:hover i {
+  color: var(--ciocia-primary);
+}
+
+/* Classic's .text-muted is a utility with !important, so only !important overrides it. */
+#wrapper .text-muted {
+  color: var(--ciocia-text-muted) !important;
+}
+
+/* Links. :where() keeps a plain `a` specificity, so Classic's component colours still apply. */
+:where(#wrapper, .modal) a {
+  color: var(--ciocia-link);
+}
+
+:where(#wrapper, .modal) a:hover,
+:where(#wrapper, .modal) a:focus {
+  color: var(--ciocia-link-hover);
+}
+
+.btn-link {
+  color: var(--ciocia-link);
+}
+
+#wrapper a:focus-visible,
+#wrapper button:focus-visible,
+.modal a:focus-visible,
+.modal button:focus-visible {
+  outline: 2px solid var(--ciocia-primary);
+  outline-offset: 2px;
+}
+
+/* Buttons: source colours, normal case. Classic's own selectors are listed where they would win. */
+.btn-primary,
+.btn-secondary,
+.btn-outline-primary {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  font-weight: 400;
+  text-transform: none;
+}
+
+.btn-primary,
+.btn-primary.disabled,
+.btn-primary:disabled,
+.btn-primary.disabled:hover,
+.btn-primary:disabled:hover,
+.btn-primary.disabled:focus,
+.btn-primary:disabled:focus {
+  border-color: var(--ciocia-primary);
+  background-color: var(--ciocia-primary);
+  color: #fff;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary.active,
+.btn-primary:active:hover,
+.btn-primary:active:focus,
+.btn-primary.active:hover,
+.btn-primary.active:focus {
+  border-color: var(--ciocia-primary-dark);
+  background-color: var(--ciocia-primary-dark);
+  color: #fff;
+}
+
+.btn-secondary,
+.btn-secondary.disabled,
+.btn-secondary:disabled,
+.btn-secondary.disabled:hover,
+.btn-secondary:disabled:hover {
+  border-color: var(--ciocia-secondary);
+  background-color: var(--ciocia-secondary);
+  color: #fff;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus,
+.btn-secondary:active,
+.btn-secondary.active,
+.btn-secondary:active:hover,
+.btn-secondary:active:focus,
+.btn-secondary.active:hover,
+.btn-secondary.active:focus {
+  border-color: var(--ciocia-secondary-dark);
+  background-color: var(--ciocia-secondary-dark);
+  color: #fff;
+}
+
+.btn-outline-primary {
+  border-color: var(--ciocia-primary);
+  background-color: transparent;
+  color: var(--ciocia-primary);
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active,
+.btn-outline-primary.active {
+  border-color: var(--ciocia-primary);
+  background-color: var(--ciocia-primary);
+  color: #fff;
+}
+
+/* As on the source, disabled buttons keep their colour and fade. */
+.btn-primary.disabled,
+.btn-primary:disabled,
+.btn-secondary.disabled,
+.btn-secondary:disabled {
+  opacity: 0.65;
+}
+
+/* Form fields */
+#wrapper .form-control,
+.modal .form-control {
+  padding: 0.375rem 1rem;
+  border: 1px solid var(--ciocia-field-border);
+  border-radius: 4px;
+  background-color: #fff;
+  color: var(--ciocia-text);
+}
+
+#wrapper .form-control:focus,
+.modal .form-control:focus,
+#wrapper #search_widget input[type="text"]:focus {
+  border-color: var(--ciocia-field-focus-border);
+  outline: 0;
+  background-color: #fff;
+  box-shadow: var(--ciocia-field-focus-ring);
+  color: var(--ciocia-text);
+}
+
+#wrapper .form-control::placeholder,
+.modal .form-control::placeholder {
+  color: var(--ciocia-text-muted);
+}
+
+/* The password field and its show button share one focus ring. */
+#wrapper .input-group.focus {
+  border-radius: 4px;
+  outline: 0;
+  box-shadow: var(--ciocia-field-focus-ring);
+}
+
+#wrapper .input-group .input-group-btn > .btn {
+  border-radius: 0 4px 4px 0;
+  background: var(--ciocia-secondary);
+  text-transform: none;
+}
+
+#wrapper .input-group .form-control:not(:last-child) {
+  border-radius: 4px 0 0 4px;
+}
+
+/* Classic's quantity field (product page, cart) is 3rem wide; the padding above would leave no room for "10". */
+#wrapper .bootstrap-touchspin input.form-control {
+  padding: 0.175rem 0.5rem;
+}
+
+#wrapper form .form-control-label {
+  font-weight: 600;
+}
+
+#wrapper .custom-checkbox input[type="checkbox"] + span,
+#wrapper .custom-radio {
+  border-color: #767676;
+  background: #fff;
+}
+
+#wrapper .custom-checkbox input[type="checkbox"] + span {
+  border-radius: 4px;
+}
+
+#wrapper .custom-radio input[type="radio"]:checked + span {
+  background-color: var(--ciocia-primary);
+}
+
+#wrapper .custom-checkbox input[type="checkbox"]:focus-visible + span {
+  border-color: var(--ciocia-field-focus-border);
+  box-shadow: var(--ciocia-field-focus-ring);
+}
+
+/* Separate rule: a browser without :has() drops the whole selector list, so the checkbox rule stays apart. */
+#wrapper .custom-radio:has(input[type="radio"]:focus-visible) {
+  border-color: var(--ciocia-field-focus-border);
+  box-shadow: var(--ciocia-field-focus-ring);
+}
+
+/* The 404 page shows our header search template outside the header, where its header styles do not apply. */
+#wrapper #search_widget form {
+  position: relative;
+}
+
+#wrapper #search_widget input[type="text"] {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.375rem 3.25rem 0.375rem 1rem;
+  border: 1px solid var(--ciocia-field-border);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ciocia-text);
+}
+
+#wrapper #search_widget .ciocia-search-submit {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0 4px 4px 0;
+  background: var(--ciocia-primary);
+  color: #fff;
+}
+
+#wrapper #search_widget .ciocia-search-submit .material-icons {
+  position: static;
+  color: inherit;
+  font-size: 1.5rem;
+}
+
+#wrapper #search_widget .clear {
+  display: none;
+}
+
+#wrapper .alert {
+  border-radius: 0.25rem;
+}
+
+/* Prices use the source's burgundy instead of Classic's blue. */
+#wrapper .product-price {
+  color: var(--ciocia-primary);
+}
+
 /* Preserve Classic's module hooks and responsive container IDs. */
 @media (min-width: 768px) {
   #header .header-top {
@@ -997,10 +1482,9 @@
 #footer {
   --ciocia-footer-bg: #370101;
   --ciocia-footer-text: #f0d5bc;
-  --ciocia-footer-heading: #f9d28f;
-  --ciocia-surface-warm: #f5eedd;
-  --ciocia-accent: #5f0602;
-  --ciocia-accent-dark: #2c0001;
+  --ciocia-footer-heading: var(--ciocia-gold);
+  --ciocia-accent: var(--ciocia-primary);
+  --ciocia-accent-dark: var(--ciocia-primary-dark);
   font-family: "Open Sans", system-ui, -apple-system, sans-serif;
   font-weight: 300;
 }
@@ -1352,5 +1836,195 @@ body#checkout #footer:has(> .ciocia-trust) {
 @media (min-width: 992px) {
   #footer .ciocia-footer-columns {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/*
+ * Cookie notice (templates/_partials/cookie-notice.tpl), as on the source shop. Under Bootstrap
+ * modals (1050) and the mobile menu (1000), so checkout dialogs and the drawer stay on top.
+ */
+.ciocia-cookie {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 990;
+}
+
+.ciocia-cookie[hidden],
+.ciocia-cookie-reopen[hidden],
+.ciocia-cookie__details[hidden] {
+  display: none;
+}
+
+.ciocia-cookie__panel {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1rem 1.125rem 1.125rem;
+  border-top: 1px solid var(--ciocia-border);
+  background: var(--ciocia-card-bg);
+  box-shadow: 0 -0.5rem 1.5rem rgba(44, 0, 1, 0.18);
+  color: var(--ciocia-text);
+  font-family: var(--ciocia-font);
+}
+
+.ciocia-cookie__title {
+  margin: 0 0 0.35rem;
+  color: var(--ciocia-page-top);
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.ciocia-cookie__text {
+  margin: 0 0 0.875rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.ciocia-cookie__link {
+  color: var(--ciocia-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.ciocia-cookie__link:hover,
+.ciocia-cookie__link:focus-visible {
+  color: var(--ciocia-link);
+}
+
+.ciocia-cookie__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ciocia-cookie__btn {
+  padding: 0.65rem 0.95rem;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.ciocia-cookie__btn--primary {
+  background: var(--ciocia-primary);
+  color: #fff;
+}
+
+.ciocia-cookie__btn--primary:hover,
+.ciocia-cookie__btn--primary:focus-visible {
+  background: var(--ciocia-primary-hover);
+}
+
+.ciocia-cookie__btn--ghost {
+  border-color: var(--ciocia-border);
+  background: transparent;
+  color: var(--ciocia-page-top);
+}
+
+.ciocia-cookie__btn--ghost:hover,
+.ciocia-cookie__btn--ghost:focus-visible {
+  border-color: var(--ciocia-link);
+  color: var(--ciocia-link-hover);
+}
+
+.ciocia-cookie__btn--text {
+  padding-right: 0.35rem;
+  padding-left: 0.35rem;
+  background: transparent;
+  color: var(--ciocia-text-muted);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.ciocia-cookie__btn--save {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.ciocia-cookie__details {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--ciocia-border);
+}
+
+.ciocia-cookie__opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0;
+  color: var(--ciocia-text);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.ciocia-cookie__opt input {
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+  accent-color: var(--ciocia-primary);
+}
+
+.ciocia-cookie__opt strong {
+  color: var(--ciocia-page-top);
+  font-weight: 600;
+}
+
+.ciocia-cookie-reopen {
+  position: fixed;
+  bottom: 0;
+  left: 0.75rem;
+  z-index: 990;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--ciocia-border);
+  border-bottom: 0;
+  border-radius: 0.35rem 0.35rem 0 0;
+  background: var(--ciocia-card-bg);
+  box-shadow: 0 -0.15rem 0.6rem rgba(44, 0, 1, 0.12);
+  color: var(--ciocia-page-top);
+  font-family: var(--ciocia-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.ciocia-cookie-reopen:hover,
+.ciocia-cookie-reopen:focus-visible {
+  background: #fff;
+  color: var(--ciocia-primary);
+}
+
+.ciocia-cookie__btn:focus-visible,
+.ciocia-cookie__link:focus-visible,
+.ciocia-cookie__opt input:focus-visible,
+.ciocia-cookie-reopen:focus-visible {
+  outline: 2px solid var(--ciocia-primary);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .ciocia-cookie__panel {
+    border: 1px solid var(--ciocia-border);
+    border-bottom: 0;
+    border-radius: 0.75rem 0.75rem 0 0;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .ciocia-cookie__actions {
+    flex-direction: column;
+  }
+
+  .ciocia-cookie__btn--primary,
+  .ciocia-cookie__btn--ghost {
+    width: 100%;
   }
 }
