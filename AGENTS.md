@@ -83,6 +83,7 @@ Run from the repository root unless noted.
 | PHP syntax (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
 | JavaScript lint (after `npm ci` once) | `npx eslint` |
 | Smoke test of the running shop (ports from `HTTP_PORT`, `HTTPS_PORT`) | `sh .github/scripts/smoke-test.sh` |
+| Review the open PRs that wait for your review (Claude Code; prints review comments to paste, posts nothing) | `/review-prs`, or `/review-prs 67` for chosen PRs |
 | Run the published images instead of building (tags in README) | `SHOP_IMAGE=ghcr.io/markir13/u-cioci-masali/shop:main PROXY_IMAGE=ghcr.io/markir13/u-cioci-masali/proxy:main docker compose -f deploy/compose.yaml up -d --no-build` |
 
 Storefront: `https://localhost:8443` (HTTP on 8080 redirects there). Admin: `https://localhost:8443/admin-ciocia`.
