@@ -7,7 +7,11 @@
  * - no note that one address serves for both delivery and invoice (the form says it with its checkbox);
  * - "+ Dodaj nowy adres" as an outline button, with a capital letter;
  * - with saved addresses, "Przejdź do dostawy" instead of "Dalej" (the form keeps "Dalej", as on the source);
- * - the headings use .ciocia-address-heading, like "Adres dostawy" in the form.
+ * - the headings use .ciocia-address-heading, like "Adres dostawy" in the form;
+ * - an incomplete saved address (for example one without the phone, saved before it became required)
+ *   always gets its message. PrestaShop writes the message only for registered customers
+ *   (OrderController::restorePersistedData), so for a guest Classic printed an empty red box while
+ *   core.js still disabled "Przejdź do dostawy".
  * Everything Classic's scripts use (the radios, .js-address-selector, .js-address-error, the hidden
  * #not-valid-addresses, the link that opens the invoice address) is unchanged. The cards are in custom.css.
  *}
@@ -47,7 +51,7 @@
         </div>
 
         {if isset($delivery_address_error)}
-          <p class="alert alert-danger js-address-error" name="alert-delivery" id="id-failure-address-{$delivery_address_error.id_address}">{$delivery_address_error.exception}</p>
+          <p class="alert alert-danger js-address-error" name="alert-delivery" id="id-failure-address-{$id_address_delivery}">{l s="Your address is incomplete, please update it." d="Shop.Notifications.Error"}</p>
         {else}
           <p class="alert alert-danger js-address-error" name="alert-delivery" style="display: none">{l s="Your address is incomplete, please update it." d="Shop.Notifications.Error"}</p>
         {/if}
@@ -91,7 +95,7 @@
           </div>
 
           {if isset($invoice_address_error)}
-            <p class="alert alert-danger js-address-error" name="alert-invoice" id="id-failure-address-{$invoice_address_error.id_address}">{$invoice_address_error.exception}</p>
+            <p class="alert alert-danger js-address-error" name="alert-invoice" id="id-failure-address-{$id_address_invoice}">{l s="Your address is incomplete, please update it." d="Shop.Notifications.Error"}</p>
           {else}
             <p class="alert alert-danger js-address-error" name="alert-invoice" style="display: none">{l s="Your address is incomplete, please update it." d="Shop.Notifications.Error"}</p>
           {/if}

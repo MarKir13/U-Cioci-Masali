@@ -3518,3 +3518,8 @@ body#checkout #wrapper #checkout-addresses-step .ciocia-invoice-link {
 body#checkout #wrapper #checkout-addresses-step form > .ciocia-address-heading:not(:first-child) {
   margin-top: 1.75rem;
 }
+
+/* "Podany adres jest niekompletny…" under the cards (steps/addresses.tpl). */
+body#checkout #wrapper #checkout-addresses-step .js-address-error {
+  margin: 1rem 0 0;
+}
