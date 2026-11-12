@@ -112,6 +112,19 @@ rewrites the `/tmp/...` path. Design notes: [ADR 0005](docs/adr/0005-shop-data-s
 > run the commands above once. `configure-shop.php` also imports the Polish VAT groups that the old
 > install is missing.
 
+## Scraped data
+
+The data from the source shop is in `scraper-results/`: 2159 products in 160 categories, with 4822 product images.
+How it was made, what was left out and why: [scraper/README.md](scraper/README.md). The product images are not in git. They
+are one archive (585 MB) in the GitHub Release [`images-v1`](https://github.com/MarKir13/U-Cioci-Masali/releases/tag/images-v1):
+
+```sh
+gh release download images-v1 --pattern product-images.tar.gz --dir /tmp
+tar xzf /tmp/product-images.tar.gz -C scraper-results
+```
+
+Check the data with `python -m scraper verify` (from `scraper/`); it needs no network.
+
 ## Continuous integration
 
 GitHub Actions runs four workflows:
@@ -235,8 +248,8 @@ same result as CI and never shows your passwords.
 | `shop/` | Dockerfile, PHP config, child theme, own modules, setup scripts for shop content | in progress |
 | `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`); later: init, backup and restore scripts | in progress |
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
-| `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | in progress |
-| `scraper-results/` | Scraped data (JSON/CSV) and sample images | in progress (schema only) |
+| `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | done: crawl, images, verification |
+| `scraper-results/` | Scraped data (`categories.json`, `products.jsonl`, `schema.json`, `rejected.json`), `verification-report.md` and 20 sample images | done: 2159 products, 160 categories |
 | `tests/` | Playwright E2E tests | planned |
 
 ## Team
