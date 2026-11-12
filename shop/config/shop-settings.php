@@ -38,6 +38,10 @@ return [
     // Country used by default in address forms
     'country_default' => 'PL',
 
+    // Address fields the customer must fill in, besides PrestaShop's own (name, street, postcode, city,
+    // country). The carriers need a phone number, as on the source shop.
+    'address_required_fields' => ['phone'],
+
     // Free delivery when the cart (products, gross, after discounts) reaches this amount
     'free_shipping_from' => 2000,
 

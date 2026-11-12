@@ -31,6 +31,7 @@ $settings = require $settingsFile;
 
 configureCurrencies($settings);
 configureCountry($settings['country_default']);
+configureAddressFields($settings['address_required_fields']);
 configureTaxes();
 $carrierReferences = configureCarriers($settings);
 configureShipping($settings);
@@ -99,6 +100,18 @@ function configureCountry($iso)
     // Do not switch the country by the browser language
     Configuration::updateValue('PS_DETECT_COUNTRY', 0);
     echo "Country: $iso is the only active country.\n";
+}
+
+/**
+ * Extra required address fields (issue #44), as the back office sets them in Customers > Addresses >
+ * "Set required fields for this section". The list replaces the previous one, so a field removed from
+ * the settings stops being required on the next run.
+ */
+function configureAddressFields(array $fields)
+{
+    (new CustomerAddress())->addFieldsRequiredDatabase($fields);
+    echo 'Required address fields: ' . ($fields ? implode(', ', $fields) : 'none extra') . ".
+";
 }
 
 /**
