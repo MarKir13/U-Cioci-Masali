@@ -89,12 +89,13 @@ the database:
   modules. Page text is in `shop/scripts/setup/cms/`.
 - `configure-shop.php` sets up the shop for Poland: PLN (plus EUR in the selector, as on the source
   shop), Poland as the only country, Polish VAT groups (23, 8, 5, 0 %), two carriers priced by weight
-  up to 50 kg, free delivery from 2000 PLN gross, bank transfer and cash on delivery (no cheque),
-  invoices, e-mail through Mailpit, and the promo code `WITAJ10` (10 % off the products, once per
-  customer) for the "Kod promocyjny" row in the cart and checkout.
+  up to 50 kg, free delivery from 2000 PLN gross, the delivery time shown for products in stock
+  ("Wysyłka w ciągu 24h"), bank transfer and cash on delivery (no cheque), invoices, e-mail through
+  Mailpit, and the promo code `WITAJ10` (10 % off the products, once per customer) for the
+  "Kod promocyjny" row in the cart and checkout.
 
 All values for both are in [`shop/config/shop-settings.php`](shop/config/shop-settings.php): store
-details, free delivery threshold, carriers and fees, bank details, promo code. The "Dostawa" and "Formy płatności"
+details, free delivery threshold, delivery time, carriers and fees, bank details, promo code. The "Dostawa" and "Formy płatności"
 pages and the header banner ("Dostawa od 2000 zł gratis") take them from there, so they always match
 the checkout. Change values in that file, not in the admin panel: changes made there are lost on
 `down -v` and never reach the rest of the team. To apply a change to a running shop, rebuild and run

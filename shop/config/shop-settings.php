@@ -41,6 +41,9 @@ return [
     // Free delivery when the cart (products, gross, after discounts) reaches this amount
     'free_shipping_from' => 2000,
 
+    // Delivery time shown for products in stock: on the product page and under each product in the cart
+    'delivery_time_available' => 'Wysyłka w ciągu 24h',
+
     // VAT rate on delivery fees, in %. Fees below are gross; the script stores them net.
     'shipping_vat' => 23,
 

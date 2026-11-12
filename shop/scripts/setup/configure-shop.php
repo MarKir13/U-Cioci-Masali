@@ -250,6 +250,11 @@ function configureShipping(array $settings)
     Configuration::updateValue('PS_SHIPPING_HANDLING', 0);
     Configuration::updateValue('PS_SHIPPING_METHOD', 1);
     echo 'Free delivery from ' . $settings['free_shipping_from'] . " PLN gross.\n";
+
+    // "Wysyłka w ciągu 24h" for products in stock (product page, cart lines); a per-language value
+    $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+    Configuration::updateValue('PS_LABEL_DELIVERY_TIME_AVAILABLE', [$idLang => $settings['delivery_time_available']]);
+    echo 'Delivery time in stock: ' . $settings['delivery_time_available'] . ".\n";
 }
 
 /**
