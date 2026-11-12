@@ -2163,9 +2163,9 @@ body#checkout #footer:has(> .ciocia-trust) {
   }
 
     /*
-   * Cookie tab on phones, as on the source shop: on the right, just above the bar's height.
-   * The source keeps this height on checkout too, where there is no bar.
-   */
+     * Cookie tab on phones, as on the source shop: on the right, just above the bar's height.
+     * The source keeps this height on checkout too, where there is no bar.
+     */
   .ciocia-cookie-reopen {
     right: 0.75rem;
     bottom: calc(var(--ciocia-bottom-nav-height) + 0.03rem);
