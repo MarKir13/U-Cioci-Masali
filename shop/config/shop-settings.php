@@ -57,6 +57,14 @@ return [
         ],
     ],
 
+    // Promo code for the "Kod promocyjny" row of the cart and checkout summary: a percentage off the
+    // products, once per customer. PrestaShop shows that row only while at least one code exists.
+    'promo_code' => [
+        'code' => 'WITAJ10',
+        'name' => 'Rabat powitalny 10%',
+        'percent' => 10,
+    ],
+
     // Bank transfer details shown to the customer (also on the "Formy płatności" page).
     // FICTIONAL: not a real account or company.
     'bank_wire' => [

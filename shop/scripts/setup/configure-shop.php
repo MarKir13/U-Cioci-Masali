@@ -1,7 +1,8 @@
 <?php
 /**
  * Configures the shop for Poland (issue #47): currency, country, VAT, payments, carriers,
- * free delivery, e-mail and invoices. Values come from shop/config/shop-settings.php.
+ * free delivery, e-mail and invoices, plus the promo code (issue #44). Values come from
+ * shop/config/shop-settings.php.
  *
  * Runs once after the automatic install (post-install/30-configure-shop.sh). It is idempotent,
  * so it can also be run again by hand on a running shop:
@@ -36,6 +37,7 @@ configureShipping($settings);
 configurePayments($settings, $carrierReferences);
 configureMail($settings['mail']);
 configureInvoices();
+configurePromoCode($settings['promo_code']);
 
 Tools::clearSmartyCache();
 Cache::clear();
@@ -337,4 +339,27 @@ function configureInvoices()
         'id_order_state = ' . (int) Configuration::get('PS_OS_COD_VALIDATION')
     );
     echo "Invoices: enabled, issued for cash on delivery orders.\n";
+}
+
+/**
+ * The promo code as a cart rule: a percentage off the products, once per customer, valid for ten
+ * years from the last run. Found by its code, so a second run updates it instead of adding another.
+ * PrestaShop shows the promo code field in the cart and checkout only while a cart rule exists.
+ */
+function configurePromoCode(array $promo)
+{
+    $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+    $rule = new CartRule((int) CartRule::getIdByCode($promo['code']) ?: null);
+    $rule->name = [$idLang => $promo['name']];
+    $rule->code = $promo['code'];
+    $rule->reduction_percent = (float) $promo['percent'];
+    $rule->date_from = date('Y-m-d 00:00:00');
+    $rule->date_to = date('Y-m-d 23:59:59', strtotime('+10 years'));
+    $rule->quantity = 1000000;
+    $rule->quantity_per_user = 1;
+    // Not listed under "Take advantage of our exclusive offers": the code is entered by hand.
+    $rule->highlight = false;
+    $rule->active = true;
+    $rule->id ? $rule->update() : $rule->add();
+    echo 'Promo code ' . $promo['code'] . ': ' . $promo['percent'] . "% off the products, once per customer.\n";
 }
