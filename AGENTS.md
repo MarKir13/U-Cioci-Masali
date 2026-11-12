@@ -44,7 +44,7 @@ Full findings: `docs/scraper-recon.md` (on PR #4 until it merges). The essential
 | Database | MariaDB 10.11.18 |
 | Containers | Docker Engine, Compose v2 (`compose.yaml`, `docker compose`, no `version:` key) |
 | Scraper | Python 3.12, `requests`, Protego, pytest |
-| E2E tests | Playwright, headless (Selenium is not allowed) |
+| E2E tests | Playwright 1.64.1, headless Chromium, pinned in `tests/package.json` (Selenium is not allowed) |
 | Test mail | Mailpit or MailHog in a container |
 | Linters | hadolint 2.15.1, shellcheck 0.11.0, `php -l` (`php:8.1.34-cli`), all as Docker images; ESLint 10.13.0 on Node 24, pinned in the root `package.json` (development tools only) |
 | Published images | `ghcr.io/markir13/u-cioci-masali/shop` and `.../proxy`, `linux/amd64`, built by `publish.yml`; tags `sha-<7 characters>`, `main`, `etap*` |
@@ -54,9 +54,9 @@ Full findings: `docs/scraper-recon.md` (on PR #4 until it merges). The essential
 | `shop/` | Dockerfile, PHP config, child theme `ciocia`, own modules. PrestaShop itself is not stored here |
 | `scraper/` | Scraper source and unit tests |
 | `scraper-results/` | Scraped data in UTF-8 with source image URLs, plus up to 20 sample images |
-| `tests/` | Playwright E2E tests |
 | `deploy/` | `compose.yaml`, `.env.example`, scripts for install, data init, backup and restore |
 | `docs/` | `AI_LOG.md`, ADRs in `adr/`, [ci-cd-plan.md](docs/ci-cd-plan.md), other documentation |
+| `tests/` | Playwright E2E tests: specs in `e2e/`, page helpers in `pages/`, shared code in `support/`; own `package.json` |
 
 The structure is a graded requirement. Do not add new top-level directories, apart from tool config such as
 `.github/`.
@@ -82,6 +82,9 @@ Run from the repository root unless noted.
 | Compose check, must print nothing. Never drop `--quiet` or use `deploy/.env` | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
 | JavaScript lint (after `npm ci` once) | `npx eslint` |
+| E2E setup, once (from `tests/`) | `npm ci` and `npx playwright install chromium` |
+| E2E tests (from `tests/`; another shop: `BASE_URL=https://host:port npm test`) | `npm test` |
+| Open the last E2E report (from `tests/`) | `npm run report` |
 | Smoke test of the running shop (ports from `HTTP_PORT`, `HTTPS_PORT`) | `sh .github/scripts/smoke-test.sh` |
 | Review the open PRs that wait for your review (Claude Code; prints review comments to paste, posts nothing) | `/review-prs`, or `/review-prs 67` for chosen PRs |
 | Run the published images instead of building (tags in README) | `SHOP_IMAGE=ghcr.io/markir13/u-cioci-masali/shop:main PROXY_IMAGE=ghcr.io/markir13/u-cioci-masali/proxy:main docker compose -f deploy/compose.yaml up -d --no-build` |
@@ -163,7 +166,11 @@ Documentation is in English, except `docs/AI_LOG.md`.
   `ciocia-proxy:local`, whatever `-p` says. Set both to your own names for a second local stack.
 - Fix lint findings instead of silencing them. If a rule really does not fit, silence only that line and put the reason
   above it (as `# hadolint ignore=DL3018` in `deploy/proxy/Dockerfile`); never turn a rule off for the repository.
-
+- E2E tests take the shop address from `BASE_URL`, and its host must be the shop's domain (`PS_DOMAIN`): PrestaShop
+  redirects any other host there. Tests import `test` from `tests/support/fixtures.js`, keep selectors in
+  `tests/pages/` and never call `waitForTimeout`; ESLint fails on it. A failed run is repeated with the `E2E_SEED`
+  shown in the report.
+  
 ## Requirements: Stage 1
 
 Condensed from the course brief, which remains authoritative. `[K]` means critical: missing it gives 0 for the whole

@@ -43,6 +43,9 @@ scraper/cache/
 # Left behind only if a results file was being written when the crawl was interrupted
 scraper-results/*.tmp
 
+# --- Playwright reports  ---
+tests/test-results/
+tests/playwright-report/
 # --- Claude Code: PR checkouts made by the review-prs skill ---
 .claude/worktrees/
 
