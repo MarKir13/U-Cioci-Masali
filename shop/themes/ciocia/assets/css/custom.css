@@ -205,6 +205,15 @@ body#cart .ciocia-continue-shopping .material-icons {
   color: inherit;
 }
 
+/* Phones: across the width of the list, as on the source. */
+@media (max-width: 575.98px) {
+  body#cart .ciocia-continue-shopping {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+}
+
 /* Typography */
 #wrapper p,
 #wrapper .page-content.page-cms ul {
@@ -2922,4 +2931,217 @@ body#cart .ciocia-line .bootstrap-touchspin input::-webkit-outer-spin-button {
     align-items: center;
     justify-content: space-between;
   }
+}
+
+/*
+ * Tablets (576-991 px), cart and checkout: Classic's container stays 540 / 720 px wide there, which
+ * leaves up to 136 px empty on each side at 991 px. The page card (and the checkout steps bar) use the
+ * whole width instead, with Classic's 15 px gutter. The header keeps its own widths.
+ */
+@media (min-width: 576px) and (max-width: 991.98px) {
+  body#cart #wrapper .container,
+  body#checkout #wrapper .container {
+    width: auto;
+  }
+}
+
+/*
+ * Delivery and payment options as cards (issue #44), as on the source: a light card with a 2 px frame,
+ * burgundy on the chosen option. The whole card selects its option (delivery: the card is the label,
+ * steps/shipping.tpl; payment: the label covers the card). Keyboard focus on the radio rings the card.
+ */
+body#checkout section.checkout-step .delivery-options .delivery-option {
+  display: block;
+  min-height: 0;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  background: none;
+}
+
+body#checkout section.checkout-step .ciocia-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--ciocia-border);
+  border-radius: 0.75rem;
+  background: var(--ciocia-surface-light);
+  cursor: pointer;
+}
+
+body#checkout section.checkout-step .delivery-option:has(input:checked) .ciocia-option,
+body#checkout section.checkout-step .payment-options .payment-option:has(input:checked) {
+  border-color: var(--ciocia-primary);
+}
+
+body#checkout section.checkout-step .ciocia-option:has(input:focus-visible),
+body#checkout section.checkout-step .payment-options .payment-option:has(input:focus-visible) {
+  outline: 2px solid var(--ciocia-primary);
+  outline-offset: 2px;
+}
+
+body#checkout section.checkout-step .ciocia-option .custom-radio,
+body#checkout section.checkout-step .payment-options .custom-radio {
+  flex: none;
+  margin: 0.125rem 0 0;
+}
+
+/*
+ * The chosen radio in these cards as on the source: a filled circle in Bootstrap's blue (#0d6efd,
+ * 4.4:1 on the card) with a white centre. Other radios in the shop keep the burgundy dot.
+ */
+body#checkout section.checkout-step .ciocia-option .custom-radio:has(input:checked),
+body#checkout section.checkout-step .payment-options .custom-radio:has(input:checked) {
+  border-color: #0d6efd;
+  background: #0d6efd;
+}
+
+body#checkout section.checkout-step .ciocia-option .custom-radio input[type="radio"]:checked + span,
+body#checkout section.checkout-step .payment-options .custom-radio input[type="radio"]:checked + span {
+  top: 4px;
+  left: 4px;
+  width: 8px;
+  height: 8px;
+  background-color: #fff;
+}
+
+/* Name on the left, then fee and delivery time centred, as on the source. */
+body#checkout section.checkout-step .ciocia-option__body {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+}
+
+body#checkout section.checkout-step .ciocia-option__logo {
+  justify-self: start;
+  width: 3.125rem;
+  height: auto;
+  margin-bottom: 0.25rem;
+}
+
+body#checkout section.checkout-step .ciocia-option__name {
+  display: block;
+  color: var(--ciocia-text);
+  font-weight: 600;
+  text-align: left;
+}
+
+body#checkout section.checkout-step .ciocia-option__price {
+  margin-top: 0.25rem;
+  color: var(--ciocia-primary);
+  font-weight: 600;
+}
+
+body#checkout section.checkout-step .ciocia-option__text {
+  display: block;
+  color: var(--ciocia-text-muted);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+body#checkout section.checkout-step .payment-options .payment-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--ciocia-border);
+  border-radius: 0.75rem;
+  background: var(--ciocia-surface-light);
+}
+
+body#checkout section.checkout-step .payment-options .payment-option label {
+  display: block;
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--ciocia-text);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+/*
+ * The label's box covers the whole card, so a click anywhere on it chooses the option. The radio stays
+ * above it, so a click on the radio itself (and an E2E test's check()) still reaches the radio.
+ */
+body#checkout section.checkout-step .payment-options .payment-option label::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+body#checkout section.checkout-step .payment-options .payment-option .custom-radio {
+  position: relative;
+  z-index: 1;
+}
+
+/* The terms link sits inside a sentence: colour alone is not enough to tell it apart (WCAG 1.4.1). */
+body#checkout #conditions-to-approve a {
+  text-decoration: underline;
+}
+
+/* Bank details and the like, shown under the chosen payment option. */
+body#checkout section.checkout-step .payment-options .additional-information {
+  margin: -0.25rem 0 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--ciocia-surface-warm);
+}
+
+/*
+ * Personal information step (issue #44, steps/personal-information.tpl): the "kup jako gość" box and
+ * the two tabs with the open one underlined in burgundy, as on the source.
+ */
+body#checkout .ciocia-guest-info {
+  margin: 0 0 1.25rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.5rem;
+  background: var(--ciocia-surface-light);
+}
+
+body#checkout #wrapper .ciocia-guest-info p {
+  margin: 0;
+}
+
+body#checkout #wrapper .ciocia-guest-info .ciocia-guest-info__title {
+  color: var(--ciocia-primary);
+  font-weight: 600;
+}
+
+body#checkout #wrapper .ciocia-guest-info .ciocia-guest-info__text {
+  margin-top: 0.25rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.9375rem;
+}
+
+body#checkout #wrapper .ciocia-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+}
+
+body#checkout #wrapper .ciocia-tabs .nav-item {
+  margin: 0;
+}
+
+body#checkout #wrapper .ciocia-tabs .nav-link {
+  padding: 0 0 0.375rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--ciocia-link);
+  font-size: 1.0625rem;
+}
+
+body#checkout #wrapper .ciocia-tabs .nav-link.active {
+  border-bottom-color: var(--ciocia-primary);
+  color: var(--ciocia-primary);
+  font-weight: 600;
 }

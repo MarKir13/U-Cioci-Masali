@@ -574,3 +574,21 @@ document.addEventListener('DOMContentLoaded', function () {
   new MutationObserver(nameButtons).observe(list, { childList: true, subtree: true });
   nameButtons();
 })();
+
+/*
+ * Checkout tabs "Zamówienie jako gość" / "Zaloguj się" (steps/personal-information.tpl, issue #44).
+ * Bootstrap moves only the "active" class between them; aria-selected follows it here, so screen
+ * readers announce which tab is open.
+ */
+(function () {
+  var tabs = document.querySelectorAll('.ciocia-tabs [role="tab"]');
+  if (!tabs.length) return;
+  var observer = new MutationObserver(function () {
+    tabs.forEach(function (tab) {
+      tab.setAttribute('aria-selected', String(tab.classList.contains('active')));
+    });
+  });
+  tabs.forEach(function (tab) {
+    observer.observe(tab, { attributes: true, attributeFilter: ['class'] });
+  });
+})();
