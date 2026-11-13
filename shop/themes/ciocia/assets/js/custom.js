@@ -806,3 +806,118 @@ document.addEventListener('click', function (event) {
       });
   });
 })();
+
+/*
+ * Category header on phones (issue #75, catalog/_partials/category-header.tpl): the description is cut to
+ * four lines with "Czytaj więcej", and only six subcategories show, with "Pokaż wszystkie (N)". This marks
+ * each block with .is-ready, which lets custom.css fold it, and shows "Czytaj więcej" only when the text is
+ * really longer than four lines. PrestaShop replaces the header after sorting or changing the page without
+ * a reload (Classic's listing script, event updateProductList), so it runs again then; the clicks are
+ * handled on the document, so they also work for a replaced header.
+ */
+(function () {
+  var phone = window.matchMedia('(max-width: 767.98px)');
+
+  function setExpanded(block, button, expanded) {
+    block.classList.toggle('is-expanded', expanded);
+    button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    button.textContent = button.getAttribute(expanded ? 'data-less-label' : 'data-more-label');
+  }
+
+  function measureDescriptions() {
+    document.querySelectorAll('.js-ciocia-category-description').forEach(function (block) {
+      var text = block.querySelector('.ciocia-category-description__text');
+      var button = block.querySelector('.ciocia-category-description__toggle');
+      if (!text || !button) return;
+      block.classList.add('is-ready');
+      if (block.classList.contains('is-expanded')) return;
+      // Folded only on phones; elsewhere the full text shows and the button stays hidden.
+      button.hidden = !phone.matches || text.scrollHeight <= text.clientHeight + 1;
+    });
+  }
+
+  function init() {
+    document.querySelectorAll('.js-ciocia-subcategories').forEach(function (block) {
+      block.classList.add('is-ready');
+    });
+    measureDescriptions();
+  }
+
+  document.addEventListener('click', function (event) {
+    var button = event.target.closest('.ciocia-category-description__toggle, .ciocia-subcategories__toggle');
+    if (!button) return;
+    var block = button.closest('.js-ciocia-category-description, .js-ciocia-subcategories');
+    setExpanded(block, button, !block.classList.contains('is-expanded'));
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  phone.addEventListener('change', measureDescriptions);
+  window.addEventListener('load', measureDescriptions);
+  if (window.prestashop && typeof window.prestashop.on === 'function') {
+    // Classic's handler, registered before this file runs, has already put the new header in place.
+    window.prestashop.on('updateProductList', function () {
+      window.requestAnimationFrame(init);
+    });
+  }
+})();
+
+/*
+ * "Dodaj do koszyka" on product cards (issue #75, catalog/_partials/miniatures/product.tpl). The card's
+ * form is sent without a reload, the same request and the same updateCart event as PrestaShop's own
+ * add-to-cart script (themes/_core/js/cart.js), so ps_shoppingcart updates the cart and opens its window.
+ * The card button is not marked data-button-action="add-to-cart" (see the template), so that script does
+ * not see it. Without JavaScript, or before this runs, the form is posted and the cart page opens.
+ */
+(function () {
+  document.addEventListener('submit', function (event) {
+    var form = event.target.closest('.js-ciocia-add-to-cart');
+    var prestashop = window.prestashop;
+    if (!form || !prestashop || typeof prestashop.emit !== 'function') return;
+    event.preventDefault();
+
+    var button = form.querySelector('button[type="submit"]');
+    if (button.disabled) return;
+    button.disabled = true;
+
+    // Not form.action: the hidden field named "action" hides that property.
+    fetch(form.getAttribute('action'), {
+      method: 'POST',
+      // PrestaShop answers in JSON when the request accepts it (Controller::isAjax).
+      headers: {
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: new URLSearchParams(new FormData(form)),
+      credentials: 'same-origin'
+    })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (resp) {
+        if (resp.hasError) {
+          prestashop.emit('handleError', { eventType: 'addProductToCart', resp: resp });
+          return;
+        }
+        prestashop.emit('updateCart', {
+          reason: {
+            idProduct: resp.id_product,
+            idProductAttribute: resp.id_product_attribute,
+            idCustomization: resp.id_customization,
+            linkAction: 'add-to-cart',
+            cart: resp.cart
+          },
+          resp: resp
+        });
+      })
+      .catch(function (error) {
+        prestashop.emit('handleError', { eventType: 'addProductToCart', resp: { errors: [String(error)] } });
+      })
+      .then(function () {
+        button.disabled = false;
+      });
+  });
+})();
