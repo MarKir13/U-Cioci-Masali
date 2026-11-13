@@ -1,7 +1,8 @@
 <?php
 /**
  * Configures the shop for Poland (issue #47): currency, country, VAT, payments, carriers,
- * free delivery, e-mail and invoices, plus the Omnibus price module (issue #72).. Values come from shop/config/shop-settings.php.
+ * free delivery, e-mail and invoices, plus the Omnibus price module (issue #72).
+ * Values come from shop/config/shop-settings.php.
  *
  * Runs once after the automatic install (post-install/30-configure-shop.sh). It is idempotent,
  * so it can also be run again by hand on a running shop:
@@ -39,7 +40,6 @@ configureInvoices();
 
 configureOmnibus();
 
-Tools::clearSmartyCache();
 Tools::clearSmartyCache();
 Cache::clear();
 echo "Shop configuration done.\n";
@@ -341,7 +341,6 @@ function configureInvoices()
     );
     echo "Invoices: enabled, issued for cash on delivery orders.\n";
 }
-
 
 /**
  * Omnibus price (issue #72): installs our module ciociaomnibus (shop/modules/ciociaomnibus) and adds a
