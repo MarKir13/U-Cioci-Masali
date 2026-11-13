@@ -7,6 +7,11 @@ function deliveryFee(text) {
   return text.includes(texts.checkout.freeShipping) ? 0 : toGrosze(text);
 }
 
+// First line of a detail after its label: "Sposób dostawy: Kurier\nDostawa w 1-2 dni" → "Kurier"
+function detailValue(text, label) {
+  return text.split(label)[1].trim().split("\n")[0].trim();
+}
+
 // Checkout of a logged-in customer: cart → address → carrier → payment → order confirmation.
 // Selectors rely on PrestaShop's ids, field names and data-module-name attributes, which both Classic and
 // the ciocia templates keep, so a change of the look does not break the test.
@@ -51,10 +56,16 @@ export class CheckoutPage {
     await form.locator('input[name="address1"]').fill(address.address1);
     await form.locator('input[name="postcode"]').fill(address.postcode);
     await form.locator('input[name="city"]').fill(address.city);
+    // Required by the shop (address_required_fields in shop-settings.php): the carriers need it
+    await form.locator('input[name="phone"]').fill(address.phone);
     // Only Poland is active (shop-settings.php), so the country is preselected; check it, do not change it
     await expect(form.locator('select[name="id_country"] option:checked')).toHaveText(address.country);
     // Polish address format: no state field
     await expect(form.locator('[name="id_state"]')).toHaveCount(0);
+    // A required field left empty stops the browser from sending the form, with no message from the shop,
+    // so name such fields here instead of waiting for a step that never comes
+    const invalid = await form.locator("input:invalid, select:invalid").evaluateAll((fields) => fields.map((f) => f.name));
+    expect(invalid, "required address fields left empty").toEqual([]);
     await form.locator('button[name="confirm-addresses"]').click();
     // Wait for the next step or for an error, so a rejected address fails at once with the shop's message
     await expect(this.deliveryStep.and(this.page.locator(".-current")).or(this.errors).first()).toBeVisible();
@@ -117,23 +128,30 @@ export class CheckoutPage {
     expect(await this.errors.allInnerTexts(), "the shop rejected the order").toEqual([]);
   }
 
-  // Text after "<label>" in the order details, such as the reference after "Numer zamówienia:"
+  // Order reference, from its own line (#order-reference-value) that starts with "Numer zamówienia:"
+  async orderReference() {
+    const line = this.orderDetails.locator("#order-reference-value");
+    await expect(line).toContainText(texts.confirmation.reference);
+    return detailValue(await line.innerText(), texts.confirmation.reference);
+  }
+
+  // Text after "<label>" in the order details, such as the carrier after "Sposób dostawy:".
+  // These lines have no id in the template, so they are found by their label.
   async orderDetail(label) {
     const line = this.orderDetails.locator("li", { hasText: label });
     await expect(line).toHaveCount(1);
-    return (await line.innerText()).split(label)[1].trim().split("\n")[0].trim();
+    return detailValue(await line.innerText(), label);
   }
 
-  // Totals table of the confirmation: { "Produkty": grosze, "Wysyłka": grosze, ... } and the total
+  // Order total in grosze, from the row the template marks as the total (tr.total-value),
+  // and every row of the totals table as text, for the failure message
   async confirmationTotals() {
-    const rows = await this.page
-      .locator(".order-confirmation-table table tr")
-      .evaluateAll((trs) => trs.map((tr) => [...tr.querySelectorAll("td")].map((td) => td.innerText.trim())));
-    const lines = rows.filter((cells) => cells.length === 2);
-    const total = lines.at(-1);
+    const table = this.page.locator(".order-confirmation-table table");
+    const totalRow = table.locator("tr.total-value");
+    await expect(totalRow).toHaveCount(1);
     return {
-      lines: Object.fromEntries(lines.slice(0, -1).map(([label, value]) => [label, value])),
-      total: toGrosze(total[1]),
+      total: toGrosze(await totalRow.locator("td").last().innerText()),
+      rows: await table.locator("tr").allInnerTexts(),
     };
   }
 }

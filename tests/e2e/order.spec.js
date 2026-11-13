@@ -58,7 +58,8 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng, c
   // Errors from here on count for "no console errors during checkout"
   const errorsBeforeCheckout = consoleErrors.length;
 
-  // Products total in grosze, from the cart the shop is about to order
+  // Products total after discounts in grosze, from the cart the shop is about to order. Free delivery
+  // counts this amount (shop-settings.php), so a discount code applied in steps 1–3 is taken into account.
   const productsTotal = await test.step("5. Order the cart contents", async () => {
     await checkout.openFromCart();
     const cart = await page.evaluate(() => globalThis.prestashop.cart);
@@ -66,7 +67,10 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng, c
     // The logged-in customer skips "Dane osobowe" and starts at the address
     await expect(page.locator("#checkout-personal-information-step")).toHaveClass(/-complete/);
     await checkout.fillAddress(testAddress);
-    return Math.round(Number(cart.subtotals.products.amount) * 100);
+    // subtotals.discounts is null when the cart has no discount
+    const products = Number(cart.subtotals.products.amount);
+    const discounts = Number(cart.subtotals.discounts?.amount ?? 0);
+    return Math.round((products - discounts) * 100);
   });
 
   // The checkout asks for the carrier before the payment, so step 7 runs before step 6
@@ -96,13 +100,13 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng, c
     await checkout.placeOrder();
     await expect(page.locator("#content-hook_order_confirmation")).toContainText(texts.confirmation.title);
 
-    const reference = await checkout.orderDetail(texts.confirmation.reference);
+    const reference = await checkout.orderReference();
     expect(reference, "order reference").toMatch(/^[A-Z]{9}$/);
     expect(await checkout.orderDetail(texts.confirmation.payment)).toBe(texts.checkout.cashOnDelivery);
     expect(await checkout.orderDetail(texts.confirmation.carrier)).toBe(carrier);
 
     const totals = await checkout.confirmationTotals();
-    expect(totals.total, `order total (${JSON.stringify(totals.lines)})`).toBe(productsTotal + shippingFee);
+    expect(totals.total, `order total (${JSON.stringify(totals.rows)})`).toBe(productsTotal + shippingFee);
 
     expect(consoleErrors.slice(errorsBeforeCheckout), "console errors during checkout").toEqual([]);
 
