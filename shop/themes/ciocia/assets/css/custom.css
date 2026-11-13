@@ -545,10 +545,6 @@ body#checkout section.checkout-step.-unreachable .step-title {
     transform: translateY(8px);
   }
 
-  #header #_desktop_logo h1 {
-    margin-bottom: 0;
-  }
-
   #header .ciocia-desktop-navigation .header-top-right {
     display: flex;
     align-items: center;
@@ -678,8 +674,9 @@ body#checkout section.checkout-step.-unreachable .step-title {
     position: relative;
     z-index: 1;
     background: linear-gradient(90deg, rgba(249, 210, 143, 0.05), transparent 22%, transparent 78%, rgba(249, 210, 143, 0.05)), var(--ciocia-menu-bg);
-    border-top: 1px solid rgba(249, 210, 143, 0.12);
-    border-bottom: 1px solid rgba(249, 210, 143, 0.12);
+    /* Lines as inset shadows, not borders: the sticky header folds this row to 0 px height. */
+    box-shadow: inset 0 1px rgba(249, 210, 143, 0.12), inset 0 -1px rgba(249, 210, 143, 0.12);
+    padding: 1px 0;
   }
 
   #header #_desktop_logo {
@@ -1493,6 +1490,108 @@ body#checkout section.checkout-step.-unreachable .step-title {
   #header #mobile_top_menu_wrapper .ciocia-drawer-footer .material-icons { color: #fff; font-size: 20px; }
 }
 
+/*
+ * Sticky header from 992 px. custom.js adds .is-compact after 100 px of scroll and sets the
+ * --ciocia-header-* variables on <html>. The checkout uses the same header, so it behaves the same.
+ */
+@media (min-width: 992px) {
+  /*
+   * Focused fields and anchor targets stop below the header (WCAG 2.4.11). Not scroll-padding on
+   * <html>: it also applies to the header's own links, and focusing the search scrolled to the top.
+   */
+  main > :not(#header),
+  main > :not(#header) * {
+    scroll-margin-top: var(--ciocia-header-height, 0px);
+  }
+
+  /* Search suggestions are appended to <body>; Classic's 999 would put them under the header. */
+  .ui-autocomplete.ui-front.searchbar-autocomplete {
+    z-index: 1021;
+  }
+
+  #header {
+    --ciocia-header-speed: 0.3s;
+    position: sticky;
+    top: 0;
+    /* Above page content, below Bootstrap modals (1050) such as the add-to-cart dialog. */
+    z-index: 1020;
+    transition: margin-bottom var(--ciocia-header-speed), box-shadow var(--ciocia-header-speed);
+  }
+
+  #header.is-compact {
+    /*
+     * Grows while the rows shrink, with the same duration and easing, so header and margin
+     * always add up to the same height and the page below does not move.
+     */
+    margin-bottom: var(--ciocia-header-collapsed, 0px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  }
+
+  /* Rows that fold away. custom.js sets --ciocia-row-height to each row's natural height. */
+  #header .header-banner,
+  #header .ciocia-topbar,
+  #header .ciocia-desktop-navigation {
+    transition:
+      height var(--ciocia-header-speed),
+      padding var(--ciocia-header-speed),
+      opacity var(--ciocia-header-speed),
+      visibility var(--ciocia-header-speed),
+      /*
+       * On unfolding, keep the content clipped until the row has its full height again.
+       * allow-discrete only here: on height it would also "animate" auto -> px after each measuring.
+       */
+      overflow 0s var(--ciocia-header-speed) allow-discrete;
+  }
+
+  #header:not(.is-measuring) .header-banner,
+  #header:not(.is-measuring) .ciocia-topbar,
+  #header:not(.is-measuring) .ciocia-desktop-navigation {
+    height: var(--ciocia-row-height, auto);
+  }
+
+  /* visibility: hidden also takes the hidden links out of the Tab order. */
+  #header.is-compact .header-banner,
+  #header.is-compact .ciocia-topbar,
+  #header.is-compact .ciocia-desktop-navigation {
+    height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    /* On folding, clip at once. */
+    transition-delay: 0s;
+  }
+
+  /*
+   * The logo hangs 15 px below its row (8 px offset plus the image's own overhang). The compact
+   * header leaves room for it, plus 3 px of background below, as on the source shop.
+   */
+  #header .header-top {
+    transition: padding-bottom var(--ciocia-header-speed);
+  }
+
+  #header.is-compact .header-top {
+    padding-bottom: 18px;
+  }
+
+  /* custom.js measures both states at once; nothing may animate meanwhile. */
+  #header.is-measuring,
+  #header.is-measuring * {
+    transition: none !important;
+  }
+}
+
+@media (min-width: 992px) and (prefers-reduced-motion: reduce) {
+  #header,
+  #header .header-banner,
+  #header .ciocia-topbar,
+  #header .ciocia-desktop-navigation,
+  #header .header-top {
+    transition: none;
+  }
+}
+
 /* Footer: trust bar, newsletter, link columns and copyright, as on the source shop. */
 #footer {
   --ciocia-footer-bg: #370101;
@@ -2040,6 +2139,205 @@ body#checkout #footer:has(> .ciocia-trust) {
 
   .ciocia-cookie__btn--primary,
   .ciocia-cookie__btn--ghost {
+    width: 100%;
+  }
+}
+
+/*
+ * Home page banner (issue #63), as the hero on the source: one rounded card with the slider on the
+ * left and the text on the right from 768 px; stacked below. Template: modules/ps_imageslider/.../slider.tpl.
+ * Sizes and breakpoints are the source's own (its ndx-home-hero rules).
+ */
+
+/*
+ * On the source home page the cream card fills the page column (up to 985 px) at every width, while other
+ * pages keep the narrower Classic container below 992 px. Classic's container has a fixed width at each
+ * breakpoint (540, 720, 960 px), so on the home page it is released to the 985 px #wrapper.
+ * The card also starts right under the menu there: Classic's 25 px top padding of #wrapper is removed.
+ * Other pages keep it, as on the source, where the breadcrumb sits between the menu and the card.
+ */
+body#index #wrapper {
+  padding-top: 0;
+}
+
+body#index #wrapper > .container {
+  width: 100%;
+  max-width: none;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+#wrapper .ciocia-hero {
+  display: grid;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #fffdf7 0%, var(--ciocia-surface-warm) 100%);
+}
+
+#wrapper .ciocia-hero__media {
+  align-self: start;
+  background: #f7f7eb;
+}
+
+/*
+ * Classic gives its slider a fixed height of 340 px and a bottom margin, and on phones stretches it to
+ * the full screen width (100vw, moved left), past the card and its arrows.
+ */
+#wrapper .ciocia-hero .carousel {
+  left: auto;
+  width: auto;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 0.625rem;
+  box-shadow: none;
+}
+
+#wrapper .ciocia-hero .carousel-inner {
+  height: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#wrapper .ciocia-hero .carousel-item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 440 / 243;
+  object-fit: cover;
+}
+
+/*
+ * Arrows as on the source: a small dark chevron on a 36 px white square, on a full-height strip at each
+ * side of the photo, faint (opacity 0.35).
+ */
+#wrapper .ciocia-hero__arrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+
+#wrapper .ciocia-hero__arrow--prev {
+  left: 0;
+}
+
+#wrapper .ciocia-hero__arrow--next {
+  right: 0;
+}
+
+/*
+ * Hovering does not change them, as on the source. Keyboard focus does (unlike the source): at 0.35 the
+ * focus outline would be hard to see.
+ */
+#wrapper .ciocia-hero__arrow:focus-visible {
+  opacity: 0.9;
+}
+
+#wrapper .ciocia-hero__arrow .material-icons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.25rem;
+  background: #fff;
+  color: #212529;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+#wrapper .ciocia-hero__content {
+  align-self: center;
+  padding: clamp(1rem, 2.5vw, 1.75rem);
+}
+
+/* The source colour #b06d52 has 3.4:1 on the card; the theme's darker link copper passes 4.5:1. */
+#wrapper .ciocia-hero__eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--ciocia-link);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+#wrapper .ciocia-hero__title {
+  margin: 0;
+  color: var(--ciocia-primary);
+  font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+  font-weight: 600;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+#wrapper .ciocia-hero__lead {
+  margin: 0.85rem 0 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+#wrapper .ciocia-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.15rem;
+}
+
+#wrapper .ciocia-hero__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  font-size: 1rem;
+}
+
+/* Side by side; the buttons wrap below each other by themselves when the text column is too narrow. */
+@media (min-width: 768px) {
+  #wrapper .ciocia-hero {
+    grid-template-columns: minmax(0, 1.05fr) minmax(20rem, 0.95fr);
+  }
+}
+
+/*
+ * Phones: stacked, square corners, buttons full width one below the other. The banner keeps the card's
+ * 20 px inner spacing on both sides, like the sections below it. The source pulls it 12 px to the left
+ * instead, but its container clips that part, so there it looks cut off on the left (text 3 px from the
+ * edge) and 33 px from the right edge.
+ */
+@media (max-width: 767px) {
+  #wrapper .ciocia-hero {
+    border-radius: 0;
+  }
+
+  #wrapper .ciocia-hero__content {
+    padding: 1rem 0.9rem 1.15rem;
+  }
+
+  #wrapper .ciocia-hero__title {
+    font-size: clamp(1.25rem, 5.5vw, 1.55rem);
+  }
+
+  #wrapper .ciocia-hero__actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #wrapper .ciocia-hero__actions .btn {
     width: 100%;
   }
 }

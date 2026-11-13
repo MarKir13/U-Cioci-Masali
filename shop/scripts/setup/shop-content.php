@@ -1,6 +1,6 @@
 <?php
-// Puts the shop's own content into the database (issue #27): store details, CMS pages and footer
-// links, and switches off Classic demo content that the source shop does not have.
+// Puts the shop's own content into the database (issue #27): store details, CMS pages, footer links and
+// the home page banner (issue #63), and switches off Classic demo content that the source shop does not have.
 //
 // Runs once after the automatic install (post-install/20-shop-content.sh). Safe to run again: it finds
 // records by link_rewrite or position, updates them in place and never creates duplicates.
@@ -65,9 +65,8 @@ const PAGE_TITLES = [
 ];
 
 // Classic demo modules with no equivalent in our shop yet. Disabled, not uninstalled, so a later
-// issue can enable one again with our own content (for example ps_imageslider for a home banner).
+// issue can enable one again with our own content, as saveHomeBanner() does with ps_imageslider.
 const DEMO_MODULES = [
-    'ps_imageslider',   // "Sample 1-3" slides on the home page
     'ps_banner',        // demo sale banner on the home page
     'ps_customtext',    // lorem ipsum block on the home page
     'blockreassurance', // "(edit with the Customer Reassurance module)" on product, cart and checkout
@@ -191,14 +190,22 @@ function cmsLinks(array $cmsIds): array
     $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
     $links = [];
     foreach ($cmsIds as $linkRewrite => $id) {
-        // Only the path is stored, without the domain, so the links keep working when the shop runs under
-        // another address (Stage 2 cluster).
-        $url = parse_url($link->getCMSLink($id, null, null, $idLang));
-        $href = $url['path'] . (isset($url['query']) ? '?' . $url['query'] : '');
+        $href = pathOnly($link->getCMSLink($id, null, null, $idLang));
         $links["{{link:$linkRewrite}}"] = '<a href="' . e($href) . '">' . e(CMS_PAGES[$linkRewrite][0]) . '</a>';
     }
 
     return $links;
+}
+
+/**
+ * "https://localhost:8443/dostawa" -> "/dostawa". Links are stored without the domain, so they keep working
+ * when the shop runs under another address (Stage 2 cluster).
+ */
+function pathOnly(string $url): string
+{
+    $parts = parse_url($url);
+
+    return ($parts['path'] ?? '/') . (isset($parts['query']) ? '?' . $parts['query'] : '');
 }
 
 function pageContent(string $linkRewrite, array $placeholders): string
@@ -373,6 +380,93 @@ function disableDemoContent(): void
     }
 }
 
+/**
+ * Home page banner (issue #63) from 'home_banner' in shop-settings.php: slides of ps_imageslider and the
+ * CIOCIA_BANNER_* texts and links read by themes/ciocia/modules/ps_imageslider/views/templates/hook/slider.tpl.
+ */
+function saveHomeBanner(array $banner): void
+{
+    // Loading the module also loads its slide class, Ps_HomeSlide.
+    $module = Module::getInstanceByName('ps_imageslider');
+    if (!Module::isEnabled('ps_imageslider')) {
+        $module->enable();
+        say('Enabled module ps_imageslider');
+    }
+
+    Configuration::updateValue('CIOCIA_BANNER_EYEBROW', $banner['eyebrow']);
+    Configuration::updateValue('CIOCIA_BANNER_TITLE', $banner['title']);
+    Configuration::updateValue('CIOCIA_BANNER_LEAD', $banner['lead']);
+    foreach (['primary', 'secondary'] as $button) {
+        $key = 'CIOCIA_BANNER_' . strtoupper($button);
+        $url = bannerLink($banner["button_$button"]['link']);
+        Configuration::updateValue($key . '_LABEL', $banner["button_$button"]['label']);
+        Configuration::updateValue($key . '_URL', $url);
+        say("Banner button \"{$banner["button_$button"]['label']}\" -> $url");
+    }
+
+    saveSlides($banner['slides']);
+    say('Home banner: "' . $banner['title'] . '"');
+}
+
+/**
+ * Path of a banner button target: a PrestaShop page name ('new-products') or a category ID, written as 3 or '3'
+ * (no page name is made of digits only).
+ */
+function bannerLink(int|string $target): string
+{
+    $link = Context::getContext()->link;
+    $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+    if (is_int($target) || ctype_digit($target)) {
+        $target = (int) $target;
+        $category = new Category($target, $idLang);
+        if (!Validate::isLoadedObject($category) || !$category->active) {
+            throw new RuntimeException("Home banner: no active category with ID $target");
+        }
+
+        return pathOnly($link->getCategoryLink($category, null, $idLang));
+    }
+    if (!Meta::getMetaByPage($target, $idLang)) {
+        throw new RuntimeException("Home banner: unknown page \"$target\"");
+    }
+
+    return pathOnly($link->getPageLink($target, null, $idLang));
+}
+
+/** Reuses the existing slides in order, deletes extra ones (Classic's demo slides) and creates missing ones. */
+function saveSlides(array $slides): void
+{
+    $module = Module::getInstanceByName('ps_imageslider');
+    $existing = array_column($module->getSlides(null, true), 'id_slide');
+
+    // Extra slides go first: delete() also deletes the slide's image file (unless its name contains
+    // "sample"), which may be a file that a remaining slide uses. The files are copied again below.
+    foreach (array_slice($existing, count($slides)) as $extraId) {
+        mustSave((new Ps_HomeSlide((int) $extraId))->delete(), "deletion of slide $extraId");
+        say("Deleted extra slide (id $extraId)");
+    }
+
+    // The module shows images from its own folder; ours are kept in the child theme with the other assets.
+    $from = _PS_ALL_THEMES_DIR_ . 'ciocia/assets/img/home-banner/';
+    $to = _PS_MODULE_DIR_ . 'ps_imageslider/images/';
+    foreach (array_values($slides) as $index => $definition) {
+        if (!copy($from . $definition['image'], $to . $definition['image'])) {
+            throw new RuntimeException("Could not copy slide image $from{$definition['image']}");
+        }
+
+        $id = isset($existing[$index]) ? (int) $existing[$index] : null;
+        $slide = new Ps_HomeSlide($id);
+        $slide->position = $index + 1;
+        $slide->active = true;
+        $slide->image = forAllLanguages($definition['image']);
+        $slide->legend = forAllLanguages($definition['alt']); // the module uses the legend as the alt text
+        $slide->title = forAllLanguages('');
+        $slide->description = forAllLanguages('');
+        $slide->url = forAllLanguages(''); // no link on the slide, as on the source
+        mustSave($id ? $slide->update() : $slide->add(), 'slide ' . $definition['image']);
+        say(($id ? 'Updated' : 'Created') . " slide {$definition['image']} (id {$slide->id})");
+    }
+}
+
 function setFormTexts(): void
 {
     foreach (FORM_TEXTS as $key => $text) {
@@ -393,6 +487,7 @@ try {
     setPageTitles();
     setFormTexts();
     disableDemoContent();
+    saveHomeBanner($settings['home_banner']);
     // Rendered footer blocks and module output are cached as templates.
     Tools::clearAllCache();
     say('Shop content done');
