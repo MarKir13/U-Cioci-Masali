@@ -1,7 +1,7 @@
 <?php
 /**
  * Configures the shop for Poland (issue #47): currency, country, VAT, payments, carriers,
- * free delivery, e-mail and invoices. Values come from shop/config/shop-settings.php.
+ * free delivery, e-mail and invoices, plus the Omnibus price module (issue #72).. Values come from shop/config/shop-settings.php.
  *
  * Runs once after the automatic install (post-install/30-configure-shop.sh). It is idempotent,
  * so it can also be run again by hand on a running shop:
@@ -37,6 +37,9 @@ configurePayments($settings, $carrierReferences);
 configureMail($settings['mail']);
 configureInvoices();
 
+configureOmnibus();
+
+Tools::clearSmartyCache();
 Tools::clearSmartyCache();
 Cache::clear();
 echo "Shop configuration done.\n";
@@ -337,4 +340,22 @@ function configureInvoices()
         'id_order_state = ' . (int) Configuration::get('PS_OS_COD_VALIDATION')
     );
     echo "Invoices: enabled, issued for cash on delivery orders.\n";
+}
+
+
+/**
+ * Omnibus price (issue #72): installs our module ciociaomnibus (shop/modules/ciociaomnibus) and adds a
+ * starting price row for every product that has none yet, so a promotion added later has a price to compare
+ * with. Products saved through PrestaShop's classes (back office, Webservice API) get their rows from the
+ * module's hooks; running this again after an import fills in anything else.
+ */
+function configureOmnibus()
+{
+    if (!Module::isInstalled('ciociaomnibus') && !Module::getInstanceByName('ciociaomnibus')->install()) {
+        throw new RuntimeException('Could not install the ciociaomnibus module');
+    }
+    // Loading the module also loads its classes, CiociaPriceHistory among them
+    Module::getInstanceByName('ciociaomnibus')->enable();
+    $added = CiociaPriceHistory::seed();
+    echo "Omnibus price: module ciociaomnibus enabled, $added starting price rows added.\n";
 }
