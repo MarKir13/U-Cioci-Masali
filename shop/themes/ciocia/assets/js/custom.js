@@ -456,3 +456,17 @@ document.addEventListener('DOMContentLoaded', function () {
     if (cart && !cart.contains(event.relatedTarget) && !cart.matches(':hover')) cart.classList.remove(DISMISSED);
   });
 })();
+ * Password fields (templates/_partials/form-fields.tpl): the eye button shows or hides the password.
+ * Delegated from the document, because checkout replaces its forms after AJAX updates.
+ */
+document.addEventListener('click', function (event) {
+  var button = event.target.closest('[data-action="ciocia-show-password"]');
+  if (!button) return;
+  // Not by id: checkout has a login form and a registration form, both with "field-password".
+  var input = button.closest('.input-group').querySelector('input.js-visible-password');
+  if (!input) return;
+  var show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  button.setAttribute('aria-label', show ? button.dataset.labelHide : button.dataset.labelShow);
+  button.querySelector('.material-icons').textContent = show ? 'visibility_off' : 'visibility';
+});

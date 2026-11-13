@@ -5,8 +5,9 @@ import { randomBytes } from "node:crypto";
 export function newCustomer() {
   const suffix = `${Date.now()}-${randomBytes(3).toString("hex")}`;
   return {
-    firstName: "Imionna",
-    lastName: "Nazwiskowa",
+    // Polish letters check that the shop stores and shows them correctly (W3, Polish characters)
+    firstName: "Łucja",
+    lastName: "Żółkiewska",
     email: `e2e-${suffix}@example.com`,
     // Generated per run: no password in the repository, and strong enough for PrestaShop's password policy
     password: `E2e-${randomBytes(12).toString("base64url")}`,
