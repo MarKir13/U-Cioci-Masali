@@ -456,6 +456,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (cart && !cart.contains(event.relatedTarget) && !cart.matches(':hover')) cart.classList.remove(DISMISSED);
   });
 })();
+
+/*
  * Password fields (templates/_partials/form-fields.tpl): the eye button shows or hides the password.
  * Delegated from the document, because checkout replaces its forms after AJAX updates.
  */
