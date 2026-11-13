@@ -1,7 +1,8 @@
 import { test, expect } from "../support/fixtures.js";
 import { AccountPage } from "../pages/account.js";
 import { CartPage } from "../pages/cart.js";
-import { CatalogPage } from "../pages/catalog.js";
+import { CatalogPage, canBeAdded } from "../pages/catalog.js";
+import { SearchPage } from "../pages/search.js";
 import { cartSnapshot } from "../support/cart-state.js";
 import { newCustomer } from "../support/data.js";
 import { mailpitUrl, messagesTo } from "../support/mailpit.js";
@@ -11,11 +12,33 @@ import { mailpitUrl, messagesTo } from "../support/mailpit.js";
 const CATEGORY_COUNT = 2;
 const PRODUCTS_PER_CATEGORY = 5;
 const MAX_QUANTITY = 3;
+// Step 2 gives up after this many products without a usable search word, so a run stays within 5 minutes
+const SEARCH_CANDIDATES = 10;
+
+// Cart lines as CartPage.lineQuantities() returns them: id and quantity, sorted by id
+const asCartLines = (products) =>
+  products.map(({ id, quantity }) => ({ id, quantity })).sort((a, b) => a.id.localeCompare(b.id));
+const totalQuantity = (products) => products.reduce((sum, p) => sum + p.quantity, 0);
+
+// Step 2: a product that is not in the cart yet, and a word of its name that the search finds only in names
+async function findSearchTarget(catalog, search, rng, skipProductIds) {
+  let tried = 0;
+  const categories = await catalog.categories();
+  for (const category of rng.sample(categories, categories.length)) {
+    const listed = (await catalog.listedProducts(category)).filter((item) => !skipProductIds.has(item.productId));
+    for (const item of rng.sample(listed, listed.length)) {
+      if (tried++ === SEARCH_CANDIDATES) return null;
+      const product = await catalog.openProduct(item.url);
+      const query = await search.queryFor(product.name, rng);
+      if (query) return { product, query };
+    }
+  }
+  return null;
+}
 
 // The W4 scenario is one test: every step needs what the previous one left (cart, customer, order).
 // Issues E2E 2/5 to 5/5 replace each test.step.skip with the real step.
 test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng }) => {
-  // eslint-disable-next-line no-unused-vars -- used by steps 2–3 (rest of E2E 2/5)
   const addedProducts = await test.step("1. Add 10 products in varying quantities from 2 categories to the cart", async () => {
     const catalog = new CatalogPage(page);
     const cart = new CartPage(page);
@@ -49,13 +72,65 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng })
     );
 
     await cart.openFromHeader();
-    const expected = added.map(({ id, quantity }) => ({ id, quantity })).sort((a, b) => a.id.localeCompare(b.id));
-    expect(await cart.lineQuantities(), "cart lines and their quantities").toEqual(expected);
-    const totalQuantity = added.reduce((sum, p) => sum + p.quantity, 0);
-    await expect(cart.headerCount, "header cart count = sum of the quantities").toHaveText(String(totalQuantity));
+    expect(await cart.lineQuantities(), "cart lines and their quantities").toEqual(asCartLines(added));
+    await expect(cart.headerCount, "header cart count = sum of the quantities").toHaveText(
+      String(totalQuantity(added)),
+    );
     return added;
   });
-  await test.step.skip("2. Search by name and add a random result to the cart", async () => {});
+
+  // Cart lines after step 2 (id, name, quantity); step 3 removes some of them
+  // eslint-disable-next-line no-unused-vars -- used by step 3 (rest of E2E 2/5)
+  const cartLines = await test.step("2. Search by name and add a random result to the cart", async () => {
+    const catalog = new CatalogPage(page);
+    const search = new SearchPage(page);
+    const cart = new CartPage(page);
+
+    const target = await findSearchTarget(catalog, search, rng, new Set(addedProducts.map((p) => p.productId)));
+    expect(target, "a product outside the cart with a word of its name that the search finds only in names").not.toBeNull();
+    const { product: searched, query } = target;
+
+    await search.searchFromHeader(query);
+    const names = await search.resultNames();
+    expect(names, `results for "${query}"`).toContain(searched.name);
+    expect(SearchPage.namesWithout(names, query), `results for "${query}" without it in the name`).toEqual([]);
+
+    // A random result; one that cannot be added (out of stock, required customisation) is passed over
+    let result = null;
+    const shown = await catalog.shownProducts();
+    for (const item of rng.sample(shown, shown.length)) {
+      const product = await catalog.openProduct(item.url);
+      if (canBeAdded(product, 1)) {
+        result = product;
+        break;
+      }
+    }
+    expect(result, `a result for "${query}" that can be added to the cart`).not.toBeNull();
+    await catalog.addToCart(result, 1);
+
+    // A new line, or one more of a product that step 1 already put in the cart
+    const expected = addedProducts.map(({ id, name, quantity }) => ({ id, name, quantity }));
+    const existing = expected.find((line) => line.id === result.id);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      expected.push({ id: result.id, name: result.name, quantity: 1 });
+    }
+    test.info().annotations.push({
+      type: "search",
+      description: `"${query}" (from ${searched.name}) → ${result.name}${existing ? ", already in the cart" : ""}`,
+    });
+
+    await cart.openFromHeader();
+    expect(
+      await cart.lineQuantities(),
+      existing ? `one more ${result.name} in the cart` : `${result.name} as a new cart line`,
+    ).toEqual(asCartLines(expected));
+    await expect(cart.headerCount, "header cart count = sum of the quantities").toHaveText(
+      String(totalQuantity(expected)),
+    );
+    return expected;
+  });
   await test.step.skip("3. Remove 3 products from the cart", async () => {});
 
   // Steps 9–10 log in again with this e-mail and password

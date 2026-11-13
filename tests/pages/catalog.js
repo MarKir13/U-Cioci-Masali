@@ -1,6 +1,12 @@
 import { expect } from "../support/fixtures.js";
 import { headerCartCount } from "./cart.js";
 
+// Whether a product from openProduct() can be added in this quantity: the shop allows it (not out of stock,
+// no required customisation), it has enough stock, and the quantity reaches its minimum
+export function canBeAdded(product, quantity) {
+  return product.canAdd && product.stock >= quantity && product.minimalQuantity <= quantity;
+}
+
 // Catalogue: categories of the top menu, their product lists and the product page with "Dodaj do koszyka".
 // The ciocia theme overrides only the menu; the category and product templates are Classic's, so the
 // selectors are Classic ids and classes. Nothing here depends on product names or ids, because the same
@@ -41,11 +47,16 @@ export class CatalogPage {
     return links;
   }
 
-  // Products on page 1 of a category's list, without those the list already marks as out of stock.
-  // The product page has the last word: openProduct() tells whether a product can really be added.
+  // Products on page 1 of a category's list, without those the list already marks as out of stock
   async listedProducts(category) {
     await this.page.goto(category.url);
     await expect(this.page.locator("body#category"), `category page ${category.url}`).toBeVisible();
+    return this.shownProducts();
+  }
+
+  // Products on the open list (category or search results), without those marked as out of stock.
+  // The product page has the last word: openProduct() tells whether a product can really be added.
+  async shownProducts() {
     return this.miniatures.evaluateAll((items) =>
       items
         .filter((item) => !item.querySelector(".product-flag.out_of_stock"))
@@ -87,8 +98,8 @@ export class CatalogPage {
   }
 
   // Adds one product per planned quantity from a category, in an order drawn from the seed. A product that
-  // cannot take its planned quantity (out of stock, too little stock, higher minimum, required customisation)
-  // is skipped. Products in `skipProductIds` (already in the cart from another category) are skipped too.
+  // cannot take its planned quantity (see canBeAdded) is skipped. Products in `skipProductIds` (already in the
+  // cart from another category) are skipped too.
   // Returns null, with nothing added, when the list is too short to try; the caller then tries another category.
   async addFromCategory(category, quantities, rng, skipProductIds) {
     const listed = (await this.listedProducts(category)).filter((item) => !skipProductIds.has(item.productId));
@@ -100,7 +111,7 @@ export class CatalogPage {
       if (added.length === quantities.length) break;
       const quantity = quantities[added.length];
       const product = await this.openProduct(item.url);
-      if (!product.canAdd || product.stock < quantity || product.minimalQuantity > quantity) continue;
+      if (!canBeAdded(product, quantity)) continue;
       await this.addToCart(product, quantity);
       added.push({ ...product, quantity, category: category.name });
     }
