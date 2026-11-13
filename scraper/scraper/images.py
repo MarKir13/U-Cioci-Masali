@@ -13,7 +13,6 @@ complete (`save_bytes`), and products.jsonl is rewritten the same way, so Ctrl+C
 
 import hashlib
 import io
-import json
 import logging
 import os
 import re
@@ -25,7 +24,7 @@ import requests
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from . import config
-from .crawl import load_json, load_lines, save_json
+from .crawl import load_json, load_lines, save_json, save_lines
 from .http_client import HttpClient, SkippedURL
 
 log = logging.getLogger(__name__)
@@ -138,14 +137,6 @@ def save_bytes(path: Path, data: bytes) -> None:
     """Write `data` so that `path` is either missing or complete, never half-written."""
     temporary = path.with_name(path.name + ".part")
     temporary.write_bytes(data)
-    os.replace(temporary, path)
-
-
-def save_lines(path: Path, records: list[dict]) -> None:
-    """Rewrite a JSON Lines file in one step (the counterpart of crawl.append_line)."""
-    text = "".join(json.dumps(record, ensure_ascii=False) + "\n" for record in records)
-    temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(text, encoding="utf-8")
     os.replace(temporary, path)
 
 

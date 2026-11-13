@@ -34,6 +34,10 @@ const TERMS_PAGE = 'regulamin';
 // stored as CIOCIA_DELIVERY_CMS_ID because page IDs differ between installs.
 const DELIVERY_PAGE = 'dostawa';
 
+// The page linked from the cookie notice (templates/_partials/cookie-notice.tpl),
+// stored as CIOCIA_PRIVACY_CMS_ID for the same reason.
+const PRIVACY_PAGE = 'polityka-prywatnosci';
+
 // The installer's English demo pages, deleted by link_rewrite.
 const DEMO_CMS_PAGES = ['delivery', 'legal-notice', 'terms-and-conditions-of-use', 'about-us', 'secure-payment'];
 
@@ -435,6 +439,7 @@ try {
     $cmsIds = saveCmsPages(placeholders($settings));
     Configuration::updateValue('PS_CONDITIONS_CMS_ID', $cmsIds[TERMS_PAGE]);
     Configuration::updateValue('CIOCIA_DELIVERY_CMS_ID', $cmsIds[DELIVERY_PAGE]);
+    Configuration::updateValue('CIOCIA_PRIVACY_CMS_ID', $cmsIds[PRIVACY_PAGE]);
     deleteDemoCmsPages();
     saveFooterBlocks($cmsIds);
     setPageTitles();

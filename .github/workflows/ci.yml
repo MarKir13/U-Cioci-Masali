@@ -93,9 +93,56 @@ jobs:
         if: ${{ !cancelled() }}
         run: npx eslint
 
+  # Decides whether `smoke` runs: only when the change touches what the shop is built and started
+  # from. HEAD^1 is main: on a PR, HEAD is GitHub's test merge of the PR into main; on a push to
+  # main, HEAD is the PR's merge commit. So the diff lists every file the PR changes.
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      shop: ${{ steps.diff.outputs.shop }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - name: Did shop/, deploy/ or the smoke test change?
+        id: diff
+        run: |
+          git diff --name-only HEAD^1 HEAD | tee "$RUNNER_TEMP/changed-files.txt"
+          if grep -qE '^(shop/|deploy/|\.github/workflows/ci\.yml|\.github/scripts/smoke-test\.sh)' "$RUNNER_TEMP/changed-files.txt"; then
+            echo "shop=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "shop=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # A clean install, the way the lecturer starts the shop from the README: build, install, wait
+  # until every container is ready, then check the shop through the HTTPS proxy.
+  smoke:
+    needs: changes
+    if: needs.changes.outputs.shop == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure as in the README
+        run: cp deploy/.env.example deploy/.env
+      # --wait: until db and shop are healthy (their healthchecks) and the others are running.
+      # Fails if a container stops or turns unhealthy, or after 600 s.
+      - name: Build, install and wait until ready
+        run: docker compose -f deploy/compose.yaml up -d --build --wait --wait-timeout 600
+      - name: Check the running shop
+        run: sh .github/scripts/smoke-test.sh
+      - name: Container status and logs
+        if: failure()
+        run: |
+          docker compose -f deploy/compose.yaml ps -a
+          docker compose -f deploy/compose.yaml logs --no-color
+      - name: Remove containers and volumes
+        if: always()
+        run: docker compose -f deploy/compose.yaml down -v
+
   ci-gate:
     if: always()
-    needs: [scraper, repo-hygiene, infra-lint]
+    needs: [scraper, repo-hygiene, infra-lint, changes, smoke]
     runs-on: ubuntu-24.04
     steps:
       - name: Fail if any required job did not succeed

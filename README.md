@@ -16,6 +16,7 @@ built as a team project for the *Biznes Elektroniczny* course at Gdansk Universi
 | HTTPS proxy | nginx 1.28.0 (`nginx:1.28.0-alpine`), self-signed certificate |
 | Containers | Docker Engine + Docker Compose v2 |
 | Scraper | Python 3.12, `requests`, Protego, pydantic, pytest (versions in `scraper/requirements.txt`) |
+| E2E tests | Playwright 1.64.1 (headless Chromium) on Node.js 24, see [E2E tests](#e2e-tests) |
 
 Our own code (child theme `ciocia`, modules, PHP config) lives in `shop/` and is built on top of
 the official image. PrestaShop itself is not stored in this repository.
@@ -136,15 +137,82 @@ in the admin panel (Katalog > Kategorie, column ID) and set them as the buttons'
 The layout is in `shop/themes/ciocia/modules/ps_imageslider/views/templates/hook/slider.tpl` and in the
 "Home page banner" section of `custom.css`.
 
+## Scraped data
+
+The data from the source shop is in `scraper-results/`: 2159 products in 160 categories, with 4822 product images.
+How it was made, what was left out and why: [scraper/README.md](scraper/README.md). The product images are not in git. They
+are one archive (585 MB) in the GitHub Release [`images-v1`](https://github.com/MarKir13/U-Cioci-Masali/releases/tag/images-v1):
+
+```sh
+gh release download images-v1 --pattern product-images.tar.gz --dir /tmp
+tar xzf /tmp/product-images.tar.gz -C scraper-results
+```
+
+Check the data with `python -m scraper verify` (from `scraper/`); it needs no network.
+
+
+## E2E tests
+
+The Playwright suite in [`tests/`](tests/) runs the W4 purchase scenario in headless Chromium against a running
+shop. It has its own [`package.json`](tests/package.json), separate from the ESLint tools in the root one.
+
+Requirements: [Node.js](https://nodejs.org/) 24 and a running shop (see [Running the shop](#running-the-shop)).
+
+1. Install the dependencies and the browser once, from `tests/`:
+   ```sh
+   cd tests
+   npm ci
+   npx playwright install chromium
+   ```
+   On Linux without a desktop (CI, a cluster node) use `npx playwright install --with-deps chromium`.
+2. Run the whole suite, from `tests/`:
+   ```sh
+   npm test
+   ```
+
+The shop address comes from `BASE_URL` (default `https://localhost:8443`); the self-signed certificate is accepted.
+
+| Shell | Command |
+|---|---|
+| bash, Git Bash | `BASE_URL=https://localhost:8443 npm test` |
+| PowerShell | `$env:BASE_URL = "https://localhost:8443"; npm test` |
+
+The host in `BASE_URL` must be the shop's own domain (`PS_DOMAIN`, set at install time), because PrestaShop
+redirects every other host name there. The smoke test fails if that happens.
+
+Reports are written on every run; both folders are ignored by git:
+
+| Report | Where |
+|---|---|
+| HTML: every step, plus a screenshot and a trace when a test fails | `tests/playwright-report/index.html`, open it with `npm run report` |
+| JUnit XML | `tests/test-results/junit.xml` |
+
+Products and quantities are picked at random from a seed, which both reports show (`seed` annotation). To repeat
+a failed run with the same picks, pass that seed: `E2E_SEED=123456789 npm test` (PowerShell:
+`$env:E2E_SEED = "123456789"; npm test`). The new customer's e-mail is unique on every run, with or without a seed,
+so the suite can run many times on the same shop.
+
+| Path | Contents |
+|---|---|
+| `tests/e2e/` | `smoke.spec.js` (home page over HTTPS, no console errors) and `order.spec.js` (the W4 scenario, one step per point of the brief) |
+| `tests/pages/` | One file per area of the shop (catalog, search, cart, account, checkout, orders) with its selectors and actions |
+| `tests/support/` | Shared code: fixtures (`test`, `rng`, `consoleErrors`), seeded random numbers, test data |
+
+Rules for new tests: import `test` and `expect` from `tests/support/fixtures.js`, keep selectors in `tests/pages/`,
+and never wait a fixed time. Wait on a condition instead (`expect(...)`, `waitForURL`, `waitForResponse`);
+`npx eslint` fails on `waitForTimeout`. The whole run must stay under 5 minutes, and Playwright stops it after 4.
+
+
 ## Continuous integration
 
-GitHub Actions runs three workflows:
+GitHub Actions runs four workflows:
 
 | Workflow | When | What it checks |
 |---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and the theme's JavaScript. `ci-gate`: passes only if all jobs passed |
+| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and JavaScript (theme and E2E tests). `smoke`: a clean install of the shop, only when `changes` finds a change in `shop/`, `deploy/` or the smoke test itself. `ci-gate`: passes only if all jobs passed or were skipped |
 | [`pr-policy.yml`](.github/workflows/pr-policy.yml) | A pull request is opened, updated or relabelled | `ai-log`: a PR labelled `ai-assisted` must add or update a row in `docs/AI_LOG.md` |
 | [`secret-scan.yml`](.github/workflows/secret-scan.yml) | Nightly, or by hand from the Actions tab | Secrets and repository limits over every branch, the way the lecturer measures it |
+| [`publish.yml`](.github/workflows/publish.yml) | Every push to `main`, tags `etap*`, by hand; pull requests that change `shop/` or `deploy/proxy/` | `build`: the shop and proxy images for `linux/amd64`, pushed to GHCR only from `main` or an `etap*` tag; pull requests and manual runs on other branches only build. `verify` (on `main` only): pulls them without logging in, checks they are `amd64` and runs the smoke test on them. Not a required check |
 
 A pull request must have passing `ci-gate` and `ai-log` checks before it is merged.
 
@@ -180,6 +248,48 @@ Fix a finding rather than silencing it. If a rule really does not fit, silence t
 above it, as `deploy/proxy/Dockerfile` does for `# hadolint ignore=DL3018`. Never turn a rule off for the whole
 repository. The reasons are in [ADR 0003](docs/adr/0003-ci-checks-and-merge-policy.md).
 
+`smoke` starts the shop the way the README tells to: it copies `deploy/.env.example` to `deploy/.env`,
+runs `docker compose up -d --build --wait`, which waits until the shop container's healthcheck passes, then runs
+[`.github/scripts/smoke-test.sh`](.github/scripts/smoke-test.sh) against it and removes everything with `down -v`.
+The script checks, through the HTTPS proxy:
+
+- HTTP answers 301 to `https://localhost:<HTTPS_PORT>/`;
+- the home page answers 200 as UTF-8 HTML, in Polish (`lang="pl-PL"`), with the `ciocia` theme;
+- the header shows a free delivery threshold above 0, which is only there if `post-install/30-configure-shop.sh` ran.
+  A failed configuration script does not stop the shop: the container restarts and starts without it.
+
+It does not need product data, so it says nothing about product pages, the cart or checkout. On a failure, the job
+prints the container status and logs.
+
+### Published images
+
+`publish.yml` builds the two images on GitHub's `amd64` runners, which matches the Stage 2 cluster, and pushes them
+to GitHub's registry (GHCR). Both packages are public, so they can be pulled without logging in. The reasons are in
+[ADR 0006](docs/adr/0006-image-build-and-distribution.md).
+
+| Image | Built from |
+|---|---|
+| `ghcr.io/markir13/u-cioci-masali/shop` | `shop/` |
+| `ghcr.io/markir13/u-cioci-masali/proxy` | `deploy/proxy/` |
+
+| Tag | Points to |
+|---|---|
+| `sha-<7 characters of the commit>` | The image built from that commit of `main`; never moves |
+| `main` | The newest `main` |
+| `etap1` | The version handed in, once the tag `etap1` exists |
+
+There is no `latest`. To run the published images instead of building, set `SHOP_IMAGE` and `PROXY_IMAGE` (in
+`deploy/.env`, or in front of the command) and start without `--build`:
+
+```sh
+SHOP_IMAGE=ghcr.io/markir13/u-cioci-masali/shop:main PROXY_IMAGE=ghcr.io/markir13/u-cioci-masali/proxy:main \
+  docker compose -f deploy/compose.yaml up -d --no-build
+```
+
+Without these variables, nothing changes: `up -d --build` builds both images locally as `ciocia-shop:local` and
+`ciocia-proxy:local`. Setting them to your own names, such as `ciocia-shop:test`, also keeps a second local stack (with
+`-p` and other ports) from replacing the images of your main one.
+
 To run the same checks locally, install the tools once. The linters run in Docker; ESLint needs Node.js 20.19+, 22.13+
 or 24+:
 
@@ -202,6 +312,7 @@ npm ci
 | Compose file (prints nothing when valid) | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
 | JavaScript | `npx eslint` |
+| Smoke test of the running shop (ports from `HTTP_PORT` and `HTTPS_PORT`, default 8080 and 8443) | `sh .github/scripts/smoke-test.sh` |
 
 In Git Bash on Windows, put `MSYS_NO_PATHCONV=1` in front of `docker run`, or in front of `xargs` where the command
 uses it, otherwise the `/repo` path is rewritten. `--all` also covers your local branches, so it can report something
@@ -215,9 +326,9 @@ same result as CI and never shows your passwords.
 | `shop/` | Dockerfile, PHP config, child theme, own modules, setup scripts for shop content | in progress |
 | `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`); later: init, backup and restore scripts | in progress |
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
-| `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | in progress |
-| `scraper-results/` | Scraped data (JSON/CSV) and sample images | in progress (schema only) |
-| `tests/` | Playwright E2E tests | planned |
+| `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | done: crawl, images, verification |
+| `scraper-results/` | Scraped data (`categories.json`, `products.jsonl`, `schema.json`, `rejected.json`), `verification-report.md` and 20 sample images | done: 2159 products, 160 categories |
+| `tests/` | Playwright E2E tests | in progress |
 
 ## Team
 

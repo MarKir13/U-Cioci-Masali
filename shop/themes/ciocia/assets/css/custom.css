@@ -30,6 +30,7 @@
   --ciocia-surface-light: #fffaf6;
   --ciocia-gold: #f9d28f;
   --ciocia-primary: #5f0602;
+  --ciocia-primary-hover: #7a1006;
   --ciocia-primary-dark: #2c0001;
   --ciocia-secondary: #6c757d;
   --ciocia-secondary-dark: #5c636a;
@@ -658,8 +659,9 @@ body#checkout section.checkout-step.-unreachable .step-title {
     position: relative;
     z-index: 1;
     background: linear-gradient(90deg, rgba(249, 210, 143, 0.05), transparent 22%, transparent 78%, rgba(249, 210, 143, 0.05)), var(--ciocia-menu-bg);
-    border-top: 1px solid rgba(249, 210, 143, 0.12);
-    border-bottom: 1px solid rgba(249, 210, 143, 0.12);
+    /* Lines as inset shadows, not borders: the sticky header folds this row to 0 px height. */
+    box-shadow: inset 0 1px rgba(249, 210, 143, 0.12), inset 0 -1px rgba(249, 210, 143, 0.12);
+    padding: 1px 0;
   }
 
   #header #_desktop_logo {
@@ -1473,6 +1475,108 @@ body#checkout section.checkout-step.-unreachable .step-title {
   #header #mobile_top_menu_wrapper .ciocia-drawer-footer .material-icons { color: #fff; font-size: 20px; }
 }
 
+/*
+ * Sticky header from 992 px. custom.js adds .is-compact after 100 px of scroll and sets the
+ * --ciocia-header-* variables on <html>. The checkout uses the same header, so it behaves the same.
+ */
+@media (min-width: 992px) {
+  /*
+   * Focused fields and anchor targets stop below the header (WCAG 2.4.11). Not scroll-padding on
+   * <html>: it also applies to the header's own links, and focusing the search scrolled to the top.
+   */
+  main > :not(#header),
+  main > :not(#header) * {
+    scroll-margin-top: var(--ciocia-header-height, 0px);
+  }
+
+  /* Search suggestions are appended to <body>; Classic's 999 would put them under the header. */
+  .ui-autocomplete.ui-front.searchbar-autocomplete {
+    z-index: 1021;
+  }
+
+  #header {
+    --ciocia-header-speed: 0.3s;
+    position: sticky;
+    top: 0;
+    /* Above page content, below Bootstrap modals (1050) such as the add-to-cart dialog. */
+    z-index: 1020;
+    transition: margin-bottom var(--ciocia-header-speed), box-shadow var(--ciocia-header-speed);
+  }
+
+  #header.is-compact {
+    /*
+     * Grows while the rows shrink, with the same duration and easing, so header and margin
+     * always add up to the same height and the page below does not move.
+     */
+    margin-bottom: var(--ciocia-header-collapsed, 0px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  }
+
+  /* Rows that fold away. custom.js sets --ciocia-row-height to each row's natural height. */
+  #header .header-banner,
+  #header .ciocia-topbar,
+  #header .ciocia-desktop-navigation {
+    transition:
+      height var(--ciocia-header-speed),
+      padding var(--ciocia-header-speed),
+      opacity var(--ciocia-header-speed),
+      visibility var(--ciocia-header-speed),
+      /*
+       * On unfolding, keep the content clipped until the row has its full height again.
+       * allow-discrete only here: on height it would also "animate" auto -> px after each measuring.
+       */
+      overflow 0s var(--ciocia-header-speed) allow-discrete;
+  }
+
+  #header:not(.is-measuring) .header-banner,
+  #header:not(.is-measuring) .ciocia-topbar,
+  #header:not(.is-measuring) .ciocia-desktop-navigation {
+    height: var(--ciocia-row-height, auto);
+  }
+
+  /* visibility: hidden also takes the hidden links out of the Tab order. */
+  #header.is-compact .header-banner,
+  #header.is-compact .ciocia-topbar,
+  #header.is-compact .ciocia-desktop-navigation {
+    height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    /* On folding, clip at once. */
+    transition-delay: 0s;
+  }
+
+  /*
+   * The logo hangs 15 px below its row (8 px offset plus the image's own overhang). The compact
+   * header leaves room for it, plus 3 px of background below, as on the source shop.
+   */
+  #header .header-top {
+    transition: padding-bottom var(--ciocia-header-speed);
+  }
+
+  #header.is-compact .header-top {
+    padding-bottom: 18px;
+  }
+
+  /* custom.js measures both states at once; nothing may animate meanwhile. */
+  #header.is-measuring,
+  #header.is-measuring * {
+    transition: none !important;
+  }
+}
+
+@media (min-width: 992px) and (prefers-reduced-motion: reduce) {
+  #header,
+  #header .header-banner,
+  #header .ciocia-topbar,
+  #header .ciocia-desktop-navigation,
+  #header .header-top {
+    transition: none;
+  }
+}
+
 /* Footer: trust bar, newsletter, link columns and copyright, as on the source shop. */
 #footer {
   --ciocia-footer-bg: #370101;
@@ -1831,6 +1935,196 @@ body#checkout #footer:has(> .ciocia-trust) {
 @media (min-width: 992px) {
   #footer .ciocia-footer-columns {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/*
+ * Cookie notice (templates/_partials/cookie-notice.tpl), as on the source shop. Under Bootstrap
+ * modals (1050) and the mobile menu (1000), so checkout dialogs and the drawer stay on top.
+ */
+.ciocia-cookie {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 990;
+}
+
+.ciocia-cookie[hidden],
+.ciocia-cookie-reopen[hidden],
+.ciocia-cookie__details[hidden] {
+  display: none;
+}
+
+.ciocia-cookie__panel {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1rem 1.125rem 1.125rem;
+  border-top: 1px solid var(--ciocia-border);
+  background: var(--ciocia-card-bg);
+  box-shadow: 0 -0.5rem 1.5rem rgba(44, 0, 1, 0.18);
+  color: var(--ciocia-text);
+  font-family: var(--ciocia-font);
+}
+
+.ciocia-cookie__title {
+  margin: 0 0 0.35rem;
+  color: var(--ciocia-page-top);
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.ciocia-cookie__text {
+  margin: 0 0 0.875rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.ciocia-cookie__link {
+  color: var(--ciocia-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.ciocia-cookie__link:hover,
+.ciocia-cookie__link:focus-visible {
+  color: var(--ciocia-link);
+}
+
+.ciocia-cookie__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ciocia-cookie__btn {
+  padding: 0.65rem 0.95rem;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.ciocia-cookie__btn--primary {
+  background: var(--ciocia-primary);
+  color: #fff;
+}
+
+.ciocia-cookie__btn--primary:hover,
+.ciocia-cookie__btn--primary:focus-visible {
+  background: var(--ciocia-primary-hover);
+}
+
+.ciocia-cookie__btn--ghost {
+  border-color: var(--ciocia-border);
+  background: transparent;
+  color: var(--ciocia-page-top);
+}
+
+.ciocia-cookie__btn--ghost:hover,
+.ciocia-cookie__btn--ghost:focus-visible {
+  border-color: var(--ciocia-link);
+  color: var(--ciocia-link-hover);
+}
+
+.ciocia-cookie__btn--text {
+  padding-right: 0.35rem;
+  padding-left: 0.35rem;
+  background: transparent;
+  color: var(--ciocia-text-muted);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.ciocia-cookie__btn--save {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.ciocia-cookie__details {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--ciocia-border);
+}
+
+.ciocia-cookie__opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0;
+  color: var(--ciocia-text);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.ciocia-cookie__opt input {
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+  accent-color: var(--ciocia-primary);
+}
+
+.ciocia-cookie__opt strong {
+  color: var(--ciocia-page-top);
+  font-weight: 600;
+}
+
+.ciocia-cookie-reopen {
+  position: fixed;
+  bottom: 0;
+  left: 0.75rem;
+  z-index: 990;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--ciocia-border);
+  border-bottom: 0;
+  border-radius: 0.35rem 0.35rem 0 0;
+  background: var(--ciocia-card-bg);
+  box-shadow: 0 -0.15rem 0.6rem rgba(44, 0, 1, 0.12);
+  color: var(--ciocia-page-top);
+  font-family: var(--ciocia-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.ciocia-cookie-reopen:hover,
+.ciocia-cookie-reopen:focus-visible {
+  background: #fff;
+  color: var(--ciocia-primary);
+}
+
+.ciocia-cookie__btn:focus-visible,
+.ciocia-cookie__link:focus-visible,
+.ciocia-cookie__opt input:focus-visible,
+.ciocia-cookie-reopen:focus-visible {
+  outline: 2px solid var(--ciocia-primary);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .ciocia-cookie__panel {
+    border: 1px solid var(--ciocia-border);
+    border-bottom: 0;
+    border-radius: 0.75rem 0.75rem 0 0;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .ciocia-cookie__actions {
+    flex-direction: column;
+  }
+
+  .ciocia-cookie__btn--primary,
+  .ciocia-cookie__btn--ghost {
+    width: 100%;
   }
 }
 

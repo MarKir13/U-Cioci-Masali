@@ -29,6 +29,101 @@
   tablet.addEventListener('change', placeHeaderIcons);
 })();
 
+/*
+ * Desktop (992 px+): the header sticks to the top (CSS). After 100 px of scroll, .is-compact folds
+ * away the top bar and the category row, leaving logo, search and cart; at 60 px or less they come
+ * back. The gap between the two values stops flicker on slow scroll.
+ * Folded rows are visibility: hidden, so Tab skips them: once the header is compact, the top bar and
+ * the category menu are out of reach of the keyboard until the page is scrolled back up (Home key).
+ * The source shop behaves the same, and the search and cart stay reachable. A row with focus inside
+ * it does not fold.
+ * CSS cannot animate to or from height: auto, so this script measures each folding row and passes
+ * its height as --ciocia-row-height. It also sets on <html>:
+ *   --ciocia-header-collapsed: how much shorter the compact header is. The margin under the header
+ *     grows by this much while the rows shrink, so the page below does not move.
+ *   --ciocia-header-height: the header's height now, for scroll-margin on focused fields.
+ */
+(function () {
+  var header = document.getElementById('header');
+  if (!header) return;
+  var root = document.documentElement;
+  var desktop = window.matchMedia('(min-width: 992px)');
+  var rows = Array.from(header.querySelectorAll('.header-banner, .ciocia-topbar, .ciocia-desktop-navigation'));
+  var COLLAPSE_AFTER = 100;
+  var EXPAND_AT = 60;
+  var fullHeight = 0;
+  var compactHeight = 0;
+  var scheduled = false;
+
+  function setCompact(compact) {
+    header.classList.toggle('is-compact', compact);
+    if (desktop.matches) root.style.setProperty('--ciocia-header-height', (compact ? compactHeight : fullHeight) + 'px');
+  }
+
+  function measure() {
+    if (!desktop.matches) {
+      rows.forEach(function (row) { row.style.removeProperty('--ciocia-row-height'); });
+      ['--ciocia-header-height', '--ciocia-header-collapsed']
+        .forEach(function (name) { root.style.removeProperty(name); });
+      return;
+    }
+    // .is-measuring turns transitions off and gives the rows their natural height. Classes change
+    // back and forth within one task, so the browser lays the states out but never paints them.
+    var compact = header.classList.contains('is-compact');
+    header.classList.add('is-measuring');
+    // getBoundingClientRect, not offsetHeight: heights such as 25.06 px must not be rounded.
+    function height(el) { return el.getBoundingClientRect().height; }
+    header.classList.remove('is-compact');
+    fullHeight = height(header);
+    var rowHeights = rows.map(height);
+    header.classList.add('is-compact');
+    compactHeight = height(header);
+    header.classList.toggle('is-compact', compact);
+
+    rows.forEach(function (row, i) { row.style.setProperty('--ciocia-row-height', rowHeights[i] + 'px'); });
+    root.style.setProperty('--ciocia-header-collapsed', (fullHeight - compactHeight) + 'px');
+    setCompact(compact);
+    // Apply the new values while transitions are still off, so nothing animates from the old ones.
+    height(header);
+    header.classList.remove('is-measuring');
+    // Settle the normal state now too. Otherwise the next fold would start from the measuring
+    // state, where rows have height: auto, which cannot animate: rows would jump, the margin not.
+    height(header);
+  }
+
+  function update() {
+    scheduled = false;
+    var y = window.scrollY;
+    if (!desktop.matches || y <= EXPAND_AT) {
+      setCompact(false);
+    } else if (y > COLLAPSE_AFTER && !rows.some(function (row) { return row.contains(document.activeElement); })) {
+      // Do not hide a row while keyboard focus is inside it.
+      setCompact(true);
+    }
+  }
+
+  function scheduleUpdate() {
+    if (scheduled) return;
+    scheduled = true;
+    window.requestAnimationFrame(update);
+  }
+
+  window.addEventListener('scroll', scheduleUpdate, { passive: true });
+  // Focus leaving the top bar or the category row may let the header collapse now.
+  header.addEventListener('focusout', scheduleUpdate);
+  desktop.addEventListener('change', function () {
+    measure();
+    update();
+  });
+  // Watch the row contents, not the header: the header itself changes size while it animates.
+  // Fires once at start and again when fonts load, the menu wraps or the width changes.
+  var observer = new ResizeObserver(measure);
+  header.querySelectorAll('.header-banner > *, .ciocia-topbar > .container, .ciocia-header-layout, .ciocia-desktop-navigation > .container')
+    .forEach(function (el) { observer.observe(el); });
+  measure();
+  update();
+})();
+
 /* Keep Classic's responsive module relocation; own the mobile drawer interaction. */
 document.addEventListener('DOMContentLoaded', function () {
   var toggle = document.getElementById('menu-icon');
@@ -232,3 +327,95 @@ document.addEventListener('DOMContentLoaded', function () {
     items.forEach(function (item) { setOpen(item, false); });
   });
 });
+
+/*
+ * Cookie notice (templates/_partials/cookie-notice.tpl). The choice is saved in localStorage, so the
+ * panel shows only until the visitor picks an option; after that only the "Cookies" tab is shown.
+ * Runs at once: this file loads after the footer, so the panel appears without a late jump.
+ */
+(function () {
+  var STORAGE_KEY = 'ciocia_cookie_consent';
+  var notice = document.getElementById('ciocia-cookie-notice');
+  var reopen = document.getElementById('ciocia-cookie-reopen');
+  if (!notice || !reopen) return;
+  var details = document.getElementById('ciocia-cookie-details');
+  var customize = notice.querySelector('[data-cookie-customize]');
+  var analytics = notice.querySelector('[data-cookie-analytics]');
+  var ads = notice.querySelector('[data-cookie-ads]');
+
+  // Storage can be blocked (private mode, site data off); then the panel simply shows again.
+  function readChoice() {
+    try {
+      return JSON.parse(window.localStorage.getItem(STORAGE_KEY));
+    } catch {
+      return null;
+    }
+  }
+  function saveChoice(choice) {
+    choice.date = new Date().toISOString();
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(choice));
+    } catch { /* keep working for this page view */ }
+  }
+
+  // Leave room under the page for the fixed panel or tab, so they never hide its last content.
+  function reserveSpace() {
+    var visible = notice.hidden ? reopen : notice;
+    document.body.style.paddingBottom = visible.offsetHeight + 'px';
+  }
+
+  function setDetails(open) {
+    details.hidden = !open;
+    customize.setAttribute('aria-expanded', String(open));
+    reserveSpace();
+  }
+
+  // As on the source: the first visit shows the short panel, the "Cookies" tab opens it with the
+  // options already expanded, set to the saved choice.
+  function showNotice(withDetails) {
+    var choice = readChoice() || {};
+    analytics.checked = Boolean(choice.analytics);
+    ads.checked = Boolean(choice.ads);
+    setDetails(withDetails);
+    notice.hidden = false;
+    reopen.hidden = true;
+    reserveSpace();
+  }
+
+  function closeNotice(choice) {
+    if (choice) saveChoice(choice);
+    // Only a keyboard user (focus ring shown in the panel) gets focus moved to the "Cookies" tab;
+    // after a mouse click the tab would otherwise show a focus ring nobody asked for.
+    var keyboardFocus = Boolean(notice.querySelector(':focus-visible'));
+    notice.hidden = true;
+    reopen.hidden = false;
+    reserveSpace();
+    // The focused button disappears with the panel; hand focus to the control that brings it back.
+    if (keyboardFocus) reopen.focus();
+  }
+
+  notice.querySelector('[data-cookie-accept]').addEventListener('click', function () {
+    closeNotice({ necessary: true, analytics: true, ads: true });
+  });
+  notice.querySelector('[data-cookie-necessary]').addEventListener('click', function () {
+    closeNotice({ necessary: true, analytics: false, ads: false });
+  });
+  notice.querySelector('[data-cookie-save]').addEventListener('click', function () {
+    closeNotice({ necessary: true, analytics: analytics.checked, ads: ads.checked });
+  });
+  customize.addEventListener('click', function () {
+    setDetails(details.hidden);
+  });
+  reopen.addEventListener('click', function () {
+    showNotice(true);
+    notice.querySelector('[data-cookie-accept]').focus();
+  });
+  // Escape closes a reopened panel without changing the saved choice; the first choice must be made.
+  notice.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && readChoice()) closeNotice(null);
+  });
+  window.addEventListener('resize', reserveSpace);
+
+  if (readChoice()) closeNotice(null);
+  else showNotice(false);
+})();

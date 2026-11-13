@@ -26,6 +26,9 @@ python -m scraper images --limit 5                              # test run: at m
 python -m scraper fetch /8-kosmetyki                            # download one page, print status and size
 python -m scraper fetch /8-kosmetyki -o tests/fixtures/x.html   # save it, e.g. as a test fixture
 python -m scraper schema                                        # write ../scraper-results/schema.json
+python -m scraper verify                                        # check the results against the requirements, write the report
+python -m scraper sample                                        # copy 20 sample images to ../scraper-results/sample-images/
+python -m scraper archive                                       # pack all images into ../scraper-results/product-images.tar.gz
 ```
 
 Options before the command: `--delay SECONDS` (default 1.0, minimum 0.5, maximum 3600), `-v` for DEBUG messages in the console.
@@ -46,7 +49,9 @@ these pages: [ADR 0004](../docs/adr/0004-crawl-sources-and-category-assignment.m
    [config.py](scraper/config.py)).
 5. **Products:** every product from the sitemap, plus any product seen only on a listing. The categories from the
    product page (default category and its breadcrumb) are merged with the listings it was seen on, without duplicates.
-6. **Report:** a warning for each category that lists products in the source shop but has none saved, and for
+   Category ids that are not categories of the shop are dropped, see [Rejected products](#rejected-products-and-empty-categories).
+6. **Cleaning** (full runs only): categories without products are removed and `rejected.json` is written.
+7. **Report:** a warning for each category that lists products in the source shop but has none saved, and for
    category ids that products use but that were not saved.
 
 A page that fails (blocked by robots.txt, HTTP error, network error, parse or validation error) is logged and skipped,
@@ -60,10 +65,42 @@ At the end of each stage the log shows how many records were saved, already save
 | `categories.json` | List of categories (`Category` in the schema) | Whole file again after each new category |
 | `listings.json` | Per category id: product URLs seen on its listing, and `next_page` (`null` once finished) | Whole file again after each listing page |
 | `products.jsonl` | One product per line (`Product` in the schema) | One line appended per product |
+| `rejected.json` | Products left out on purpose, each with `id`, `url` and `reason` | At the end of a full run |
+
+Other commands write these files into the same folder:
+
+| File | Written by | Committed |
+|---|---|---|
+| `images/` | `images`: one JPEG per source image, and `local_path` in `products.jsonl` | No (`.gitignore`); published as the archive |
+| `image_problems.json` | `images`: source images that cannot be used | Yes |
+| `verification-report.md` | `verify`: one line per check | Yes |
+| `sample-images/` | `sample`: 20 images, one per randomly chosen product | Yes |
+| `product-images.tar.gz` | `archive`: all images in one file | No (`.gitignore`); attached to the GitHub Release |
 
 All files are UTF-8 with Polish characters as they are (`ensure_ascii=False`). Whole files are written to a `.tmp` file
 first and then renamed over the old one, so Ctrl+C leaves either the old or the new version. A product line is written
 in one call; a last line cut off anyway is removed on the next start and that product is downloaded again.
+
+### Rejected products and empty categories
+
+The source shop has data that cannot be used as it is. A full run leaves it out and says why in `rejected.json`
+(the log shows the same as warnings or errors). On the real run, 23 of the 2182 products in the sitemap were left out:
+
+| Reason | Products | What the crawl does |
+|---|---|---|
+| The product has no description at all (17 products, e.g. 5815, 5822, 9322) | 17 | The long description is used; if it has no visible text, the short one. If both are empty, the record fails validation and is rejected. The description is never made up and the JSON-LD description is not used, because for these products it repeats the product name |
+| The product's only category is not a category of the shop (6 products: 300, 3944, 8472, 9189, 9282, 9291) | 6 | Ids that are not in the sitemap are dropped: `1` is PrestaShop's internal root, `44`, `257` and `289` are hidden categories without a page. A product left with no category is rejected, and its image files are deleted if an earlier run saved them |
+
+Other rules for a full run (not for `--limit`, which saves only some categories):
+
+- A category without products in it or in its subcategories is removed from `categories.json` (the shop must have no
+  empty categories). Nothing is removed if some product page could not be downloaded, because that product may be the
+  only one in its category. Run the crawl again, then.
+- Category 465 (`KNOWN_EMPTY_CATEGORY_IDS` in [config.py](scraper/config.py)) is empty at the source and has no
+  breadcrumb, so it is skipped with an INFO message and not reported as an error.
+- The `ERROR ... Invalid Product` lines for the 17 products appear in the log of every full run. They are expected.
+
+Products saved by an older version of the crawl are cleaned in the same way at the start of the next run.
 
 ### Stopping and resuming
 
@@ -71,7 +108,11 @@ Stop with Ctrl+C at any time and run the same command again. Saved categories an
 are skipped (the log says how many). An unfinished listing continues from its `next_page`. Only robots.txt and the
 sitemap are downloaded again. Pages that failed are tried again.
 
-To start from scratch, delete the three files above.
+Resuming is the only kind of re-run: data that is already saved is not downloaded again and is not refreshed. If the
+source shop changes a price later, the saved price stays. For a new snapshot, start from scratch.
+
+To start from scratch, delete `categories.json`, `listings.json`, `products.jsonl` and `rejected.json`, but not `schema.json`
+(it is committed and made by `python -m scraper schema`).
 
 ### Page cache
 
@@ -117,7 +158,54 @@ that is on disk is skipped, and `products.jsonl` is rewritten (to a `.tmp` file,
 images and on Ctrl+C. To fetch an image again, delete its file. Do not run `crawl` and `images` at the same time:
 both write `products.jsonl`.
 
-Expect about one image per second (`--delay`), so the whole set takes roughly an hour.
+Expect about one image per second (`--delay`). The full set (4822 images for 2159 products) took 1 hour 41 minutes.
+
+## Final dataset
+
+How the committed results were made (11 November 2026), from this directory:
+
+```sh
+python -m scraper crawl                # about 36 minutes from the network, about 1 minute with the page cache
+python -m scraper images               # 1 hour 41 minutes
+python -m scraper verify               # 12 of 12 checks passed
+python -m scraper sample
+python -m scraper archive
+```
+
+| | |
+|---|---|
+| Products | 2159 (of 2182 in the sitemap; 23 rejected, see above) |
+| Categories | 160, in 5 top-level categories that have at least 2 non-empty subcategories (Kosmetyki, Zdrowie, Żywność, Różności, Aromaterapia i Masaż) |
+| Images | 4822 JPEGs, 800-1600 px on the longer side, at most 300 000 bytes each. 1308 products have two or more |
+| Archive | `product-images.tar.gz`, 584 619 393 bytes, sha256 `54e3a0d705e5256a2f1bfee998f6176dc7164d78bd43c9208b0355d7b5f770c5` |
+
+### Verification
+
+`python -m scraper verify` needs no network. It reads `scraper-results/`, prints PASS or FAIL for each check, writes
+[verification-report.md](../scraper-results/verification-report.md) and exits with 1 if any check fails:
+
+- every record is valid against the schema, no duplicate product ids or URLs, at least 1000 products;
+- at least 4 top-level categories have at least 2 non-empty subcategories, no category is empty, every parent and every
+  category of a product exists;
+- every product has at least one image file, at least 50 products have two or more;
+- every image file listed in `products.jsonl` exists and is a JPEG with a longer side of 800-1600 px and at most
+  300 000 bytes, and no image file is unused;
+- no committed result file is over 10 MB (the images and the archive are not committed).
+
+### Publishing the images
+
+The images are not in git (the full set is 585 MB as an archive). They are attached to the GitHub Release
+[`images-v1`](https://github.com/MarKir13/U-Cioci-Masali/releases/tag/images-v1) as `product-images.tar.gz`.
+To get them on another machine:
+
+```sh
+gh release download images-v1 --pattern product-images.tar.gz --dir /tmp
+tar xzf /tmp/product-images.tar.gz -C scraper-results     # creates scraper-results/images/
+```
+
+`scraper-results/sample-images/` holds 20 of them in the repository. To make a new archive after a new run, run
+`python -m scraper archive`, upload it with `gh release upload images-v1 scraper-results/product-images.tar.gz --clobber`
+and update the hash above.
 
 ## Politeness
 
@@ -152,7 +240,8 @@ All requests go through `HttpClient` in [scraper/http_client.py](scraper/http_cl
 - `category_ids`, `family` and `images` (compared by `source_url`) cannot contain duplicates. A product with a duplicate
   is rejected, so parsers and the crawl have to remove them before validation.
 - Weight stays as raw text (`"250.000000"`, `"g"`), because the unit on the source page is unreliable.
-- A description needs visible text: `<p>&nbsp;</p>` counts as empty.
+- A description needs visible text: `<p>&nbsp;</p>` counts as empty. The crawl takes the long description, or the
+  short one if the long one is empty.
 
 After changing a model, run `python -m scraper schema` and commit the new `schema.json`. A test fails if it is out of date.
 
@@ -172,7 +261,8 @@ After changing a model, run `python -m scraper schema` and commit the new `schem
 - `missing_parents(categories)` returns the categories whose parent is not in the list.
 - `product_urls(url, html)` returns absolute, unique product URLs from a product list page.
 - `next_page_url(url, html)` returns the absolute URL of the next page of results, or `None` if there is no next page.
-- `parse_product(url, html)` returns a `Product` from the `data-product` JSON and the JSON-LD blocks. It raises
+- `description_from(data)` returns the long description, or the short one if the long one has no visible text.
+- `parse_product(url, html, problems=None)` returns a `Product` from the `data-product` JSON and the JSON-LD blocks. It raises
   `ValueError` (with the page URL) when `data-product` is missing or not valid JSON.
   - Both prices go through `round_price()`: two decimal places, halves up (`2.675` becomes `2.68`; `round(float(...), 2)`
     would give `2.67` and could put `price` above `regular_price`). A value that is not a number is passed on as it is,
@@ -198,6 +288,8 @@ with `REMOVED` before committing a new fixture.
 | `scraper/http_client.py` | Polite HTTP client |
 | `scraper/crawl.py` | Full run: stages, saving and resuming, page cache |
 | `scraper/images.py` | Image download, resizing and recompression (Pillow), `local_path` |
+| `scraper/verify.py` | Checks of the finished results (`verify`), writes `verification-report.md` |
+| `scraper/publish.py` | Sample images (`sample`) and the archive for the Release (`archive`) |
 | `scraper/logging_config.py` | Logging to the console and `scraper.log` |
 | `scraper/models.py` | Schema of the results and validation of records |
 | `scraper/parsers.py` | Parsers of the sitemap, category, listing and product pages (no network) |
