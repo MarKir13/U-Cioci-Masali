@@ -54,4 +54,20 @@ test.describe("mobile bottom bar", () => {
     await expect(page).toHaveURL(/koszyk/);
     await expect(bar.cart).toHaveAttribute("aria-current", "page");
   });
+
+  test("widening past 768 px with the drawer open unlocks the page", async ({ page }) => {
+    const bar = new BottomNav(page);
+    const wrapper = page.locator("#wrapper");
+    const footer = page.locator("#footer");
+    await page.goto("/");
+    await bar.categories.click();
+    await expect(bar.drawer).toBeVisible();
+    await expect(wrapper).toHaveJSProperty("inert", true);
+
+    // From 768 px hidden-md-up hides the drawer, but setDrawer(false) must still undo the lock
+    await page.setViewportSize({ width: 800, height: 1024 });
+    await expect(wrapper).toHaveJSProperty("inert", false);
+    await expect(footer).toHaveJSProperty("inert", false);
+    await expect.poll(() => page.locator("body").evaluate((body) => body.style.overflow)).toBe("");
+  });
 });

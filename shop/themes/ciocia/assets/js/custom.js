@@ -139,8 +139,11 @@ document.addEventListener('DOMContentLoaded', function () {
   // The button that opened the drawer; it gets focus back when the drawer closes.
   var opener = toggle;
 
+  // Our own state, not the computed display: from 768 px hidden-md-up hides the drawer
+  // while it is still open, and setDrawer(false) must still undo inert and the scroll lock.
+  var drawerOpen = false;
   function isOpen() {
-    return getComputedStyle(menu).display !== 'none';
+    return drawerOpen;
   }
 
   function updateExpandedState() {
@@ -159,6 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var inertElements = [];
   function setDrawer(open, from) {
     if (open === isOpen()) return;
+    drawerOpen = open;
     if (open) {
       opener = from || toggle;
       previousOverflow = document.body.style.overflow;
@@ -378,9 +382,13 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Leave room under the page for the fixed panel or tab, so they never hide its last content.
+  // Exception, as on the source shop: on phones without the bottom bar (checkout) the tab sits
+  // above the bar's height, so room under the page would only lift the copyright up under the tab.
   function reserveSpace() {
     var visible = notice.hidden ? reopen : notice;
-    document.body.style.paddingBottom = visible.offsetHeight + 'px';
+    var tabAboveBar = notice.hidden && !document.querySelector('.ciocia-bottom-nav') &&
+      window.matchMedia('(max-width: 767px)').matches;
+    document.body.style.paddingBottom = tabAboveBar ? '' : visible.offsetHeight + 'px';
   }
 
   function setDetails(open) {
