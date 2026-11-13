@@ -14,13 +14,16 @@ export function newCustomer() {
   };
 }
 
-// Fictional Polish address; the postcode has the NN-NNN format
+// Fictional Polish address; the postcode has the NN-NNN format. The shop requires the phone
+// (address_required_fields in shop/config/shop-settings.php).
 export const testAddress = {
   address1: "ul. Grunwaldzka 2137",
   postcode: "80-233",
   city: "Gdańsk",
   country: "Polska",
+  phone: "500100200",
 };
+
 // The two carriers added by shop/config/shop-settings.php (W3). The test never uses a demo carrier.
 export const newCarriers = ["Kurier", "Paczkomat"];
 
