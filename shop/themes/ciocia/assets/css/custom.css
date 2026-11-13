@@ -2100,6 +2100,269 @@ body#checkout #footer:has(> .ciocia-trust) {
 }
 
 /*
+ * Mobile bottom navigation (templates/_partials/bottom-nav.tpl), as on the source shop.
+ * Stacking order, lowest first:
+ *   bottom bar 980 < cookie notice 990 < mobile menu 1000/1001 < Bootstrap modals 1050.
+ * The search dialog opens with showModal(), in the browser's top layer above all of them.
+ * The first-visit cookie panel covers the bar, as on the source shop.
+ */
+@media (max-width: 767px) {
+  :root {
+    /* One value for the bar, the spacer and the cookie tab, so they always line up. */
+    --ciocia-bottom-nav-height: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ciocia-bottom-nav-spacer {
+    height: var(--ciocia-bottom-nav-height);
+    background: var(--ciocia-footer-bg);
+  }
+
+  .ciocia-bottom-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 980;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: end;
+    min-height: var(--ciocia-bottom-nav-height);
+    padding: 0 0 calc(0.25rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--ciocia-border);
+    background: rgb(255 255 255 / 0.97);
+    -webkit-backdrop-filter: blur(0.5rem);
+    backdrop-filter: blur(0.5rem);
+    box-shadow: 0 -0.25rem 1rem rgb(44 0 1 / 0.12);
+    font-family: var(--ciocia-font);
+  }
+
+  .ciocia-bottom-nav .ciocia-bottom-nav__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.125rem;
+    min-width: 0;
+    min-height: 3.5rem;
+    margin: 0;
+    padding: 0.375rem 0.125rem 0.25rem;
+    border: 0;
+    background: transparent;
+    color: var(--ciocia-text-muted);
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .ciocia-bottom-nav .ciocia-bottom-nav__item:hover,
+  .ciocia-bottom-nav .ciocia-bottom-nav__item:focus-visible,
+  .ciocia-bottom-nav .ciocia-bottom-nav__item[aria-current="page"] {
+    color: var(--ciocia-primary);
+    text-decoration: none;
+  }
+
+  /* The issue gives #c87f60, which is under 3:1 on white; the darker link colour of the same hue passes. */
+  .ciocia-bottom-nav .ciocia-bottom-nav__item:focus-visible {
+    outline: 2px solid var(--ciocia-link);
+    outline-offset: -2px;
+  }
+
+  .ciocia-bottom-nav .material-icons {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  .ciocia-bottom-nav__label {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Search: icon in a raised circle that sticks out above the bar. */
+  .ciocia-bottom-nav__search-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-top: -1.25rem;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    background: var(--ciocia-primary);
+    box-shadow: 0 0.25rem 0.75rem rgb(44 0 1 / 0.25);
+    color: #fff;
+  }
+
+  .ciocia-bottom-nav__item--search:hover .ciocia-bottom-nav__search-circle,
+  .ciocia-bottom-nav__item--search:focus-visible .ciocia-bottom-nav__search-circle {
+    background: var(--ciocia-primary-hover);
+  }
+
+  /* Cart count badge in the top right corner of the icon. */
+  .ciocia-bottom-nav__icon {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .ciocia-bottom-nav__badge {
+    position: absolute;
+    top: -0.3rem;
+    right: -0.55rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.125rem;
+    height: 1.125rem;
+    padding: 0 0.2rem;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    background: #b42318;
+    color: #fff;
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  /* display: flex above would otherwise show the badge of an empty cart. */
+  .ciocia-bottom-nav__badge[hidden] {
+    display: none;
+  }
+
+    /*
+     * Cookie tab on phones, as on the source shop: on the right, just above the bar's height,
+     * also on checkout, where there is no bar.
+     */
+  .ciocia-cookie-reopen {
+    right: 0.75rem;
+    bottom: calc(var(--ciocia-bottom-nav-height) + 0.03rem);
+    left: auto;
+    border-bottom: 1px solid var(--ciocia-border);
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-transparency: reduce) {
+  .ciocia-bottom-nav {
+    background: #fff;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Search dialog opened by "Szukaj" in the bottom bar. */
+.ciocia-search-dialog {
+  width: min(92vw, 32rem);
+  max-width: none;
+  padding: 1rem 1.125rem 1.25rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 1rem 2.5rem rgb(44 0 1 / 0.35);
+  color: var(--ciocia-text);
+  font-family: var(--ciocia-font);
+}
+
+.ciocia-search-dialog::backdrop {
+  background: rgb(44 0 1 / 0.68);
+}
+
+/* Lock page scroll while the dialog is open. */
+html:has(.ciocia-search-dialog[open]) {
+  overflow: hidden;
+}
+
+.ciocia-search-dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ciocia-search-dialog__head form {
+  margin: 0;
+}
+
+.ciocia-search-dialog__title {
+  margin: 0;
+  color: var(--ciocia-page-top);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.ciocia-search-dialog__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ciocia-text-muted);
+  cursor: pointer;
+}
+
+.ciocia-search-dialog__close:hover {
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-primary);
+}
+
+.ciocia-search-dialog__form {
+  position: relative;
+  margin-top: 0.75rem;
+}
+
+/* 1rem (16 px) keeps iOS Safari from zooming in when the field gets focus. */
+.ciocia-search-dialog__input {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.75rem 3.5rem 0.75rem 1rem;
+  border: 1px solid var(--ciocia-field-border);
+  border-radius: 999px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #fff;
+  color: var(--ciocia-text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.ciocia-search-dialog__input:focus {
+  border-color: var(--ciocia-field-focus-border);
+  outline: 0;
+  box-shadow: var(--ciocia-field-focus-ring);
+}
+
+.ciocia-search-dialog__submit {
+  position: absolute;
+  top: 50%;
+  right: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ciocia-primary);
+  color: #fff;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.ciocia-search-dialog__submit:hover {
+  background: var(--ciocia-primary-hover);
+}
+
+.ciocia-search-dialog__close:focus-visible,
+.ciocia-search-dialog__submit:focus-visible {
+  outline: 2px solid var(--ciocia-link);
+  outline-offset: 2px;
+}
+/*
  * Home page banner (issue #63), as the hero on the source: one rounded card with the slider on the
  * left and the text on the right from 768 px; stacked below. Template: modules/ps_imageslider/.../slider.tpl.
  * Sizes and breakpoints are the source's own (its ndx-home-hero rules).
