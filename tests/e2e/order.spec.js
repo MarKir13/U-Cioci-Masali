@@ -14,6 +14,7 @@ const PRODUCTS_PER_CATEGORY = 5;
 const MAX_QUANTITY = 3;
 // Step 2 gives up after this many products without a usable search word, so a run stays within 5 minutes
 const SEARCH_CANDIDATES = 10;
+const REMOVED_LINES = 3;
 
 // Cart lines as CartPage.lineQuantities() returns them: id and quantity, sorted by id
 const asCartLines = (products) =>
@@ -80,7 +81,6 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng })
   });
 
   // Cart lines after step 2 (id, name, quantity); step 3 removes some of them
-  // eslint-disable-next-line no-unused-vars -- used by step 3 (rest of E2E 2/5)
   const cartLines = await test.step("2. Search by name and add a random result to the cart", async () => {
     const catalog = new CatalogPage(page);
     const search = new SearchPage(page);
@@ -131,7 +131,39 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng })
     );
     return expected;
   });
-  await test.step.skip("3. Remove 3 products from the cart", async () => {});
+  await test.step("3. Remove 3 products from the cart", async () => {
+    const cart = new CartPage(page);
+    await cart.openFromHeader();
+    const before = await cart.readLines();
+    const subtotalBefore = await cart.productsSubtotalGrosze();
+
+    const removed = rng.sample(cartLines, REMOVED_LINES);
+    test.info().annotations.push({ type: "removed", description: removed.map((line) => line.name).join("; ") });
+    for (const line of removed) {
+      await cart.removeLine(line);
+    }
+
+    const removedIds = new Set(removed.map((line) => line.id));
+    const after = await cart.readLines();
+    expect(after.filter((line) => removedIds.has(line.id)), "removed products still in the cart").toEqual([]);
+    expect(after.length, `cart lines: ${before.length} before, ${REMOVED_LINES} removed`).toBe(
+      before.length - REMOVED_LINES,
+    );
+    const remaining = cartLines.filter((line) => !removedIds.has(line.id));
+    expect(
+      after.map(({ id, quantity }) => ({ id, quantity })),
+      "the other lines keep their quantities",
+    ).toEqual(asCartLines(remaining));
+
+    // "Suma produktów" drops by exactly the totals of the removed lines
+    const removedTotal = before.filter((line) => removedIds.has(line.id)).reduce((sum, line) => sum + line.total, 0);
+    await expect
+      .poll(() => cart.productsSubtotalGrosze(), { message: "products subtotal = before − removed line totals (grosze)" })
+      .toBe(subtotalBefore - removedTotal);
+    await expect(cart.headerCount, "header cart count = sum of the quantities").toHaveText(
+      String(totalQuantity(remaining)),
+    );
+  });
 
   // Steps 9–10 log in again with this e-mail and password
   // eslint-disable-next-line no-unused-vars -- used by steps 9–10 (E2E 5/5)
