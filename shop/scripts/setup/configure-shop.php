@@ -1,8 +1,8 @@
 <?php
 /**
  * Configures the shop for Poland (issue #47): currency, country, VAT, payments, carriers,
- * free delivery, e-mail and invoices, plus the promo code (issue #44). Values come from
- * shop/config/shop-settings.php.
+ * free delivery, e-mail and invoices, plus the Omnibus price module (issue #72).
+ * Values come from shop/config/shop-settings.php.
  *
  * Runs once after the automatic install (post-install/30-configure-shop.sh). It is idempotent,
  * so it can also be run again by hand on a running shop:
@@ -39,6 +39,8 @@ configurePayments($settings, $carrierReferences);
 configureMail($settings['mail']);
 configureInvoices();
 configurePromoCode($settings['promo_code']);
+
+configureOmnibus();
 
 Tools::clearSmartyCache();
 Cache::clear();
@@ -360,6 +362,23 @@ function configureInvoices()
 }
 
 /**
+ * Omnibus price (issue #72): installs our module ciociaomnibus (shop/modules/ciociaomnibus) and adds a
+ * starting price row for every product that has none yet, so a promotion added later has a price to compare
+ * with. Products saved through PrestaShop's classes (back office, Webservice API) get their rows from the
+ * module's hooks; running this again after an import fills in anything else.
+ */
+function configureOmnibus()
+{
+    if (!Module::isInstalled('ciociaomnibus') && !Module::getInstanceByName('ciociaomnibus')->install()) {
+        throw new RuntimeException('Could not install the ciociaomnibus module');
+    }
+    // Loading the module also loads its classes, CiociaPriceHistory among them
+    Module::getInstanceByName('ciociaomnibus')->enable();
+    $added = CiociaPriceHistory::seed();
+    echo "Omnibus price: module ciociaomnibus enabled, $added starting price rows added.\n";
+}
+
+/** 
  * The promo code as a cart rule: a percentage off the products, once per customer, valid for ten
  * years from the last run. Found by its code, so a second run updates it instead of adding another.
  * PrestaShop shows the promo code field in the cart and checkout only while a cart rule exists.

@@ -92,7 +92,7 @@ the database:
   up to 50 kg, free delivery from 2000 PLN gross, the delivery time shown for products in stock
   ("Wysyłka w ciągu 24h"), bank transfer and cash on delivery (no cheque), invoices, e-mail through
   Mailpit, and the promo code `WITAJ10` (10 % off the products, once per customer) for the
-  "Kod promocyjny" row in the cart and checkout.
+  "Kod promocyjny" row in the cart and checkout. It also installs our Omnibus price module (see below).
 
 All values for both are in [`shop/config/shop-settings.php`](shop/config/shop-settings.php): store
 details, free delivery threshold, delivery time, required address fields, carriers and fees, bank details, promo code. The "Dostawa" and "Formy płatności"
@@ -138,6 +138,28 @@ in the admin panel (Katalog > Kategorie, column ID) and set them as the buttons'
 
 The layout is in `shop/themes/ciocia/modules/ps_imageslider/views/templates/hook/slider.tpl` and in the
 "Home page banner" section of `custom.css`.
+
+### Omnibus price (lowest price from the 30 days before a promotion)
+
+Every product in a promotion shows "Najniższa cena z 30 dni przed obniżką: …" under its price, on the
+product page and on product cards. PrestaShop does not do this, so our module
+[`shop/modules/ciociaomnibus`](shop/modules/ciociaomnibus) keeps a price history in the database:
+
+- a row for every change of the gross price a visitor sees, written by hooks whenever a product,
+  combination or promotion is saved (back office, Webservice API, setup scripts);
+- the rule in `classes/CiociaOmnibusRule.php`: the lowest price in the 30 days before the promotion
+  started (its "from" date, or when it was added). With no history, the regular price.
+
+`configure-shop.php` installs the module and adds a starting row for products without one, so run it
+again after changing the module. The line comes from `{hook h='displayProductPriceBlock' product=$product type='omnibus_price'}`
+in `shop/themes/ciocia/templates/catalog/_partials/product-prices.tpl` and `miniatures/product.tpl`;
+its look is `.omnibus-price` in `custom.css`. Test of the rule (also run in CI):
+
+```sh
+docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php
+```
+
+Design notes and limitations: [ADR 0008](docs/adr/0008-omnibus-price-history-module.md).
 
 ## Scraped data
 
@@ -243,6 +265,7 @@ do not silence it. CI reports lines marked `gitleaks:allow` anyway, and the limi
 | Shell scripts | [shellcheck](https://www.shellcheck.net/) 0.11.0 on every tracked `*.sh` | Syntax errors, unquoted variables, commands that do not exist in POSIX `sh` |
 | Compose file | `docker compose config --quiet` with `deploy/.env.example` | Unknown keys, undefined services or volumes, invalid ports, missing variables. Compose only warns about an unknown variable and leaves it empty, so the step fails on any output |
 | PHP syntax | `php -l` from `php:8.1.34-cli` on every `*.php` under `shop/` | Syntax errors |
+| Omnibus rule | Plain PHP test from `php:8.1.34-cli`: `shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php` | Wrong lowest price from the 30 days before a promotion |
 | JavaScript | [ESLint](https://eslint.org/) 10.13.0, recommended rules, browser globals ([`eslint.config.mjs`](eslint.config.mjs)) | Undefined variables, unused variables, unreachable code |
 
 hadolint, shellcheck and PHP run from pinned Docker images, so nothing has to be installed for them. ESLint is pinned
@@ -317,6 +340,7 @@ npm ci
 | Shell scripts | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
 | Compose file (prints nothing when valid) | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
+| Omnibus rule test | `docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php` |
 | JavaScript | `npx eslint` |
 | Smoke test of the running shop (ports from `HTTP_PORT` and `HTTPS_PORT`, default 8080 and 8443) | `sh .github/scripts/smoke-test.sh` |
 
