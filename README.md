@@ -182,7 +182,7 @@ The shop address comes from `BASE_URL` (default `https://localhost:8443`); the s
 The host in `BASE_URL` must be the shop's own domain (`PS_DOMAIN`, set at install time), because PrestaShop
 redirects every other host name there. The smoke test fails if that happens.
 
-Step 4 also checks that the welcome e-mail reaches Mailpit, through its API at `MAILPIT_URL` (default
+Steps 4 and 8 also check that the welcome e-mail and the order confirmation e-mail reach Mailpit, through its API at `MAILPIT_URL` (default
 `http://localhost:8025`). Set it to an empty value (`MAILPIT_URL= npm test`, PowerShell: `$env:MAILPIT_URL = ""`)
 to skip that check on a shop whose Mailpit the tests cannot reach.
 
@@ -197,6 +197,11 @@ Products and quantities are picked at random from a seed, which both reports sho
 a failed run with the same picks, pass that seed: `E2E_SEED=123456789 npm test` (PowerShell:
 `$env:E2E_SEED = "123456789"; npm test`). The new customer's e-mail is unique on every run, with or without a seed,
 so the suite can run many times on the same shop.
+
+Step 7 orders with one of the two new carriers, "Kurier" or "Paczkomat", picked from the seed. To force one, set
+`E2E_CARRIER` (`E2E_CARRIER=Paczkomat npm test`, PowerShell: `$env:E2E_CARRIER = "Paczkomat"; npm test`). The
+report shows the carrier used (`carrier` annotation). The checkout asks for the carrier before the payment, so
+step 7 runs before step 6.
 
 | Path | Contents |
 |---|---|

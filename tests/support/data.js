@@ -23,3 +23,15 @@ export const testAddress = {
   country: "Polska",
   phone: "500100200",
 };
+
+// The two carriers added by shop/config/shop-settings.php (W3). The test never uses a demo carrier.
+export const newCarriers = ["Kurier", "Paczkomat"];
+
+// Carrier for this run: E2E_CARRIER if set, otherwise picked with the run's seed
+export function chooseCarrier(rng) {
+  const wanted = process.env.E2E_CARRIER || rng.pick(newCarriers);
+  if (!newCarriers.includes(wanted)) {
+    throw new Error(`E2E_CARRIER must be one of ${newCarriers.join(", ")}, got "${wanted}"`);
+  }
+  return wanted;
+}
