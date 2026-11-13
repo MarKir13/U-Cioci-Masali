@@ -83,13 +83,13 @@
        <div class="row ciocia-header-layout">
         <div class="col-md-2 hidden-sm-down" id="_desktop_logo">
           <span class="ciocia-brand-scene" aria-hidden="true"></span>
-          {if $page.page_name == 'index'}<h1>{/if}
-            <a class="ciocia-brand-link" href="{$urls.base_url|escape:'htmlall':'UTF-8'}">
-              <img class="logo img-fluid ciocia-brand-logo"
-                   src="{$urls.child_img_url|escape:'htmlall':'UTF-8'}logo-magiczne-indie.svg"
-                   alt="Magiczne Indie" width="182" height="150" fetchpriority="high">
-            </a>
-          {if $page.page_name == 'index'}</h1>{/if}
+          {* No <h1> around the logo on the home page, unlike Classic: as on the source, the home page
+             H1 is the banner title (modules/ps_imageslider/views/templates/hook/slider.tpl). *}
+          <a class="ciocia-brand-link" href="{$urls.base_url|escape:'htmlall':'UTF-8'}">
+            <img class="logo img-fluid ciocia-brand-logo"
+                 src="{$urls.child_img_url|escape:'htmlall':'UTF-8'}logo-magiczne-indie.svg"
+                 alt="Magiczne Indie" width="182" height="150" fetchpriority="high">
+          </a>
         </div>
         <div id="_desktop_search" class="hidden-sm-down">
           {* Classic moves children between matching _desktop_ / _mobile_ IDs. *}
