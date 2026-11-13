@@ -81,6 +81,7 @@ Run from the repository root unless noted.
 | Shell lint (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
 | Compose check, must print nothing. Never drop `--quiet` or use `deploy/.env` | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
+| Omnibus rule test (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php` |
 | JavaScript lint (after `npm ci` once) | `npx eslint` |
 | E2E setup, once (from `tests/`) | `npm ci` and `npx playwright install chromium` |
 | E2E tests (from `tests/`; another shop: `BASE_URL=https://host:port npm test`) | `npm test` |

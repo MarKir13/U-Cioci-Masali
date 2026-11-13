@@ -241,6 +241,7 @@ do not silence it. CI reports lines marked `gitleaks:allow` anyway, and the limi
 | Shell scripts | [shellcheck](https://www.shellcheck.net/) 0.11.0 on every tracked `*.sh` | Syntax errors, unquoted variables, commands that do not exist in POSIX `sh` |
 | Compose file | `docker compose config --quiet` with `deploy/.env.example` | Unknown keys, undefined services or volumes, invalid ports, missing variables. Compose only warns about an unknown variable and leaves it empty, so the step fails on any output |
 | PHP syntax | `php -l` from `php:8.1.34-cli` on every `*.php` under `shop/` | Syntax errors |
+| Omnibus rule | Plain PHP test from `php:8.1.34-cli`: `shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php` | Wrong lowest price from the 30 days before a promotion |
 | JavaScript | [ESLint](https://eslint.org/) 10.13.0, recommended rules, browser globals ([`eslint.config.mjs`](eslint.config.mjs)) | Undefined variables, unused variables, unreachable code |
 
 hadolint, shellcheck and PHP run from pinned Docker images, so nothing has to be installed for them. ESLint is pinned
@@ -315,6 +316,7 @@ npm ci
 | Shell scripts | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
 | Compose file (prints nothing when valid) | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
+| Omnibus rule test | `docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php` |
 | JavaScript | `npx eslint` |
 | Smoke test of the running shop (ports from `HTTP_PORT` and `HTTPS_PORT`, default 8080 and 8443) | `sh .github/scripts/smoke-test.sh` |
 
