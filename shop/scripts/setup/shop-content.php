@@ -371,12 +371,16 @@ function saveHomeBanner(array $banner): void
     say('Home banner: "' . $banner['title'] . '"');
 }
 
-/** Path of a banner button target: a PrestaShop page name ('new-products') or a category ID (3). */
+/**
+ * Path of a banner button target: a PrestaShop page name ('new-products') or a category ID, written as 3 or '3'
+ * (no page name is made of digits only).
+ */
 function bannerLink(int|string $target): string
 {
     $link = Context::getContext()->link;
     $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
-    if (is_int($target)) {
+    if (is_int($target) || ctype_digit($target)) {
+        $target = (int) $target;
         $category = new Category($target, $idLang);
         if (!Validate::isLoadedObject($category) || !$category->active) {
             throw new RuntimeException("Home banner: no active category with ID $target");

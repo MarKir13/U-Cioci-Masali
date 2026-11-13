@@ -80,7 +80,7 @@ return [
         'lead' => 'Dawny sklep stacjonarny stworzyliśmy z miłości do Ajurwedy. Dziś jego atmosferę '
             . 'i starannie wybraną ofertę przenosimy do zakupów online.',
         // 'link' is a PrestaShop page name ('new-products', 'prices-drop', 'best-sales', 'contact', ...)
-        // or a category ID as a number, for example 'link' => 3. The categories come with the data
+        // or a category ID, for example 'link' => 3 (or '3'). The categories come with the data
         // import; until then the buttons lead to product list pages that already exist.
         'button_primary' => ['label' => 'Odkryj kosmetyki', 'link' => 'new-products'],
         'button_secondary' => ['label' => 'Zobacz suplementy', 'link' => 'prices-drop'],

@@ -121,8 +121,8 @@ magiczne-indie.pl) is set by `home_banner` in
 
 - **Text:** edit `eyebrow` (small line above the title), `title` or `lead`.
 - **Buttons:** edit `label` or `link` of `button_primary` (filled) and `button_secondary` (outline).
-  `link` is a PrestaShop page name, such as `'new-products'` or `'prices-drop'`, or a category ID
-  written as a number, such as `'link' => 12`.
+  `link` is a PrestaShop page name, such as `'new-products'` or `'prices-drop'`, or a category ID,
+  such as `'link' => 12` (quotes are fine too: `'12'`).
 - **Slides:** put the image (JPEG or WebP, at most 1600 px on the longer side and 300 KB) in
   `shop/themes/ciocia/assets/img/home-banner/` and list it under `slides` with a Polish `alt` text.
   Removing a line removes that slide.
