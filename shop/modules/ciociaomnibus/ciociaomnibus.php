@@ -12,13 +12,15 @@
 if (!defined('_PS_VERSION_')) {
     exit;
 }
-
+require_once __DIR__ . '/classes/CiociaOmnibusRule.php';
+require_once __DIR__ . '/classes/CiociaPriceHistory.php';
 class CiociaOmnibus extends Module
 {
     /**
      * Hooks used by the module. Object hooks are named actionObject<Class><Action>After and run for every save
      * through PrestaShop's classes: the back office, the Webservice API (our import) and the setup scripts.
      * The hook methods come in the next step; PrestaShop skips a registered hook that has no method yet.
+     * displayProductPriceBlock has no method yet; PrestaShop skips a registered hook without one.
      */
     private const HOOKS = [
         'actionObjectProductAddAfter',
@@ -49,9 +51,14 @@ class CiociaOmnibus extends Module
 
     public function install()
     {
-        return parent::install()
-            && $this->createTables()
-            && $this->registerHook(self::HOOKS);
+        if (!parent::install() || !$this->createTables() || !$this->registerHook(self::HOOKS)) {
+            return false;
+        }
+
+        // Starting rows for the products already in the shop (demo products, or an earlier import)
+        CiociaPriceHistory::seed();
+
+        return true;
     }
 
     /** Also deletes the price history. A "Reset" in the back office does the same, as it uninstalls first. */
@@ -61,6 +68,62 @@ class CiociaOmnibus extends Module
             && $this->dropTables();
     }
 
+    public function hookActionObjectProductAddAfter(array $params): void
+    {
+        CiociaPriceHistory::recordProduct((int) $params['object']->id);
+    }
+
+    public function hookActionObjectProductUpdateAfter(array $params): void
+    {
+        CiociaPriceHistory::recordProduct((int) $params['object']->id);
+    }
+
+    /** A combination has its own price impact, added to the product price. */
+    public function hookActionObjectCombinationAddAfter(array $params): void
+    {
+        CiociaPriceHistory::recordProduct((int) $params['object']->id_product);
+    }
+
+    public function hookActionObjectCombinationUpdateAfter(array $params): void
+    {
+        CiociaPriceHistory::recordProduct((int) $params['object']->id_product);
+    }
+
+    /** A promotion is a specific price. */
+    public function hookActionObjectSpecificPriceAddAfter(array $params): void
+    {
+        $specificPrice = $params['object'];
+        if ($this->isProductPromotion($specificPrice)) {
+            CiociaPriceHistory::savePromoStart((int) $specificPrice->id);
+            CiociaPriceHistory::recordProduct((int) $specificPrice->id_product);
+        }
+    }
+
+    public function hookActionObjectSpecificPriceUpdateAfter(array $params): void
+    {
+        $specificPrice = $params['object'];
+        if ($this->isProductPromotion($specificPrice)) {
+            CiociaPriceHistory::recordProduct((int) $specificPrice->id_product);
+        }
+    }
+
+    public function hookActionObjectSpecificPriceDeleteAfter(array $params): void
+    {
+        $specificPrice = $params['object'];
+        CiociaPriceHistory::deletePromoStart((int) $specificPrice->id);
+        if ($this->isProductPromotion($specificPrice)) {
+            CiociaPriceHistory::recordProduct((int) $specificPrice->id_product);
+        }
+    }
+
+    /**
+     * Skips specific prices that are not a promotion of one product: id_product 0 applies to every product,
+     * and a price with id_cart belongs to a single cart (set when an employee edits an order).
+     */
+    private function isProductPromotion(SpecificPrice $specificPrice): bool
+    {
+        return (int) $specificPrice->id_product > 0 && (int) $specificPrice->id_cart === 0;
+    }
     /**
      * DATETIME(6) keeps microseconds. The rule compares dates with "earlier than the promotion start", and a row
      * written in the same second as the promotion must still be told apart from it.
