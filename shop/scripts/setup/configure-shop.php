@@ -31,12 +31,14 @@ $settings = require $settingsFile;
 
 configureCurrencies($settings);
 configureCountry($settings['country_default']);
+configureAddressFields($settings['address_required_fields']);
 configureTaxes();
 $carrierReferences = configureCarriers($settings);
 configureShipping($settings);
 configurePayments($settings, $carrierReferences);
 configureMail($settings['mail']);
 configureInvoices();
+configurePromoCode($settings['promo_code']);
 
 configureOmnibus();
 
@@ -100,6 +102,18 @@ function configureCountry($iso)
     // Do not switch the country by the browser language
     Configuration::updateValue('PS_DETECT_COUNTRY', 0);
     echo "Country: $iso is the only active country.\n";
+}
+
+/**
+ * Extra required address fields (issue #44), as the back office sets them in Customers > Addresses >
+ * "Set required fields for this section". The list replaces the previous one, so a field removed from
+ * the settings stops being required on the next run.
+ */
+function configureAddressFields(array $fields)
+{
+    (new CustomerAddress())->addFieldsRequiredDatabase($fields);
+    echo 'Required address fields: ' . ($fields ? implode(', ', $fields) : 'none extra') . ".
+";
 }
 
 /**
@@ -251,6 +265,11 @@ function configureShipping(array $settings)
     Configuration::updateValue('PS_SHIPPING_HANDLING', 0);
     Configuration::updateValue('PS_SHIPPING_METHOD', 1);
     echo 'Free delivery from ' . $settings['free_shipping_from'] . " PLN gross.\n";
+
+    // "Wysyłka w ciągu 24h" for products in stock (product page, cart lines); a per-language value
+    $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+    Configuration::updateValue('PS_LABEL_DELIVERY_TIME_AVAILABLE', [$idLang => $settings['delivery_time_available']]);
+    echo 'Delivery time in stock: ' . $settings['delivery_time_available'] . ".\n";
 }
 
 /**
@@ -357,4 +376,27 @@ function configureOmnibus()
     Module::getInstanceByName('ciociaomnibus')->enable();
     $added = CiociaPriceHistory::seed();
     echo "Omnibus price: module ciociaomnibus enabled, $added starting price rows added.\n";
+}
+
+/** 
+ * The promo code as a cart rule: a percentage off the products, once per customer, valid for ten
+ * years from the last run. Found by its code, so a second run updates it instead of adding another.
+ * PrestaShop shows the promo code field in the cart and checkout only while a cart rule exists.
+ */
+function configurePromoCode(array $promo)
+{
+    $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+    $rule = new CartRule((int) CartRule::getIdByCode($promo['code']) ?: null);
+    $rule->name = [$idLang => $promo['name']];
+    $rule->code = $promo['code'];
+    $rule->reduction_percent = (float) $promo['percent'];
+    $rule->date_from = date('Y-m-d 00:00:00');
+    $rule->date_to = date('Y-m-d 23:59:59', strtotime('+10 years'));
+    $rule->quantity = 1000000;
+    $rule->quantity_per_user = 1;
+    // Not listed under "Take advantage of our exclusive offers": the code is entered by hand.
+    $rule->highlight = false;
+    $rule->active = true;
+    $rule->id ? $rule->update() : $rule->add();
+    echo 'Promo code ' . $promo['code'] . ': ' . $promo['percent'] . "% off the products, once per customer.\n";
 }
