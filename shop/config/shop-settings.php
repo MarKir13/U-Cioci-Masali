@@ -6,7 +6,8 @@
  *   describe what the checkout really offers;
  * - 30-configure-shop.sh (configure-shop.php, issue #47) applies them to the shop configuration.
  *
- * This is the one place to change store details, delivery, payment and e-mail settings. After a change
+ * This is the one place to change store details, delivery, payment and e-mail settings and the home page
+ * banner. After a change
  * (Git Bash: prefix the exec commands with MSYS_NO_PATHCONV=1):
  *   docker compose -f deploy/compose.yaml up -d --build
  *   docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh
@@ -84,5 +85,25 @@ return [
     'mail' => [
         'server' => 'mailpit',
         'port' => 1025,
+    ],
+
+    // Home page banner (issue #63): image slider on the left, text and two buttons on the right, as on
+    // magiczne-indie.pl. Applied by 20-shop-content.sh. Template: themes/ciocia/modules/ps_imageslider/.
+    'home_banner' => [
+        'eyebrow' => 'Magiczne Indie od 2010 roku', // small line above the title, shown in capitals
+        'title' => 'Sklep ajurwedyjski - kosmetyki i suplementy z Indii',
+        'lead' => 'Dawny sklep stacjonarny stworzyliśmy z miłości do Ajurwedy. Dziś jego atmosferę '
+            . 'i starannie wybraną ofertę przenosimy do zakupów online.',
+        // 'link' is a PrestaShop page name ('new-products', 'prices-drop', 'best-sales', 'contact', ...)
+        // or a category ID, for example 'link' => 3 (or '3'). The categories come with the data
+        // import; until then the buttons lead to product list pages that already exist.
+        'button_primary' => ['label' => 'Odkryj kosmetyki', 'link' => 'new-products'],
+        'button_secondary' => ['label' => 'Zobacz suplementy', 'link' => 'prices-drop'],
+        // Slides in order. Files are in shop/themes/ciocia/assets/img/home-banner/; 'alt' describes the
+        // photo for screen readers. Adding or removing a line adds or removes a slide.
+        'slides' => [
+            ['image' => 'mi-slide-1.jpg', 'alt' => 'Wnętrze sklepu stacjonarnego Magiczne Indie'],
+            ['image' => 'mi-slide-2.jpg', 'alt' => 'Półki z suplementami w sklepie Magiczne Indie'],
+        ],
     ],
 ];

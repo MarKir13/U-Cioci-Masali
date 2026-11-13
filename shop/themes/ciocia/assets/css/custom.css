@@ -43,6 +43,8 @@
   --ciocia-field-border: #dee2e6;
   --ciocia-field-focus-border: #85b4fb;
   --ciocia-field-focus-ring: 0 0 0 0.25rem rgba(11, 105, 246, 0.25);
+  /* Required-field star. The source's #ff4657 is 3.0:1 on the card; this red passes 4.5:1. */
+  --ciocia-required: #c8102e;
   --ciocia-font: "Open Sans", system-ui, -apple-system, sans-serif;
 }
 
@@ -234,7 +236,6 @@ body#cart .ciocia-continue-shopping .material-icons {
 
 /* Classic's grey #7a7a7a is 3.9:1 on the card; the source's muted grey passes. */
 #wrapper .form-control-comment,
-#wrapper .sitemap h2,
 #wrapper .nav-item .nav-link,
 #wrapper #products,
 #wrapper .products-selection p,
@@ -306,6 +307,7 @@ body#checkout section.checkout-step.-unreachable .step-title {
 .btn-secondary,
 .btn-outline-primary {
   padding: 0.375rem 0.75rem;
+  line-height: 1.5;
   border: 1px solid transparent;
   border-radius: 0.25rem;
   font-weight: 400;
@@ -387,6 +389,8 @@ body#checkout section.checkout-step.-unreachable .step-title {
 #wrapper .form-control,
 .modal .form-control {
   padding: 0.375rem 1rem;
+  /* Source line height: 38 px fields, as tall as the buttons next to them. */
+  line-height: 1.5;
   border: 1px solid var(--ciocia-field-border);
   border-radius: 4px;
   background-color: #fff;
@@ -394,8 +398,7 @@ body#checkout section.checkout-step.-unreachable .step-title {
 }
 
 #wrapper .form-control:focus,
-.modal .form-control:focus,
-#wrapper #search_widget input[type="text"]:focus {
+.modal .form-control:focus {
   border-color: var(--ciocia-field-focus-border);
   outline: 0;
   background-color: #fff;
@@ -415,10 +418,21 @@ body#checkout section.checkout-step.-unreachable .step-title {
   box-shadow: var(--ciocia-field-focus-ring);
 }
 
+/* Show-password button: a burgundy eye icon, as on the source (templates/_partials/form-fields.tpl). */
 #wrapper .input-group .input-group-btn > .btn {
+  padding: 0.375rem 0.75rem;
   border-radius: 0 4px 4px 0;
-  background: var(--ciocia-secondary);
+  background: var(--ciocia-primary);
   text-transform: none;
+}
+
+#wrapper .input-group .input-group-btn > .btn:hover,
+#wrapper .input-group .input-group-btn > .btn:focus {
+  background: var(--ciocia-primary-dark);
+}
+
+#wrapper .input-group .input-group-btn > .btn .material-icons {
+  font-size: 1.25rem;
 }
 
 #wrapper .input-group .form-control:not(:last-child) {
@@ -459,49 +473,6 @@ body#checkout section.checkout-step.-unreachable .step-title {
   box-shadow: var(--ciocia-field-focus-ring);
 }
 
-/* The 404 page shows our header search template outside the header, where its header styles do not apply. */
-#wrapper #search_widget form {
-  position: relative;
-}
-
-#wrapper #search_widget input[type="text"] {
-  width: 100%;
-  min-height: 2.5rem;
-  padding: 0.375rem 3.25rem 0.375rem 1rem;
-  border: 1px solid var(--ciocia-field-border);
-  border-radius: 4px;
-  background: #fff;
-  color: var(--ciocia-text);
-}
-
-#wrapper #search_widget .ciocia-search-submit {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: auto;
-  padding: 0;
-  border: 0;
-  border-radius: 0 4px 4px 0;
-  background: var(--ciocia-primary);
-  color: #fff;
-}
-
-#wrapper #search_widget .ciocia-search-submit .material-icons {
-  position: static;
-  color: inherit;
-  font-size: 1.5rem;
-}
-
-#wrapper #search_widget .clear {
-  display: none;
-}
-
 #wrapper .alert {
   border-radius: 0.25rem;
 }
@@ -538,10 +509,6 @@ body#checkout section.checkout-step.-unreachable .step-title {
     justify-content: center;
     min-height: 112px;
     transform: translateY(8px);
-  }
-
-  #header #_desktop_logo h1 {
-    margin-bottom: 0;
   }
 
   #header .ciocia-desktop-navigation .header-top-right {
@@ -2142,6 +2109,674 @@ body#checkout #footer:has(> .ciocia-trust) {
   }
 }
 
+/*
+ * Home page banner (issue #63), as the hero on the source: one rounded card with the slider on the
+ * left and the text on the right from 768 px; stacked below. Template: modules/ps_imageslider/.../slider.tpl.
+ * Sizes and breakpoints are the source's own (its ndx-home-hero rules).
+ */
+
+/*
+ * On the source home page the cream card fills the page column (up to 985 px) at every width, while other
+ * pages keep the narrower Classic container below 992 px. Classic's container has a fixed width at each
+ * breakpoint (540, 720, 960 px), so on the home page it is released to the 985 px #wrapper.
+ * The card also starts right under the menu there: Classic's 25 px top padding of #wrapper is removed.
+ * Other pages keep it, as on the source, where the breadcrumb sits between the menu and the card.
+ */
+body#index #wrapper {
+  padding-top: 0;
+}
+
+body#index #wrapper > .container {
+  width: 100%;
+  max-width: none;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+#wrapper .ciocia-hero {
+  display: grid;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #fffdf7 0%, var(--ciocia-surface-warm) 100%);
+}
+
+#wrapper .ciocia-hero__media {
+  align-self: start;
+  background: #f7f7eb;
+}
+
+/*
+ * Classic gives its slider a fixed height of 340 px and a bottom margin, and on phones stretches it to
+ * the full screen width (100vw, moved left), past the card and its arrows.
+ */
+#wrapper .ciocia-hero .carousel {
+  left: auto;
+  width: auto;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 0.625rem;
+  box-shadow: none;
+}
+
+#wrapper .ciocia-hero .carousel-inner {
+  height: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#wrapper .ciocia-hero .carousel-item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 440 / 243;
+  object-fit: cover;
+}
+
+/*
+ * Arrows as on the source: a small dark chevron on a 36 px white square, on a full-height strip at each
+ * side of the photo, faint (opacity 0.35).
+ */
+#wrapper .ciocia-hero__arrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+
+#wrapper .ciocia-hero__arrow--prev {
+  left: 0;
+}
+
+#wrapper .ciocia-hero__arrow--next {
+  right: 0;
+}
+
+/*
+ * Hovering does not change them, as on the source. Keyboard focus does (unlike the source): at 0.35 the
+ * focus outline would be hard to see.
+ */
+#wrapper .ciocia-hero__arrow:focus-visible {
+  opacity: 0.9;
+}
+
+#wrapper .ciocia-hero__arrow .material-icons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.25rem;
+  background: #fff;
+  color: #212529;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+#wrapper .ciocia-hero__content {
+  align-self: center;
+  padding: clamp(1rem, 2.5vw, 1.75rem);
+}
+
+/* The source colour #b06d52 has 3.4:1 on the card; the theme's darker link copper passes 4.5:1. */
+#wrapper .ciocia-hero__eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--ciocia-link);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+#wrapper .ciocia-hero__title {
+  margin: 0;
+  color: var(--ciocia-primary);
+  font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+  font-weight: 600;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+#wrapper .ciocia-hero__lead {
+  margin: 0.85rem 0 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+#wrapper .ciocia-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.15rem;
+}
+
+#wrapper .ciocia-hero__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  font-size: 1rem;
+}
+
+/* Side by side; the buttons wrap below each other by themselves when the text column is too narrow. */
+@media (min-width: 768px) {
+  #wrapper .ciocia-hero {
+    grid-template-columns: minmax(0, 1.05fr) minmax(20rem, 0.95fr);
+  }
+}
+
+/*
+ * Phones: stacked, square corners, buttons full width one below the other. The banner keeps the card's
+ * 20 px inner spacing on both sides, like the sections below it. The source pulls it 12 px to the left
+ * instead, but its container clips that part, so there it looks cut off on the left (text 3 px from the
+ * edge) and 33 px from the right edge.
+ */
+@media (max-width: 767px) {
+  #wrapper .ciocia-hero {
+    border-radius: 0;
+  }
+
+  #wrapper .ciocia-hero__content {
+    padding: 1rem 0.9rem 1.15rem;
+  }
+
+  #wrapper .ciocia-hero__title {
+    font-size: clamp(1.25rem, 5.5vw, 1.55rem);
+  }
+
+  #wrapper .ciocia-hero__actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #wrapper .ciocia-hero__actions .btn {
+    width: 100%;
+  }
+}
+
+/*
+ * Forms and customer pages (issue #45): login, registration, password reset, contact, 404, sitemap.
+ */
+
+/*
+ * Every form: label above a full-width field, "Opcjonalne" under it. Classic lays out each
+ * .form-group.row as label | field | comment columns (25 % / 50 % / 25 % from 768 px).
+ */
+#wrapper .form-group.row,
+.modal .form-group.row {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+#wrapper .form-group.row > [class*="col-"],
+.modal .form-group.row > [class*="col-"] {
+  float: none;
+  width: auto;
+  max-width: none;
+  margin-left: 0;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+#wrapper .form-group.row > .form-control-label,
+.modal .form-group.row > .form-control-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  padding-top: 0;
+  color: var(--ciocia-text);
+  font-size: 1rem;
+  text-align: left;
+}
+
+/* Classic gives the label of a required field the class "required"; the source marks it with a red star. */
+#wrapper .form-control-label.required::after,
+.modal .form-control-label.required::after {
+  content: "*";
+  margin-left: 0.25rem;
+  color: var(--ciocia-required);
+}
+
+/* Checkbox rows (newsletter, consents) print an empty label before the box; the box has its own text. */
+#wrapper .form-group.row:has(.custom-checkbox) > .form-control-label,
+.modal .form-group.row:has(.custom-checkbox) > .form-control-label {
+  display: none;
+}
+
+/* Required checkboxes (terms, data consent) get the star after their own text instead. */
+#wrapper .custom-checkbox:has(input[required]) > label::after {
+  content: "*";
+  margin-left: 0.25rem;
+  color: var(--ciocia-required);
+}
+
+#wrapper .form-group.row > .form-control-comment,
+.modal .form-group.row > .form-control-comment {
+  margin-top: 0;
+  padding-top: 0;
+  font-size: 0.875rem;
+}
+
+#wrapper .form-group .form-control-valign {
+  padding-top: 0;
+}
+
+#wrapper .form-footer {
+  text-align: left;
+}
+
+/* Login and password reset: one narrow centred card, 516 px as on the source. */
+body#authentication #wrapper > .container > .row,
+body#registration #wrapper > .container > .row,
+body#password #wrapper > .container > .row {
+  max-width: 32.25rem;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+/* "Masz już konto? Zaloguj się!": a link inside a sentence needs more than colour (Lighthouse link-in-text-block). */
+#wrapper .register-form > p a {
+  text-decoration: underline;
+}
+
+/* Registration has more fields; the source gives it a wider card, 696 px (as the 404 page). */
+body#registration #wrapper > .container > .row {
+  max-width: 43.5rem;
+}
+
+/* Classic frames these forms in a white 640 px box; the card above replaces it. */
+.page-authentication #content,
+.page-registration #content {
+  max-width: none;
+  padding: 0;
+  background: transparent;
+}
+
+/* "Nie pamiętasz hasła?" and "Zaloguj się" in one row; on phones the submit button comes first. */
+#wrapper .ciocia-login-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+#wrapper .ciocia-login-actions .btn {
+  float: none;
+}
+
+/* Source: 32 px from the title to the first field. */
+body#authentication #main .page-header,
+body#registration #main .page-header,
+body#password #main .page-header {
+  margin-bottom: 2rem;
+}
+
+/* The source's action row is 44 px tall, taller than other buttons. */
+#wrapper .ciocia-login-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+}
+
+#wrapper .ciocia-forgot-password {
+  font-weight: 600;
+  border-radius: 0.5rem;
+}
+
+@media (max-width: 575px) {
+  #wrapper .ciocia-login-actions {
+    flex-direction: column-reverse;
+  }
+}
+
+.page-customer-account #content hr {
+  margin: 1rem 0;
+  border-top-color: var(--ciocia-field-border);
+}
+
+.page-customer-account #content .no-account {
+  text-align: left;
+}
+
+#wrapper .no-account .h4 {
+  margin-bottom: 1rem;
+  font-size: 1.125rem;
+}
+
+#wrapper .ciocia-create-account {
+  display: block;
+  width: 100%;
+}
+
+#wrapper .forgotten-password,
+#wrapper .send-renew-password-link {
+  padding: 0;
+}
+
+/* Password change after the reset link (Classic's password-new.tpl): drop its offsets. */
+#wrapper .renew-password,
+#wrapper .renew-password [type="submit"] {
+  margin-left: 0;
+}
+
+#wrapper .renew-password .container-fluid {
+  padding: 0;
+}
+
+/* Contact: details card on the left, form on the right from 768 px, stacked below (templates/contact.tpl). */
+#wrapper .ciocia-contact-title {
+  margin-bottom: 1.25rem;
+  color: var(--ciocia-primary);
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  line-height: 1.2;
+}
+
+.ciocia-contact-layout {
+  display: grid;
+  gap: 1.75rem;
+}
+
+/* The source switches to two columns at 768 px, with the form slightly wider. */
+@media (min-width: 768px) {
+  .ciocia-contact-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 2rem;
+    align-items: start;
+  }
+}
+
+/* Classic pads the form section 16 px; the source starts the form level with the details card. */
+#wrapper .ciocia-contact-form .contact-form {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+#wrapper .ciocia-contact-form textarea {
+  min-height: 8.375rem;
+}
+
+.ciocia-contact-info {
+  padding: 1.25rem 1.35rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.75rem;
+  /* The source lays a faint gold glow over the top of the card. */
+  background: linear-gradient(165deg, rgb(249 210 143 / 18%) 0%, transparent 42%), var(--ciocia-surface-warm);
+}
+
+#wrapper .ciocia-contact-info-title {
+  margin: 0 0 0.35rem;
+  color: var(--ciocia-primary);
+  font-size: 1.2rem;
+}
+
+#wrapper .ciocia-contact-info-lead {
+  margin: 0 0 1.15rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.925rem;
+}
+
+.ciocia-contact-info-list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ciocia-contact-info-item {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.ciocia-contact-info-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: rgb(95 6 2 / 8%);
+  color: var(--ciocia-primary);
+}
+
+.ciocia-contact-info-icon .material-icons {
+  font-size: 1.2rem;
+}
+
+.ciocia-contact-info-label {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+#wrapper .ciocia-contact-info-value {
+  display: block;
+  margin: 0;
+  color: var(--ciocia-primary);
+  font-size: 0.975rem;
+  font-style: normal;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+#wrapper .ciocia-contact-info-note {
+  margin: 0.35rem 0 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.8125rem;
+}
+
+.ciocia-contact-info-details {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--ciocia-border);
+}
+
+.ciocia-contact-info-details summary {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ciocia-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+.ciocia-contact-info-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.ciocia-contact-info-details summary::after {
+  content: "+";
+  color: var(--ciocia-link);
+}
+
+.ciocia-contact-info-details[open] summary::after {
+  content: "\2212";
+}
+
+.ciocia-contact-info-details summary:focus-visible {
+  outline: 2px solid var(--ciocia-primary);
+  outline-offset: 2px;
+}
+
+.ciocia-contact-info-details dl {
+  margin: 0.6rem 0 0;
+  font-size: 0.9375rem;
+}
+
+.ciocia-contact-info-details dt {
+  color: var(--ciocia-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.ciocia-contact-info-details dd {
+  margin: 0 0 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+#wrapper .ciocia-contact-form-title {
+  margin-bottom: 1rem;
+  color: var(--ciocia-primary);
+  font-size: 1.125rem;
+}
+
+#wrapper .ciocia-contact-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Classic's honeypot field: bots fill it in, people never see it. */
+#wrapper .ciocia-honeypot {
+  display: none;
+}
+
+/* 404: large code, one sentence, contact link and a button home, in a 696 px centred card. */
+body#pagenotfound #wrapper > .container > .row {
+  max-width: 43.5rem;
+  margin: 1.5rem auto 0;
+  text-align: center;
+}
+
+#pagenotfound #wrapper .ciocia-404-code {
+  margin: 0 0 1rem;
+  color: var(--ciocia-text);
+  font-size: 5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Classic adds 160 px below the content and a margin under the empty page footer. */
+#pagenotfound #wrapper .page-not-found {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  color: var(--ciocia-text);
+  font-size: 1rem;
+}
+
+#pagenotfound #wrapper .page-not-found p {
+  font-size: 1rem;
+}
+
+#pagenotfound #wrapper .page-not-found h1 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+#pagenotfound #wrapper .page-footer {
+  margin: 0;
+}
+
+#wrapper .ciocia-404-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+#wrapper .ciocia-404-home .material-icons {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+/* Sitemap: lists drawn as trees, as on the source: a line down each nested list and a tick at each link. */
+#wrapper .sitemap-title {
+  text-transform: none;
+}
+
+/* Classic's container-fluid indents the columns 15 px from the page title. */
+body#sitemap #wrapper .page-content.container-fluid,
+body#sitemap #wrapper .container-fluid {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+/* Source gutter: 12 px on each side of a column. */
+body#sitemap #wrapper .sitemap {
+  margin-right: -12px;
+  margin-left: -12px;
+}
+
+body#sitemap #wrapper .sitemap > [class*="col-"] {
+  padding-right: 12px;
+  padding-left: 12px;
+}
+
+#wrapper .sitemap h2 {
+  width: auto;
+  height: auto;
+  margin: 0 0 1rem;
+  border: 0;
+  color: var(--ciocia-text);
+  font-size: 1.5rem;
+  text-transform: none;
+}
+
+#wrapper .sitemap ul {
+  margin: 0 0 1rem;
+  padding-left: 0;
+  list-style: none;
+}
+
+#wrapper .sitemap ul li {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+#wrapper .sitemap ul.nested {
+  margin: 0 0 0.25rem;
+  padding-left: 1rem;
+  border-left: 2px solid #9dc3fb;
+}
+
+#wrapper .sitemap ul.nested a {
+  position: relative;
+}
+
+#wrapper .sitemap ul.nested a::before {
+  content: "";
+  position: absolute;
+  top: 0.6875rem;
+  left: -1rem;
+  width: 0.5rem;
+  height: 2px;
+  background: #9dc3fb;
+}
+
+/* Two columns on tablets, four from 992 px, as on the source. */
+@media (min-width: 768px) and (max-width: 991px) {
+  #wrapper .sitemap > [class*="col-"] {
+    width: 50%;
+  }
+
+  #wrapper .sitemap > [class*="col-"]:nth-child(odd) {
+    clear: left;
+  }
+}
 
 /*
  * Checkout steps bar (issue #44), templates/checkout/checkout.tpl: a card of its own above the
@@ -3173,45 +3808,6 @@ body#checkout .ciocia-create-account:not(:has(#ciocia-create-account:checked)) .
 /* The password is needed once the box is ticked, so Classic's "Opcjonalne" note would be wrong. */
 body#checkout .ciocia-account-password .form-group > .form-control-comment {
   display: none;
-}
-
-/*
- * Show password in the checkout as an eye, as on the source (Material Icons' visibility, and
- * visibility_off while the password is shown). The button's text stays its name for screen readers
- * ("Pokaż hasło" / "Ukryj hasło", set in custom.js); Classic swaps it on every click.
- */
-body#checkout #wrapper .input-group .input-group-btn > [data-action="show-password"] {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 3.25rem;
-  height: 100%;
-  min-height: 2.5rem;
-  padding: 0;
-  border: 1px solid var(--ciocia-primary);
-  background: var(--ciocia-primary);
-  color: #fff;
-  font-size: 0;
-}
-
-body#checkout #wrapper .input-group .input-group-btn > [data-action="show-password"]::before {
-  content: "\E8F4";
-  font-family: "Material Icons";
-  font-size: 1.375rem;
-  line-height: 1;
-}
-
-body#checkout #wrapper .input-group:has(input.js-visible-password[type="text"]) .input-group-btn > [data-action="show-password"]::before {
-  content: "\E8F5";
-}
-
-body#checkout #wrapper .input-group .input-group-btn > [data-action="show-password"]:hover {
-  border-color: var(--ciocia-primary-hover);
-  background: var(--ciocia-primary-hover);
-}
-
-body#checkout #wrapper .input-group .input-group-btn > [data-action="show-password"]:focus:not(:focus-visible) {
-  outline: 0;
 }
 
 /*

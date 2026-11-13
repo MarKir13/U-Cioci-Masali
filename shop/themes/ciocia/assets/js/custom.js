@@ -421,6 +421,22 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 
 /*
+ * Password fields (templates/_partials/form-fields.tpl): the eye button shows or hides the password.
+ * Delegated from the document, because checkout replaces its forms after AJAX updates.
+ */
+document.addEventListener('click', function (event) {
+  var button = event.target.closest('[data-action="ciocia-show-password"]');
+  if (!button) return;
+  // Not by id: checkout has a login form and a registration form, both with "field-password".
+  var input = button.closest('.input-group').querySelector('input.js-visible-password');
+  if (!input) return;
+  var show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  button.setAttribute('aria-label', show ? button.dataset.labelHide : button.dataset.labelShow);
+  button.querySelector('.material-icons').textContent = show ? 'visibility_off' : 'visibility';
+});
+
+/*
  * Checkout steps bar (templates/checkout/checkout.tpl, issue #44). Built from the step sections,
  * whose classes Classic's checkout script sets: -current, -complete, -unreachable, and -clickable on
  * the current step and those before it. Any class change rebuilds the bar, so it follows Classic
@@ -608,18 +624,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   box.addEventListener('change', sync);
   sync();
-})();
-
-/*
- * The show-password buttons in the checkout are an eye icon (custom.css), so their text, which Classic
- * swaps on every click, must name the field. Set before the first click: Classic reads these once.
- */
-(function () {
-  document.querySelectorAll('body#checkout [data-action="show-password"]').forEach(function (button) {
-    button.setAttribute('data-text-show', 'Pokaż hasło');
-    button.setAttribute('data-text-hide', 'Ukryj hasło');
-    button.textContent = 'Pokaż hasło';
-  });
 })();
 
 /*
