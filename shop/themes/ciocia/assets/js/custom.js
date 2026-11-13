@@ -419,3 +419,40 @@ document.addEventListener('DOMContentLoaded', function () {
   if (readChoice()) closeNotice(null);
   else showNotice(false);
 })();
+
+/*
+ * Cart preview (modules/ps_shoppingcart/ps_shoppingcart.tpl, from 768 px). CSS opens it on hover and
+ * focus; this adds the Escape key (WCAG 1.4.13: dismissible). Escape sets .is-dismissed on .blockcart,
+ * and the panel stays closed until the pointer and the focus have both left the cart.
+ * Listeners sit on the document, not on the cart: after an AJAX refresh ps_shoppingcart replaces the
+ * whole .blockcart element, which would drop listeners attached to it.
+ */
+(function () {
+  var DISMISSED = 'is-dismissed';
+  var wide = window.matchMedia('(min-width: 768px)');
+
+  function cartOf(node) {
+    return node instanceof Element ? node.closest('.blockcart') : null;
+  }
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape' || !wide.matches) return;
+    document.querySelectorAll('.blockcart').forEach(function (cart) {
+      if (cart.classList.contains(DISMISSED) || !(cart.matches(':hover') || cart.matches(':focus-within'))) return;
+      // Focus inside the panel would be lost when it hides; hand it back to the cart link.
+      var link = cart.querySelector('.ciocia-cart-link');
+      if (link && cart.contains(document.activeElement) && document.activeElement !== link) link.focus();
+      cart.classList.add(DISMISSED);
+    });
+  });
+
+  document.addEventListener('mouseout', function (event) {
+    var cart = cartOf(event.target);
+    if (cart && !cart.contains(event.relatedTarget) && !cart.matches(':focus-within')) cart.classList.remove(DISMISSED);
+  });
+
+  document.addEventListener('focusout', function (event) {
+    var cart = cartOf(event.target);
+    if (cart && !cart.contains(event.relatedTarget) && !cart.matches(':hover')) cart.classList.remove(DISMISSED);
+  });
+})();
