@@ -1,13 +1,60 @@
 import { test, expect } from "../support/fixtures.js";
 import { AccountPage } from "../pages/account.js";
+import { CartPage } from "../pages/cart.js";
+import { CatalogPage } from "../pages/catalog.js";
 import { cartSnapshot } from "../support/cart-state.js";
 import { newCustomer } from "../support/data.js";
 import { mailpitUrl, messagesTo } from "../support/mailpit.js";
 
+// Step 1: 2 categories × 5 products, 1–3 of each. Small quantities also keep the cart far below 50 kg,
+// above which no carrier delivers (#47) and step 7 could not choose one.
+const CATEGORY_COUNT = 2;
+const PRODUCTS_PER_CATEGORY = 5;
+const MAX_QUANTITY = 3;
+
 // The W4 scenario is one test: every step needs what the previous one left (cart, customer, order).
 // Issues E2E 2/5 to 5/5 replace each test.step.skip with the real step.
-test("W4: from an empty cart to the VAT invoice", async ({ page, request }) => {
-  await test.step.skip("1. Add 10 products in varying quantities from 2 categories to the cart", async () => {});
+test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng }) => {
+  // eslint-disable-next-line no-unused-vars -- used by steps 2–3 (rest of E2E 2/5)
+  const addedProducts = await test.step("1. Add 10 products in varying quantities from 2 categories to the cart", async () => {
+    const catalog = new CatalogPage(page);
+    const cart = new CartPage(page);
+
+    // Quantities planned up front, so there are always at least two different values
+    const quantities = Array.from({ length: CATEGORY_COUNT * PRODUCTS_PER_CATEGORY }, () => rng.int(1, MAX_QUANTITY));
+    if (new Set(quantities).size === 1) {
+      quantities[0] = (quantities[0] % MAX_QUANTITY) + 1;
+    }
+
+    // Categories in an order drawn from the seed; one whose list is too short is passed over
+    const categories = await catalog.categories();
+    const added = [];
+    const usedCategories = [];
+    for (const category of rng.sample(categories, categories.length)) {
+      if (usedCategories.length === CATEGORY_COUNT) break;
+      const planned = quantities.slice(added.length, added.length + PRODUCTS_PER_CATEGORY);
+      const products = await catalog.addFromCategory(category, planned, rng, new Set(added.map((p) => p.productId)));
+      if (products) {
+        usedCategories.push(category.name);
+        added.push(...products);
+      }
+    }
+    expect(
+      usedCategories.length,
+      `categories with ${PRODUCTS_PER_CATEGORY} products that can be added, of: ${categories.map((c) => c.name).join(", ")}`,
+    ).toBe(CATEGORY_COUNT);
+    test.info().annotations.push(
+      { type: "categories", description: usedCategories.join(", ") },
+      { type: "cart after step 1", description: added.map((p) => `${p.quantity} × ${p.name}`).join("; ") },
+    );
+
+    await cart.openFromHeader();
+    const expected = added.map(({ id, quantity }) => ({ id, quantity })).sort((a, b) => a.id.localeCompare(b.id));
+    expect(await cart.lineQuantities(), "cart lines and their quantities").toEqual(expected);
+    const totalQuantity = added.reduce((sum, p) => sum + p.quantity, 0);
+    await expect(cart.headerCount, "header cart count = sum of the quantities").toHaveText(String(totalQuantity));
+    return added;
+  });
   await test.step.skip("2. Search by name and add a random result to the cart", async () => {});
   await test.step.skip("3. Remove 3 products from the cart", async () => {});
 
