@@ -19,8 +19,7 @@ class CiociaOmnibus extends Module
     /**
      * Hooks used by the module. Object hooks are named actionObject<Class><Action>After and run for every save
      * through PrestaShop's classes: the back office, the Webservice API (our import) and the setup scripts.
-     * The hook methods come in the next step; PrestaShop skips a registered hook that has no method yet.
-     * displayProductPriceBlock has no method yet; PrestaShop skips a registered hook without one.
+     * displayProductPriceBlock shows the Omnibus line.
      */
     private const HOOKS = [
         'actionObjectProductAddAfter',
@@ -114,6 +113,42 @@ class CiociaOmnibus extends Module
         if ($this->isProductPromotion($specificPrice)) {
             CiociaPriceHistory::recordProduct((int) $specificPrice->id_product);
         }
+    }
+
+    /**
+     * Shows the Omnibus line where the child theme asks for it with its own type:
+     *   {hook h='displayProductPriceBlock' product=$product type='omnibus_price'}
+     * in catalog/_partials/product-prices.tpl (product page) and catalog/_partials/miniatures/product.tpl
+     * (lists). Classic's own types (old_price, unit_price, ...) are left alone; unit_price also runs in the cart.
+     * Only for a product in a promotion. On the product page this file is rendered again when a combination is
+     * chosen, so the line follows the selected combination.
+     */
+    public function hookDisplayProductPriceBlock(array $params): string
+    {
+        $product = $params['product'] ?? null;
+        if (($params['type'] ?? '') !== 'omnibus_price' || empty($product['show_price'])
+            || empty($product['has_discount'])) {
+            return '';
+        }
+
+        $idProduct = (int) $product['id_product'];
+        $idProductAttribute = (int) $product['id_product_attribute'];
+        $regularPrice = (float) $product['regular_price_amount'];
+        $start = CiociaPriceHistory::promoStart($product['specific_prices']);
+        $lowest = $start === null
+            ? $regularPrice
+            : CiociaOmnibusRule::lowestPrice(
+                CiociaPriceHistory::rowsBefore($idProduct, $idProductAttribute, $start),
+                $start,
+                $regularPrice
+            );
+
+        $this->context->smarty->assign(
+            'omnibus_price',
+            $this->context->getCurrentLocale()->formatPrice($lowest, $this->context->currency->iso_code)
+        );
+
+        return $this->fetch('module:ciociaomnibus/views/templates/hook/omnibus-price.tpl');
     }
 
     /**

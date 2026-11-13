@@ -2767,3 +2767,26 @@ body#sitemap #wrapper .sitemap > [class*="col-"] {
     clear: left;
   }
 }
+
+
+/*
+ * Omnibus line (module ciociaomnibus, issue #72): the lowest price from the 30 days before a promotion, under
+ * the price on the product page and on product cards. Small and muted, as it is extra information.
+ */
+.omnibus-price {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--ciocia-text-muted);
+}
+
+.omnibus-price-amount {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Product cards centre their prices. */
+.product-miniature .omnibus-price {
+  padding: 0 0.25rem;
+  text-align: center;
+}

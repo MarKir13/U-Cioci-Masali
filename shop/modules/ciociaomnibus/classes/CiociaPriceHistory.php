@@ -81,6 +81,44 @@ class CiociaPriceHistory
         );
     }
 
+        /**
+     * When a promotion started: its "from" date, or for a promotion without one, the date saved when it was
+     * added. Null when neither is known (for example a promotion added while the module was not installed and
+     * before seed() ran); the caller then shows the regular price.
+     *
+     * @param array|false $specificPrice the specific price PrestaShop applied, as in $product.specific_prices
+     */
+    public static function promoStart($specificPrice): ?DateTimeImmutable
+    {
+        if (!is_array($specificPrice) || empty($specificPrice['id_specific_price'])) {
+            return null;
+        }
+        if (!empty($specificPrice['from']) && $specificPrice['from'] !== '0000-00-00 00:00:00') {
+            return new DateTimeImmutable($specificPrice['from']);
+        }
+
+        $date = Db::getInstance()->getValue(
+            'SELECT date_start FROM `' . _DB_PREFIX_ . 'ciocia_promo_start`
+            WHERE id_specific_price = ' . (int) $specificPrice['id_specific_price'],
+            false
+        );
+
+        return $date === false ? null : new DateTimeImmutable($date);
+    }
+
+    /** History rows saved before $before, oldest first, as CiociaOmnibusRule::lowestPrice expects them. */
+    public static function rowsBefore(int $idProduct, int $idProductAttribute, DateTimeImmutable $before): array
+    {
+        return Db::getInstance()->executeS(
+            'SELECT price_gross, date_add FROM `' . _DB_PREFIX_ . 'ciocia_price_history`
+            WHERE id_product = ' . $idProduct . ' AND id_product_attribute = ' . $idProductAttribute . '
+                AND date_add < \'' . $before->format('Y-m-d H:i:s.u') . '\'
+            ORDER BY date_add, id_price_history',
+            true,
+            false
+        );
+    }
+
     public static function deletePromoStart(int $idSpecificPrice): void
     {
         Db::getInstance()->delete('ciocia_promo_start', 'id_specific_price = ' . $idSpecificPrice);
