@@ -198,6 +198,10 @@ a failed run with the same picks, pass that seed: `E2E_SEED=123456789 npm test` 
 `$env:E2E_SEED = "123456789"; npm test`). The new customer's e-mail is unique on every run, with or without a seed,
 so the suite can run many times on the same shop.
 
+Step 1 takes its two categories from the top menu, skipping any with fewer than 5 products that can be added. To
+use other ones, list their URLs: `E2E_CATEGORIES="https://localhost:8443/6-accessories,https://localhost:8443/9-art" npm test`
+(PowerShell: `$env:E2E_CATEGORIES = "..."; npm test`).
+
 | Path | Contents |
 |---|---|
 | `tests/e2e/` | `smoke.spec.js` (home page over HTTPS, no console errors) and `order.spec.js` (the W4 scenario, one step per point of the brief) |
