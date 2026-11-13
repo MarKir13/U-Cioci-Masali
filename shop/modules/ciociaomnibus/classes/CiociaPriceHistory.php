@@ -81,7 +81,7 @@ class CiociaPriceHistory
         );
     }
 
-        /**
+    /**
      * When a promotion started: its "from" date, or for a promotion without one, the date saved when it was
      * added. Null when neither is known (for example a promotion added while the module was not installed and
      * before seed() ran); the caller then shows the regular price.

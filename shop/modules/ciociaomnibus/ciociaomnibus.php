@@ -12,8 +12,10 @@
 if (!defined('_PS_VERSION_')) {
     exit;
 }
+
 require_once __DIR__ . '/classes/CiociaOmnibusRule.php';
 require_once __DIR__ . '/classes/CiociaPriceHistory.php';
+
 class CiociaOmnibus extends Module
 {
     /**
@@ -159,6 +161,7 @@ class CiociaOmnibus extends Module
     {
         return (int) $specificPrice->id_product > 0 && (int) $specificPrice->id_cart === 0;
     }
+    
     /**
      * DATETIME(6) keeps microseconds. The rule compares dates with "earlier than the promotion start", and a row
      * written in the same second as the promotion must still be told apart from it.
