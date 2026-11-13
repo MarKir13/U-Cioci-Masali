@@ -171,6 +171,10 @@ Documentation is in English, except `docs/AI_LOG.md`.
   redirects any other host there. Tests import `test` from `tests/support/fixtures.js`, keep selectors in
   `tests/pages/` and never call `waitForTimeout`; ESLint fails on it. A failed run is repeated with the `E2E_SEED`
   shown in the report.
+- The Omnibus line comes from one hook call in the child theme's `catalog/_partials/product-prices.tpl` and
+  `catalog/_partials/miniatures/product.tpl`. Keep it when rewriting those templates. The price history lives in the
+  module's tables: a back-office "Reset" of `ciociaomnibus` deletes it. An importer must update promotions in place,
+  not delete and re-add them (ADR 0008).
   
 ## Requirements: Stage 1
 

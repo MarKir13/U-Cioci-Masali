@@ -90,7 +90,7 @@ the database:
 - `configure-shop.php` sets up the shop for Poland: PLN (plus EUR in the selector, as on the source
   shop), Poland as the only country, Polish VAT groups (23, 8, 5, 0 %), two carriers priced by weight
   up to 50 kg, free delivery from 2000 PLN gross, bank transfer and cash on delivery (no cheque),
-  invoices, and e-mail through Mailpit.
+  invoices, and e-mail through Mailpit. It also installs our Omnibus price module (see below).
 
 All values for both are in [`shop/config/shop-settings.php`](shop/config/shop-settings.php): store
 details, free delivery threshold, carriers and fees, bank details. The "Dostawa" and "Formy płatności"
@@ -136,6 +136,28 @@ in the admin panel (Katalog > Kategorie, column ID) and set them as the buttons'
 
 The layout is in `shop/themes/ciocia/modules/ps_imageslider/views/templates/hook/slider.tpl` and in the
 "Home page banner" section of `custom.css`.
+
+### Omnibus price (lowest price from the 30 days before a promotion)
+
+Every product in a promotion shows "Najniższa cena z 30 dni przed obniżką: …" under its price, on the
+product page and on product cards. PrestaShop does not do this, so our module
+[`shop/modules/ciociaomnibus`](shop/modules/ciociaomnibus) keeps a price history in the database:
+
+- a row for every change of the gross price a visitor sees, written by hooks whenever a product,
+  combination or promotion is saved (back office, Webservice API, setup scripts);
+- the rule in `classes/CiociaOmnibusRule.php`: the lowest price in the 30 days before the promotion
+  started (its "from" date, or when it was added). With no history, the regular price.
+
+`configure-shop.php` installs the module and adds a starting row for products without one, so run it
+again after changing the module. The line comes from `{hook h='displayProductPriceBlock' product=$product type='omnibus_price'}`
+in `shop/themes/ciocia/templates/catalog/_partials/product-prices.tpl` and `miniatures/product.tpl`;
+its look is `.omnibus-price` in `custom.css`. Test of the rule (also run in CI):
+
+```sh
+docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php
+```
+
+Design notes and limitations: [ADR 0008](docs/adr/0008-omnibus-price-history-module.md).
 
 ## Scraped data
 
