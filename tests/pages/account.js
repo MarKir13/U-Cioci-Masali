@@ -15,6 +15,9 @@ export class AccountPage {
     this.createAccountLink = page.locator('#main a[data-link-action="display-register-form"]');
     this.form = page.locator("#customer-form");
     this.submitButton = this.form.locator('button[data-link-action="save-customer"]');
+    // Errors the shop shows when it rejects the form: under a field (_partials/form-errors.tpl)
+    // or at the top of the page (_partials/notifications.tpl)
+    this.formErrors = page.locator("#customer-form .help-block li, #notifications .alert-danger");
   }
 
   // Header icon → log-in page → registration form. The shop's own links, no typed URL.
@@ -38,8 +41,10 @@ export class AccountPage {
       await box.check();
     }
     await this.submitButton.click();
-    // After a successful registration PrestaShop leaves the form page; on an error it shows the form again
-    await this.page.waitForURL((url) => !url.pathname.includes("rejestracja"));
+    // Success logs the customer in (account link in the header); a rejection shows the form again with
+    // errors. Wait for whichever comes first, so a rejection fails at once and the report says why.
+    await expect(this.headerAccountLink.or(this.formErrors).first()).toBeVisible();
+    expect(await this.formErrors.allInnerTexts(), "the shop rejected the registration").toEqual([]);
   }
 
   // The customer the shop thinks is logged in, from PrestaShop's own front-end object
