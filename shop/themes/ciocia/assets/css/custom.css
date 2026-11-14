@@ -4688,6 +4688,38 @@ body#checkout #wrapper #checkout-addresses-step .js-address-error {
 }
 
 /*
+ * As on the source: a card narrower than 13.5rem shows the icon and the text, a wider one only the icon
+ * (the text stays in the page for screen readers).
+ */
+#wrapper .ciocia-product {
+  container-type: inline-size;
+}
+
+#wrapper .ciocia-card__button-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@container (max-width: 13.49rem) {
+  #wrapper .ciocia-card__button-text {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  #wrapper .ciocia-card__cart .ciocia-card__button .material-icons {
+    font-size: 1.05rem;
+  }
+}
+
+/*
  * Home page and product page sections (Classic's templates of ps_featuredproducts, ps_newproducts,
  * ps_specials, ps_bestsellers, ps_categoryproducts...): the title on the left and the link to all products
  * on the right of it, as on the source, instead of Classic's centred title and the link under the list.
