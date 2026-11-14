@@ -74,6 +74,8 @@ only after `down -v`. They are never stored in the repository. Design notes:
 | Stop the shop (data is kept) | `docker compose -f deploy/compose.yaml down` |
 | Apply changes from `shop/` (theme, modules, config) | `docker compose -f deploy/compose.yaml up -d --build` |
 | Reset everything and reinstall from scratch | `docker compose -f deploy/compose.yaml down -v` |
+| Back up the shop into `deploy/backups/` | `sh deploy/backup.sh` |
+| Restore a backup (replaces the shop's data, asks first) | `sh deploy/restore.sh deploy/backups/<archive>.tar.gz` |
 
 PrestaShop's cache (`var/cache/prod` and `var/cache/dev`) is cleared automatically on every start,
 so new module template overrides take effect after `up -d --build` with no manual step. The first
@@ -138,6 +140,60 @@ in the admin panel (Katalog > Kategorie, column ID) and set them as the buttons'
 
 The layout is in `shop/themes/ciocia/modules/ps_imageslider/views/templates/hook/slider.tpl` and in the
 "Home page banner" section of `custom.css`.
+
+### Backup and restore
+
+`deploy/backup.sh` saves the running shop into one archive, and `deploy/restore.sh` puts it back, also
+onto a clean install. Both run from the repository root, also in Git Bash on Windows.
+
+```sh
+sh deploy/backup.sh
+```
+
+The archive is written to `deploy/backups/ciocia-backup-<date>-<time>.tar.gz` and holds:
+
+- `db.sql`: the whole database (products, categories, CMS pages, settings, customers, orders),
+- `img/`: product, category and other shop images with their thumbnails,
+- `modules/ps_imageslider/images/`: the home banner slides,
+- `manifest.txt`: date, git commit, PrestaShop version, number of products, shop domain.
+
+The archive contains customer data and password hashes. `deploy/backups/` is gitignored: never
+commit an archive or attach it to a release.
+
+```sh
+sh deploy/restore.sh deploy/backups/ciocia-backup-<date>-<time>.tar.gz
+```
+
+The restore replaces the database and the images of the running shop, so it asks you to type `yes`
+first; `--yes` before the archive skips the question. It then sets the shop domain to the current
+`HTTPS_PORT`, restarts `shop` and `proxy`, waits until the shop answers and prints how long it took.
+The shop must be running and installed. After a restore, log in to the admin panel with the e-mail
+and password of the backed-up shop, because the admin account is part of the database.
+
+`app/config/parameters.php` (database password, cookie keys) and `.htaccess` are not in the backup:
+they belong to one install, and the environment you restore into keeps its own. Customers still log
+in with their old passwords. Design notes:
+[ADR 0009](docs/adr/0009-backup-contents-and-settings-export.md).
+
+**Restore onto a clean environment** (the acceptance demo):
+
+```sh
+sh deploy/backup.sh
+docker compose -f deploy/compose.yaml down -v            # deletes the shop and its database
+docker compose -f deploy/compose.yaml up -d --build --wait
+sh deploy/restore.sh deploy/backups/ciocia-backup-<date>-<time>.tar.gz
+sh .github/scripts/smoke-test.sh
+```
+
+Then check in the browser that the products, images, CMS pages and orders are back and that a
+customer from before the backup can log in. On the demo data the restore takes about 30 seconds;
+the limit is 10 minutes.
+
+**Settings only.** The settings export is
+[`shop/config/shop-settings.php`](shop/config/shop-settings.php) with the setup scripts described
+in [Shop settings and content](#shop-settings-and-content). It holds no customer data and no
+secrets. A clean install applies it by itself, and the two commands in that section apply it to a
+running shop.
 
 ## Scraped data
 
@@ -335,7 +391,7 @@ same result as CI and never shows your passwords.
 | Path | Contents | Status |
 |---|---|---|
 | `shop/` | Dockerfile, PHP config, child theme, own modules, setup scripts for shop content | in progress |
-| `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`); later: init, backup and restore scripts | in progress |
+| `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`), `backup.sh` and `restore.sh`; later: data init script | in progress |
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
 | `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | done: crawl, images, verification |
 | `scraper-results/` | Scraped data (`categories.json`, `products.jsonl`, `schema.json`, `rejected.json`), `verification-report.md` and 20 sample images | done: 2159 products, 160 categories |
