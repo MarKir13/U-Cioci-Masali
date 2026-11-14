@@ -97,6 +97,9 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng, c
   // Steps 9–10 look this order up in the customer's order history
   // eslint-disable-next-line no-unused-vars -- used by steps 9–10 (E2E 5/5)
   const orderReference = await test.step("8. Confirm the order", async () => {
+    // The total the customer sees before confirming: products + delivery, and later the order's total (#91)
+    const shownTotal = await checkout.summaryTotalGrosze();
+    expect(shownTotal, "checkout summary total = products + delivery (grosze)").toBe(productsTotal + shippingFee);
     await checkout.placeOrder();
     await expect(page.locator("#content-hook_order_confirmation")).toContainText(texts.confirmation.title);
 
@@ -106,7 +109,7 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng, c
     expect(await checkout.orderDetail(texts.confirmation.carrier)).toBe(carrier);
 
     const totals = await checkout.confirmationTotals();
-    expect(totals.total, `order total (${JSON.stringify(totals.rows)})`).toBe(productsTotal + shippingFee);
+    expect(totals.total, `order total = checkout summary total (${JSON.stringify(totals.rows)})`).toBe(shownTotal);
 
     expect(consoleErrors.slice(errorsBeforeCheckout), "console errors during checkout").toEqual([]);
 

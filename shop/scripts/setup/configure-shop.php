@@ -131,8 +131,15 @@ function configureTaxes()
     Configuration::updateValue('PS_TAX_DISPLAY', 1);
     // 0 = prices with tax, for every customer group
     Db::getInstance()->update('group', ['price_display_method' => 0]);
+    // Round each item's gross price, then multiply by the quantity (issue #91). It is the only mode in which
+    // every amount the customer sees adds up: unit price × quantity = line, lines = "Produkty", and
+    // "Produkty" + delivery = "RAZEM". With PrestaShop's default 2 (round each line) the order total is
+    // rounded from the unrounded line amounts (Calculator::getTotal() sums CartRow::getInitialTotalPrice()),
+    // so it can be 1 grosz off "Produkty" + delivery. With 3 (round the total) the lines shown in the cart
+    // no longer add up to "Produkty".
+    Configuration::updateValue('PS_ROUND_TYPE', Order::ROUND_ITEM);
     Configuration::updateValue('PS_WEIGHT_UNIT', 'kg');
-    echo "Taxes: Polish VAT groups active, prices shown gross.\n";
+    echo "Taxes: Polish VAT groups active, prices shown gross, rounded per item.\n";
 }
 
 /**
