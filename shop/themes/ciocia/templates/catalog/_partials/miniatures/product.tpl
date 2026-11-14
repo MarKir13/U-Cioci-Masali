@@ -114,6 +114,7 @@
               {/if}
             </div>
             {capture name='ciocia_price_note'}
+              {hook h='displayProductPriceBlock' product=$product type='omnibus_price'}
               {hook h='displayProductPriceBlock' product=$product type='after_price' hook_origin='products_list'}
               {hook h='displayProductPriceBlock' product=$product type='unit_price'}
               {hook h='displayProductPriceBlock' product=$product type='weight'}
@@ -127,7 +128,7 @@
 
       {block name='product_availability'}
         {if $ciocia_out_of_stock}
-          <p class="ciocia-card__availability">Obecnie brak na stanie</p>
+          <p class="ciocia-card__availability product-flag out_of_stock">Obecnie brak na stanie</p>
         {/if}
       {/block}
 
@@ -147,7 +148,7 @@
               <input type="hidden" name="action" value="update">
               <button type="submit" class="btn btn-primary ciocia-card__button" data-ciocia-add-to-cart>
                 <i class="material-icons" aria-hidden="true">add_shopping_cart</i>
-                <span class="sr-only">Dodaj do koszyka: {$product.name}</span>
+                <span class="ciocia-card__button-text">Dodaj do koszyka</span><span class="sr-only">: {$product.name}</span>
               </button>
             </form>
           {else}
