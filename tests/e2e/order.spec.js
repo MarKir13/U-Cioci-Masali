@@ -28,12 +28,14 @@ async function findSearchTarget(catalog, search, rng, skipProductIds) {
   let tried = 0;
   const categories = await catalog.categories();
   for (const category of rng.sample(categories, categories.length)) {
-    const listed = (await catalog.listedProducts(category)).filter((item) => !skipProductIds.has(item.productId));
-    for (const item of rng.sample(listed, listed.length)) {
-      if (tried++ === SEARCH_CANDIDATES) return null;
-      const product = await catalog.openProduct(item.url);
-      const query = await search.queryFor(product.name, rng);
-      if (query) return { product, query };
+    for (const candidate of CatalogPage.withSubcategories(category, rng)) {
+      const listed = (await catalog.listedProducts(candidate)).filter((item) => !skipProductIds.has(item.productId));
+      for (const item of rng.sample(listed, listed.length)) {
+        if (tried++ === SEARCH_CANDIDATES) return null;
+        const product = await catalog.openProduct(item.url);
+        const query = await search.queryFor(product.name, rng);
+        if (query) return { product, query };
+      }
     }
   }
   return null;
@@ -52,22 +54,26 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng, c
       quantities[0] = (quantities[0] % MAX_QUANTITY) + 1;
     }
 
-    // Categories in an order drawn from the seed; one whose list is too short is passed over
+    // Top-level categories in an order drawn from the seed, each one through itself or one of its subcategories,
+    // so the two categories are always different branches of the menu. One that cannot give
+    // PRODUCTS_PER_CATEGORY products in their planned quantities is passed over with nothing added.
     const categories = await catalog.categories();
     const added = [];
     const usedCategories = [];
     for (const category of rng.sample(categories, categories.length)) {
       if (usedCategories.length === CATEGORY_COUNT) break;
       const planned = quantities.slice(added.length, added.length + PRODUCTS_PER_CATEGORY);
-      const products = await catalog.addFromCategory(category, planned, rng, new Set(added.map((p) => p.productId)));
+      const skip = new Set(added.map((p) => p.productId));
+      const products = await catalog.addFromCategoryOrSubcategory(category, planned, rng, skip);
       if (products) {
-        usedCategories.push(category.name);
+        usedCategories.push(products[0].category);
         added.push(...products);
       }
     }
     expect(
       usedCategories.length,
-      `categories with ${PRODUCTS_PER_CATEGORY} products that can be added, of: ${categories.map((c) => c.name).join(", ")}`,
+      `categories (or subcategories) with ${PRODUCTS_PER_CATEGORY} products that can be added in their planned ` +
+        `quantities, of: ${categories.map((c) => c.name).join(", ")} (set E2E_CATEGORIES to pick others)`,
     ).toBe(CATEGORY_COUNT);
     test.info().annotations.push(
       { type: "categories", description: usedCategories.join(", ") },

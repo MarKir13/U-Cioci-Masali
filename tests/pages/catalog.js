@@ -2,7 +2,10 @@ import { expect } from "../support/fixtures.js";
 import { headerCartCount } from "./cart.js";
 
 // Whether a product from openProduct() can be added in this quantity: the shop allows it (not out of stock,
-// no required customisation), it has enough stock, and the quantity reaches its minimum
+// no required customisation), it has enough stock, and the quantity reaches its minimum.
+// `stock` already excludes what is in the cart: PrestaShop's Product::getQuantity() subtracts the cart
+// quantity before the product page puts it into data-product, so a product the cart already holds needs no
+// correction here (checked on the shop: 299, 298 after adding 1, 0 and a disabled button after adding the rest).
 export function canBeAdded(product, quantity) {
   return product.canAdd && product.stock >= quantity && product.minimalQuantity <= quantity;
 }
@@ -14,8 +17,9 @@ export function canBeAdded(product, quantity) {
 export class CatalogPage {
   constructor(page) {
     this.page = page;
-    // Top-level categories only (shop/themes/ciocia/modules/ps_mainmenu): CMS pages and links are other <li> types
-    this.topMenuCategoryLinks = page.locator('#_desktop_top_menu ul[data-depth="0"] > li.category > a');
+    // Top-level categories (shop/themes/ciocia/modules/ps_mainmenu): CMS pages and links are other <li> types.
+    // Their subcategories are in the hidden submenu inside the same <li>.
+    this.topMenuCategories = page.locator('#_desktop_top_menu ul[data-depth="0"] > li.category');
     this.miniatures = page.locator("#js-product-list .product-miniature");
 
     // Product page. data-product holds the product as the shop presents it (ids, name, stock).
@@ -30,21 +34,33 @@ export class CatalogPage {
     this.headerCartCount = headerCartCount(page);
   }
 
-  // Categories to choose from: E2E_CATEGORIES (comma-separated category URLs) when set, otherwise the top menu
+  // Categories to choose from, as { name, url, subcategories: [{ name, url }] }: E2E_CATEGORIES
+  // (comma-separated category URLs, no subcategories) when set, otherwise the top menu with its submenus
   async categories() {
     const fromEnv = (process.env.E2E_CATEGORIES ?? "")
       .split(",")
       .map((url) => url.trim())
       .filter(Boolean);
     if (fromEnv.length > 0) {
-      return fromEnv.map((url) => ({ name: url, url }));
+      return fromEnv.map((url) => ({ name: url, url, subcategories: [] }));
     }
     await this.page.goto("/");
-    const links = await this.topMenuCategoryLinks.evaluateAll((anchors) =>
-      anchors.map((a) => ({ name: a.textContent.trim(), url: a.href })),
+    const categories = await this.topMenuCategories.evaluateAll((items) =>
+      items.map((li) => {
+        const link = (a) => ({ name: a.textContent.trim(), url: a.href });
+        const subLinks = li.querySelectorAll(':scope > div > ul[data-depth="1"] > li.category > a');
+        return { ...link(li.querySelector(":scope > a")), subcategories: [...subLinks].map(link) };
+      }),
     );
-    expect(links.length, "categories in the top menu").toBeGreaterThan(0);
-    return links;
+    expect(categories.length, "categories in the top menu").toBeGreaterThan(0);
+    return categories;
+  }
+
+  // A category and then its subcategories, in an order drawn from the seed. On the shop a top-level category
+  // may list no products of its own, when they are assigned only to its subcategories.
+  static withSubcategories(category, rng) {
+    const subcategories = category.subcategories.map((sub) => ({ ...sub, name: `${category.name} › ${sub.name}` }));
+    return [category, ...rng.sample(subcategories, subcategories.length)];
   }
 
   // Products on page 1 of a category's list, without those the list already marks as out of stock
@@ -100,25 +116,39 @@ export class CatalogPage {
   // Adds one product per planned quantity from a category, in an order drawn from the seed. A product that
   // cannot take its planned quantity (see canBeAdded) is skipped. Products in `skipProductIds` (already in the
   // cart from another category) are skipped too.
-  // Returns null, with nothing added, when the list is too short to try; the caller then tries another category.
+  // The products are all chosen first and added only then, so when the category has too few that fit, it
+  // returns null with nothing added and the caller tries another category.
   async addFromCategory(category, quantities, rng, skipProductIds) {
     const listed = (await this.listedProducts(category)).filter((item) => !skipProductIds.has(item.productId));
     if (listed.length < quantities.length) {
       return null;
     }
-    const added = [];
+    const chosen = [];
     for (const item of rng.sample(listed, listed.length)) {
-      if (added.length === quantities.length) break;
-      const quantity = quantities[added.length];
+      if (chosen.length === quantities.length) break;
+      const quantity = quantities[chosen.length];
       const product = await this.openProduct(item.url);
-      if (!canBeAdded(product, quantity)) continue;
-      await this.addToCart(product, quantity);
-      added.push({ ...product, quantity, category: category.name });
+      if (canBeAdded(product, quantity)) {
+        chosen.push({ ...product, quantity, category: category.name, url: item.url });
+      }
     }
-    expect(
-      added.length,
-      `products of "${category.name}" that could be added in their planned quantity (set E2E_CATEGORIES to pick others)`,
-    ).toBe(quantities.length);
-    return added;
+    if (chosen.length < quantities.length) {
+      return null;
+    }
+    // None of them is in the cart yet, so their stock is the same as when they were chosen
+    for (const product of chosen) {
+      await this.openProduct(product.url);
+      await this.addToCart(product, product.quantity);
+    }
+    return chosen;
+  }
+
+  // addFromCategory() on the category, or else on its subcategories one by one (see withSubcategories)
+  async addFromCategoryOrSubcategory(category, quantities, rng, skipProductIds) {
+    for (const candidate of CatalogPage.withSubcategories(category, rng)) {
+      const added = await this.addFromCategory(candidate, quantities, rng, skipProductIds);
+      if (added) return added;
+    }
+    return null;
   }
 }
