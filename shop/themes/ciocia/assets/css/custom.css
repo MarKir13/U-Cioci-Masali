@@ -4129,3 +4129,647 @@ body#checkout #wrapper #checkout-addresses-step form > .ciocia-address-heading:n
 body#checkout #wrapper #checkout-addresses-step .js-address-error {
   margin: 1rem 0 0;
 }
+
+/*
+ * Product lists (issue #75): category pages, search results and the other listings
+ * (templates/catalog/listing/product-list.tpl), the home page sections and the lists on the product page.
+ * Sizes, breakpoints and colours are the source's (its category page /8-kosmetyki, November 2026), apart
+ * from text colours that fail 4.5:1 there: the subcategory links, the old price and the disabled page link.
+ */
+
+/* Category header: the name in burgundy, the description in grey, the subcategories as rounded links. */
+#wrapper .ciocia-listing__title {
+  margin: 0 0 0.5rem;
+  color: var(--ciocia-primary);
+  font-size: 1.625rem;
+  line-height: 1.2;
+}
+
+#wrapper .ciocia-category-description {
+  margin-bottom: 1rem;
+}
+
+#wrapper .ciocia-category-description__text {
+  color: var(--ciocia-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+#wrapper .ciocia-category-description__text p:last-child {
+  margin-bottom: 0;
+}
+
+#wrapper .ciocia-subcategories {
+  margin-bottom: 1.5rem;
+}
+
+#wrapper .ciocia-subcategories__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#wrapper .ciocia-subcategories__link {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--ciocia-field-border);
+  border-radius: 50rem;
+  color: var(--ciocia-link);
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+#wrapper .ciocia-subcategories__link:hover,
+#wrapper .ciocia-subcategories__link:focus-visible {
+  border-color: var(--ciocia-primary);
+  color: var(--ciocia-primary);
+}
+
+/* "Czytaj więcej" and "Pokaż wszystkie (N)": phones only, underlined burgundy text, 44 px tall to tap. */
+#wrapper .ciocia-more-button {
+  display: none;
+  align-items: center;
+  min-height: 2.75rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0;
+  border: 0;
+  background: none;
+  color: var(--ciocia-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+  cursor: pointer;
+}
+
+/* custom.js adds .is-ready; without it nothing folds, so the page also works without JavaScript. */
+@media (max-width: 767.98px) {
+  #wrapper .ciocia-category-description.is-ready:not(.is-expanded) .ciocia-category-description__text {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+  }
+
+  #wrapper .ciocia-category-description.is-ready .ciocia-more-button:not([hidden]),
+  #wrapper .ciocia-subcategories--collapsible.is-ready .ciocia-more-button {
+    display: inline-flex;
+  }
+
+  #wrapper .ciocia-subcategories--collapsible.is-ready:not(.is-expanded) .ciocia-subcategories__item:nth-child(n + 7) {
+    display: none;
+  }
+}
+
+/*
+ * Count, sorting and page links above the products: "Liczba produktów: N" left, "Sortuj wg: [Polecane]" right,
+ * the page links alone on the next row on the right, and a line under the block. On phones the sorting
+ * comes first, as on the source.
+ */
+#wrapper .ciocia-products-top {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--ciocia-border);
+}
+
+#wrapper .ciocia-products-top__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+#wrapper .ciocia-products-top__count {
+  margin: 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Phones: the sorting first and without its label, as on the source; screen readers still get the label. */
+@media (max-width: 767.98px) {
+  #wrapper .ciocia-sort {
+    order: -1;
+  }
+
+  #wrapper .ciocia-sort__label {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    white-space: nowrap;
+    clip: rect(0, 0, 0, 0);
+  }
+}
+
+#wrapper .ciocia-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#wrapper .ciocia-sort__label {
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+/* Classic: a full-width grey-framed box, a grey menu 270 px wide and blue on hover. */
+#wrapper .products-sort-order.ciocia-sort__dropdown {
+  position: relative;
+}
+
+#wrapper .products-sort-order .ciocia-sort__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: auto;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.5rem 0.35rem 0.9rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.25rem;
+  background: #fff;
+  color: var(--ciocia-text);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+#wrapper .products-sort-order .ciocia-sort__button:hover,
+#wrapper .products-sort-order .ciocia-sort__button:focus-visible,
+#wrapper .products-sort-order.open .ciocia-sort__button {
+  border-color: var(--ciocia-primary);
+  color: var(--ciocia-primary);
+}
+
+#wrapper .products-sort-order .ciocia-sort__button .material-icons {
+  font-size: 1.25rem;
+}
+
+#wrapper .products-sort-order .ciocia-sort__menu {
+  right: 0;
+  left: auto;
+  z-index: 20;
+  width: auto;
+  min-width: 13rem;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.25rem;
+  background: #fff;
+  box-shadow: 0 0.5rem 1rem rgb(0 0 0 / 12%);
+}
+
+@media (max-width: 767.98px) {
+  #wrapper .products-sort-order .ciocia-sort__menu {
+    right: auto;
+    left: 0;
+  }
+}
+
+#wrapper .products-sort-order .ciocia-sort__option {
+  padding: 0.5rem 1rem;
+  color: var(--ciocia-text);
+  font-size: 0.875rem;
+}
+
+#wrapper .products-sort-order .ciocia-sort__option:hover,
+#wrapper .products-sort-order .ciocia-sort__option:focus-visible {
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-primary);
+}
+
+#wrapper .products-sort-order .ciocia-sort__option.current {
+  color: var(--ciocia-primary);
+  font-weight: 600;
+}
+
+/* Page links (templates/_partials/pagination.tpl). */
+#wrapper .ciocia-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-top: 1.25rem;
+}
+
+#wrapper .ciocia-pagination--top {
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+#wrapper .ciocia-pagination__summary {
+  margin: 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+#wrapper .ciocia-pagination__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#wrapper .ciocia-pagination__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.5rem;
+  background: #fff;
+  color: var(--ciocia-text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-decoration: none;
+}
+
+#wrapper a.ciocia-pagination__link:hover,
+#wrapper a.ciocia-pagination__link:focus-visible {
+  border-color: var(--ciocia-primary);
+  color: var(--ciocia-primary);
+}
+
+#wrapper .ciocia-pagination__link.is-current {
+  border-color: var(--ciocia-primary);
+  background: var(--ciocia-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* The source fades these to 50 % (2.6:1); a grey box with the muted text keeps them readable. */
+#wrapper .ciocia-pagination__link.is-disabled {
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-text-muted);
+}
+
+#wrapper .ciocia-pagination__link--spacer {
+  border-color: transparent;
+  background: transparent;
+}
+
+#wrapper .ciocia-pagination__link .material-icons {
+  font-size: 1.25rem;
+}
+
+/* "Poprzedni" and "Następny" only from 1200 px; below, the arrow shows and screen readers get the word. */
+@media (max-width: 1199.98px) {
+  #wrapper .ciocia-pagination__word {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    white-space: nowrap;
+    clip: rect(0, 0, 0, 0);
+  }
+}
+
+/*
+ * The grid of cards (templates/catalog/_partials/productlist.tpl): 2 columns on phones, 3 from 576 px,
+ * 4 from 992 px, 12 px apart, as on the source. Grid rows stretch their cards to one height.
+ * Classic lays these lists out as a wrapping flex row of Bootstrap columns.
+ */
+#wrapper .ciocia-products {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+@media (min-width: 576px) {
+  #wrapper .ciocia-products {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 992px) {
+  #wrapper .ciocia-products {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+#wrapper .ciocia-product {
+  display: flex;
+  min-width: 0;
+}
+
+/*
+ * The card (templates/catalog/_partials/miniatures/product.tpl): white, framed, the photo across the top,
+ * the text centred under it and the button at the bottom.
+ */
+#wrapper .ciocia-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.375rem;
+  background: #fff;
+  box-shadow: 0 0.125rem 0.375rem rgb(0 0 0 / 6%);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+#wrapper .ciocia-card:hover {
+  box-shadow: 0 0.375rem 1rem rgb(0 0 0 / 15%);
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #wrapper .ciocia-card {
+    transition: none;
+  }
+
+  #wrapper .ciocia-card:hover {
+    transform: none;
+  }
+}
+
+/* A square box, whatever the photo's proportions; the photo fits inside it. Classic adds 25 px under it. */
+#wrapper .ciocia-card__media {
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+  background: #fff;
+}
+
+#wrapper .ciocia-card__image-link {
+  display: block;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
+#wrapper .ciocia-card__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  object-fit: contain;
+}
+
+/* One ribbon across the top left corner: the discount in gold on burgundy, or "Nowy" on blue. */
+#wrapper .ciocia-card__ribbon {
+  position: absolute;
+  top: 0.9rem;
+  left: -2.4rem;
+  z-index: 2;
+  width: 7.5rem;
+  margin: 0;
+  padding: 0.3rem 0;
+  background: #0b69f6;
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(-45deg);
+  pointer-events: none;
+}
+
+#wrapper .ciocia-card__ribbon--discount,
+#wrapper .ciocia-card__ribbon--on-sale {
+  background: linear-gradient(135deg, #7a1006 0%, var(--ciocia-primary) 55%, #3a0606 100%);
+  color: var(--ciocia-gold);
+}
+
+/* blockwishlist's heart: a white square at the top right, as on the source (the module draws a round one). */
+#wrapper .ciocia-card .wishlist-button-add {
+  position: absolute;
+  z-index: 3;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 2.375rem;
+  min-width: 2.375rem;
+  height: 2.375rem;
+  padding: 0;
+  border-radius: 0.25rem;
+  box-shadow: none;
+}
+
+#wrapper .ciocia-card .wishlist-button-add i {
+  margin: 0;
+  color: var(--ciocia-link);
+}
+
+#wrapper .ciocia-card__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 0.5rem 0.75rem;
+}
+
+/* Names cut after three lines on every card; the box keeps three lines, so prices line up across a row. */
+#wrapper .ciocia-card__title {
+  min-height: 4.2em;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: center;
+}
+
+#wrapper .ciocia-card__title a {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  color: var(--ciocia-text);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+#wrapper .ciocia-card__title a:hover,
+#wrapper .ciocia-card__title a:focus-visible {
+  color: var(--ciocia-primary);
+}
+
+#wrapper .ciocia-card__reference {
+  margin: -0.25rem 0 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+#wrapper .ciocia-card__price-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.4rem;
+}
+
+#wrapper .ciocia-card__price {
+  color: var(--ciocia-primary);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+/* The source's #888 is 3.5:1 on white. */
+#wrapper .ciocia-card__regular-price {
+  color: var(--ciocia-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* Room for the Omnibus line (D3) and other price notes, in small grey text under the price. */
+#wrapper .ciocia-card__price-note {
+  margin-top: 0.25rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+
+#wrapper .ciocia-card__price-note p,
+#wrapper .ciocia-card__price-note div {
+  margin: 0;
+  font-size: inherit;
+}
+
+#wrapper .ciocia-card__availability {
+  margin: 0;
+  color: #b02a37;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* At the bottom of every card, so the buttons of a row line up. */
+#wrapper .ciocia-card__actions {
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+#wrapper .ciocia-card__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+}
+
+#wrapper .ciocia-card__button .material-icons {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* The add-to-cart button shows only the cart icon, as on the source; the text is for screen readers. */
+#wrapper .ciocia-card__cart .ciocia-card__button {
+  min-height: 2.25rem;
+}
+
+#wrapper .ciocia-card__cart .ciocia-card__button .material-icons {
+  font-size: 1.35rem;
+}
+
+/*
+ * As on the source: a card narrower than 13.5rem shows the icon and the text, a wider one only the icon
+ * (the text stays in the page for screen readers).
+ */
+#wrapper .ciocia-product {
+  container-type: inline-size;
+}
+
+#wrapper .ciocia-card__button-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@container (max-width: 13.49rem) {
+  #wrapper .ciocia-card__button-text {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  #wrapper .ciocia-card__cart .ciocia-card__button .material-icons {
+    font-size: 1.05rem;
+  }
+}
+
+/*
+ * Home page and product page sections (Classic's templates of ps_featuredproducts, ps_newproducts,
+ * ps_specials, ps_bestsellers, ps_categoryproducts...): the title on the left and the link to all products
+ * on the right of it, as on the source, instead of Classic's centred title and the link under the list.
+ */
+#wrapper .featured-products {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 1rem;
+  margin: 0 0 2rem;
+}
+
+#wrapper .featured-products > h2,
+#wrapper .featured-products > .products-section-title {
+  grid-column: 1;
+  margin: 0;
+  color: var(--ciocia-text);
+  font-size: clamp(1.375rem, 1.1rem + 1vw, 2rem);
+  line-height: 1.2;
+  text-align: left;
+}
+
+/* Classic marks these titles .text-uppercase, a utility with !important; the source writes them normally. */
+#wrapper .featured-products > .products-section-title.text-uppercase {
+  text-transform: none !important;
+}
+
+#wrapper .featured-products > .ciocia-products {
+  grid-column: 1 / -1;
+}
+
+#wrapper .featured-products > .all-product-link {
+  display: inline-flex;
+  grid-row: 1;
+  grid-column: 2;
+  align-items: center;
+  margin: 0;
+  float: none;
+  color: var(--ciocia-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+#wrapper .featured-products > .all-product-link .material-icons {
+  font-size: 1.125rem;
+}
+
+#wrapper .featured-products::after,
+#wrapper .featured-products::before {
+  display: none;
+}
