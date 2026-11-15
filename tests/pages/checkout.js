@@ -34,6 +34,8 @@ export class CheckoutPage {
 
     // Summary next to the steps, refreshed by the shop after every change
     this.summaryShipping = page.locator("#js-checkout-summary #cart-subtotal-shipping .value");
+    // "Razem (brutto)": the amount the customer agrees to pay
+    this.summaryTotal = page.locator("#js-checkout-summary .cart-summary-totals .cart-total .value");
 
     this.orderDetails = page.locator("#order-details");
     // Errors the shop shows when it rejects a form or the order
@@ -113,6 +115,12 @@ export class CheckoutPage {
     const id = await option.getAttribute("id");
     await this.page.locator(`label[for="${id}"]`).click();
     await expect(option).toBeChecked();
+  }
+
+  // Total of the checkout summary in grosze. Read it after chooseCarrier(), which waits for the summary to
+  // show the new delivery fee, so the total includes it too.
+  async summaryTotalGrosze() {
+    return toGrosze(await this.summaryTotal.innerText());
   }
 
   // Accepts every condition the shop asks for (terms of service) and places the order
