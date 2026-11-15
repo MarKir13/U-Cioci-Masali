@@ -34,6 +34,10 @@ class Report:
     def rejected(self) -> int:
         return sum(counts["rejected"] for counts in self.counts.values())
 
+    def rejected_of(self, resource: str) -> int:
+        with self._lock:
+            return self.counts[resource]["rejected"]
+
     def summary(self) -> str:
         width = max(len(r) for r in RESOURCES)
         lines = [" " * width + "".join(f"{c:>11}" for c in COLUMNS)]
