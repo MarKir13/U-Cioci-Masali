@@ -87,7 +87,6 @@ return [
         'port' => 1025,
     ],
 
-<<<<<<< HEAD
     // Home page banner (issue #63): image slider on the left, text and two buttons on the right, as on
     // magiczne-indie.pl. Applied by 20-shop-content.sh. Template: themes/ciocia/modules/ps_imageslider/.
     'home_banner' => [
@@ -106,7 +105,6 @@ return [
             ['image' => 'mi-slide-1.jpg', 'alt' => 'Wnętrze sklepu stacjonarnego Magiczne Indie'],
             ['image' => 'mi-slide-2.jpg', 'alt' => 'Półki z suplementami w sklepie Magiczne Indie'],
         ],
-=======
     // Product catalogue, filled by the importer (deploy/importer, issue #70)
     'catalog' => [
         // Top menu: these top-level categories, in this order. Names exactly as in
@@ -116,6 +114,5 @@ return [
         'order_out_of_stock' => false,
         // Allow <iframe> in descriptions: product 9536 embeds a YouTube video, as on the source shop
         'allow_iframes' => true,
->>>>>>> bb28b63 (feat: add top menu module and catalog settings)
     ],
 ];
