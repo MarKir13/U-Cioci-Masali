@@ -148,8 +148,8 @@ The layout is in `shop/themes/ciocia/modules/ps_imageslider/views/templates/hook
 The product importer loads the scraped data through the PrestaShop Webservice API. A third setup script,
 [`webservice.php`](shop/scripts/setup/webservice.php), turns the API on and creates one key,
 `ciocia-importer`, from `PS_WEBSERVICE_KEY` in `deploy/.env` (32 characters, `A-Z` and `0-9`). The key can
-reach only what the import needs: categories, products, images, specific prices and stock (read and write),
-and taxes and languages (read only). The list is `PERMISSIONS` at the top of the script. Everything else,
+reach only what the import needs: categories, products, images, specific prices, manufacturers and stock (read
+and write), and taxes and languages (read only). The list is `PERMISSIONS` at the top of the script. Everything else,
 such as customers and orders, is refused.
 
 The API is reachable only inside the Docker network. The proxy answers 404 for `/api/` and `/webservice/`,
@@ -199,6 +199,22 @@ tar xzf /tmp/product-images.tar.gz -C scraper-results
 ```
 
 Check the data with `python -m scraper verify` (from `scraper/`); it needs no network.
+
+### Loading the data into the shop
+
+The importer ([deploy/importer](deploy/importer/README.md)) puts the categories, brands, products, stock,
+promotions and images into the running shop through the Webservice API, and removes the installer's demo
+catalogue. With the images unpacked as above, from the repository root:
+
+```sh
+docker compose -f deploy/compose.yaml --profile init run --rm --build importer
+```
+
+It prints created, updated, unchanged, deleted and rejected counts and writes every problem to
+`deploy/logs/importer.log`. Running it again changes nothing. `--limit 20` imports only 20 products, for a quick
+check. The top menu shows the categories listed under `catalog` in
+[`shop/config/shop-settings.php`](shop/config/shop-settings.php). Design notes:
+[ADR 0008](docs/adr/0008-product-import-through-the-webservice-api.md).
 
 
 ## E2E tests
@@ -374,10 +390,11 @@ npm ci
 | Lint | `ruff check .` |
 | Formatting (`ruff format .` fixes it) | `ruff format --check .` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
+| Importer unit tests (from `deploy/importer/`) | `python -m pytest` |
 | Secret scan, as on a PR (needs Docker) | `docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"` |
 | Secret scan, every branch | The same command with `--log-opts="--all"` |
 | Repository limits (add `--all` for every branch) | `sh .github/scripts/check-repo-limits.sh` |
-| Dockerfiles | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile` |
+| Dockerfiles | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile` |
 | Shell scripts | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
 | Compose file (prints nothing when valid) | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
@@ -394,7 +411,7 @@ same result as CI and never shows your passwords.
 | Path | Contents | Status |
 |---|---|---|
 | `shop/` | Dockerfile, PHP config, child theme, own modules, setup scripts for shop content | in progress |
-| `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`); later: init, backup and restore scripts | in progress |
+| `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`), product importer (`importer/`); later: init, backup and restore scripts | in progress |
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
 | `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | done: crawl, images, verification |
 | `scraper-results/` | Scraped data (`categories.json`, `products.jsonl`, `schema.json`, `rejected.json`), `verification-report.md` and 20 sample images | done: 2159 products, 160 categories |
