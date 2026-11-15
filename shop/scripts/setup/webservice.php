@@ -33,6 +33,8 @@ const PERMISSIONS = [
     'products' => ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
     'images' => ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
     'specific_prices' => ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
+    // Brands. DELETE removes the installer's demo manufacturers.
+    'manufacturers' => ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
     // PrestaShop creates the stock row together with the product, so the import only updates it.
     'stock_availables' => ['GET', 'HEAD', 'PUT'],
     // Read only: the tax rule group for a VAT rate is found through group -> rule -> tax (rate),

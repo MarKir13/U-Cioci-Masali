@@ -38,7 +38,11 @@ configureShipping($settings);
 configurePayments($settings, $carrierReferences);
 configureMail($settings['mail']);
 configureInvoices();
+<<<<<<< HEAD
 configurePromoCode($settings['promo_code']);
+=======
+configureCatalog($settings['catalog']);
+>>>>>>> bb28b63 (feat: add top menu module and catalog settings)
 
 Tools::clearSmartyCache();
 Cache::clear();
@@ -367,6 +371,7 @@ function configureInvoices()
 }
 
 /**
+<<<<<<< HEAD
  * The promo code as a cart rule: a percentage off the products, once per customer, valid for ten
  * years from the last run. Found by its code, so a second run updates it instead of adding another.
  * PrestaShop shows the promo code field in the cart and checkout only while a cart rule exists.
@@ -387,4 +392,27 @@ function configurePromoCode(array $promo)
     $rule->active = true;
     $rule->id ? $rule->update() : $rule->add();
     echo 'Promo code ' . $promo['code'] . ': ' . $promo['percent'] . "% off the products, once per customer.\n";
+=======
+ * Stock rules, HTML in descriptions, and the top menu for the categories the importer creates (issue #70).
+ */
+function configureCatalog(array $catalog)
+{
+    Configuration::updateValue('PS_STOCK_MANAGEMENT', 1);
+    Configuration::updateValue('PS_ORDER_OUT_OF_STOCK', $catalog['order_out_of_stock'] ? 1 : 0);
+    Configuration::updateValue('PS_ALLOW_HTML_IFRAME', $catalog['allow_iframes'] ? 1 : 0);
+
+    // The module rebuilds the menu after every category change, also those made through the API
+    Configuration::updateValue('CIOCIA_MENU_CATEGORIES', json_encode($catalog['menu_categories'], JSON_UNESCAPED_UNICODE));
+    $menu = Module::getInstanceByName('ciociamenu');
+    if (!$menu) {
+        throw new RuntimeException('Module ciociamenu not found in modules/ (shop/modules/ciociamenu)');
+    }
+    if (!Module::isInstalled('ciociamenu') && !$menu->install()) {
+        throw new RuntimeException('Could not install module ciociamenu');
+    }
+    $items = $menu->rebuildMenu();
+    echo 'Catalog: out-of-stock orders ' . ($catalog['order_out_of_stock'] ? 'allowed' : 'denied')
+        . ', iframes ' . ($catalog['allow_iframes'] ? 'allowed' : 'not allowed')
+        . ', top menu: ' . ($items ?: 'empty until the import creates the categories') . ".\n";
+>>>>>>> bb28b63 (feat: add top menu module and catalog settings)
 }
