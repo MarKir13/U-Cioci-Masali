@@ -84,14 +84,15 @@ Sequentially the import would take about 35 minutes, most of it image uploads. M
 
 | Approach | Full import |
 |---|---|
-| One thread per product doing everything, 4 workers, product saves under a lock | 744 s |
+| Each worker does a whole product (save, stock, promotion, images), 4 workers | 744 s |
 | The same with 8 workers | 642 s |
-| **Two phases, 8 workers (chosen)** | MEASURED |
+| Two phases: all products first, then all images, 8 workers | 697 s |
+| **Whole product per worker, 8 workers, stock row taken from the create response (chosen)** | **631 s** |
 
 A product save alone takes 0.07 s; uploads scale from 2.6 images/s alone to 12.4/s with 8 at a time and 14/s
-with 12. With everything mixed, uploads slowed the saves down, and the saves are serialised by the lock (because of
-the deadlock in search indexing), so they held everything up. The chosen approach first saves every product with
-its stock and promotion, then uploads all images, both with a thread pool of 8 workers (`--workers`).
+with 12. The product saves are serialised by a lock (because of the deadlock in search indexing); everything else
+runs in a thread pool of 8 workers (`--workers`). Doubling the workers from 4 to 8 gained only 14%, and separating
+saves from uploads did not help: the limit is the shop making 5 thumbnails of every image, which the API cannot skip.
 
 ## Decision
 
@@ -102,7 +103,7 @@ its stock and promotion, then uploads all images, both with a thread pool of 8 w
 - Steps in order: read the shop once; categories, parents first; brands as manufacturers; products with their stock
   and promotion; their images; on a full run, delete products, categories and manufacturers that are not in the data
   (the installer's demo catalogue). Each step creates, updates or leaves a record alone, comparing with what the shop
-  has.
+  has. A rejected record is not deleted: a run with missing image files must not remove products imported before.
 - Updates always send the complete set of fields the importer manages.
 - Prices: net = gross / (1 + VAT), 6 decimals, which gives back every source price to the grosz (unit test on all
   products). The VAT group is the active group whose only rate is the product's rate, found through the API.
@@ -116,7 +117,10 @@ its stock and promotion, then uploads all images, both with a thread pool of 8 w
 
 ## Consequences
 
-- A full import on a fresh shop takes MEASURED (4 workers); a second run takes MEASURED and reports 0 created.
+- A full import on a fresh shop takes 631 s (8 workers, Docker with 12 CPUs); a second run takes 30 s and reports
+  everything unchanged. That fits D2 (30 minutes for 1000 products), but it is most of W3's 15 minutes from a clean
+  clone, which also includes the install and downloading the 585 MB image archive. #71 has to measure the whole
+  path, and on a machine with fewer CPUs the import is slower.
 - Renaming a category in the back office makes the next import create it again under the old name. The importer owns
   the catalogue: change products and categories in the data, not in the back office.
 - A product whose images change but keep the same count is not re-uploaded. Changing an image means deleting the
