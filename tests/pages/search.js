@@ -5,9 +5,9 @@ const MIN_WORD_LENGTH = 3;
 
 const containsQuery = (name, query) => name.toLocaleLowerCase("pl").includes(query.toLocaleLowerCase("pl"));
 
-// Search: the header field (shop/themes/ciocia/modules/ps_searchbar) and the results page, which is
-// Classic's product list. Result names are read from the page's schema.org ItemList (JSON-LD), because the
-// product tiles cut long names to 30 characters.
+// Search: the header field (shop/themes/ciocia/modules/ps_searchbar) and the results page, which uses the
+// ciocia product list (see CatalogPage). Result names are read from the page's schema.org ItemList (JSON-LD),
+// which always holds the full names, whatever the tiles show (Classic cut them to 30 characters).
 export class SearchPage {
   constructor(page) {
     this.page = page;

@@ -11,9 +11,10 @@ export function canBeAdded(product, quantity) {
 }
 
 // Catalogue: categories of the top menu, their product lists and the product page with "Dodaj do koszyka".
-// The ciocia theme overrides only the menu; the category and product templates are Classic's, so the
-// selectors are Classic ids and classes. Nothing here depends on product names or ids, because the same
-// test runs on the demo products now and on the imported ones later.
+// The product page is Classic's. The ciocia theme has its own menu and product lists (#75), which keep
+// Classic's ids and classes (#js-product-list, .product-miniature, a.product-thumbnail,
+// .product-flag.out_of_stock), so the selectors are the same for both. Nothing here depends on product
+// names or ids, because the same test runs on the demo products now and on the imported ones later.
 export class CatalogPage {
   constructor(page) {
     this.page = page;
