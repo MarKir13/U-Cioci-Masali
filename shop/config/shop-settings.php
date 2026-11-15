@@ -105,6 +105,8 @@ return [
             ['image' => 'mi-slide-1.jpg', 'alt' => 'Wnętrze sklepu stacjonarnego Magiczne Indie'],
             ['image' => 'mi-slide-2.jpg', 'alt' => 'Półki z suplementami w sklepie Magiczne Indie'],
         ],
+    ],
+
     // Product catalogue, filled by the importer (deploy/importer, issue #70)
     'catalog' => [
         // Top menu: these top-level categories, in this order. Names exactly as in

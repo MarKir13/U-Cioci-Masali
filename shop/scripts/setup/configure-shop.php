@@ -388,6 +388,7 @@ function configurePromoCode(array $promo)
     $rule->active = true;
     $rule->id ? $rule->update() : $rule->add();
     echo 'Promo code ' . $promo['code'] . ': ' . $promo['percent'] . "% off the products, once per customer.\n";
+}
 
 /**
  * Stock rules, HTML in descriptions, and the top menu for the categories the importer creates (issue #70).
