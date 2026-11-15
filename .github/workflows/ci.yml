@@ -31,6 +31,15 @@ jobs:
       - name: Unit tests
         working-directory: scraper
         run: python -m pytest
+      # The importer (deploy/importer) is Python too: ruff above already covers it. Its tests need no shop,
+      # only the files in scraper-results/. Same job, so the required check `scraper` keeps its name.
+      - name: Install importer dependencies
+        if: ${{ !cancelled() }}
+        run: pip install -r deploy/importer/requirements.txt
+      - name: Importer unit tests
+        if: ${{ !cancelled() }}
+        working-directory: deploy/importer
+        run: python -m pytest
 
   repo-hygiene:
     runs-on: ubuntu-24.04
@@ -57,7 +66,7 @@ jobs:
       - uses: actions/checkout@v7
       - name: Dockerfiles (hadolint)
         if: ${{ !cancelled() }}
-        run: docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile
+        run: docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile
       - name: Shell scripts (shellcheck)
         if: ${{ !cancelled() }}
         # -z and xargs -0 pass each path as one argument, even with spaces in it
