@@ -23,7 +23,9 @@ const asCartLines = (products) =>
   products.map(({ id, quantity }) => ({ id, quantity })).sort((a, b) => a.id.localeCompare(b.id));
 const totalQuantity = (products) => products.reduce((sum, p) => sum + p.quantity, 0);
 
-// Step 2: a product that is not in the cart yet, and a word of its name that the search finds only in names
+// Step 2: a product that is not in the cart yet and can be added, and a word of its name that the search finds
+// only in names. The target must be addable itself: its word may find no other product ("Customizable" finds only
+// "Customizable mug", whose required customisation disables the button), and then step 2 would have nothing to add.
 async function findSearchTarget(catalog, search, rng, skipProductIds) {
   let tried = 0;
   const categories = await catalog.categories();
@@ -33,6 +35,7 @@ async function findSearchTarget(catalog, search, rng, skipProductIds) {
       for (const item of rng.sample(listed, listed.length)) {
         if (tried++ === SEARCH_CANDIDATES) return null;
         const product = await catalog.openProduct(item.url);
+        if (!canBeAdded(product, 1)) continue;
         const query = await search.queryFor(product.name, rng);
         if (query) return { product, query };
       }
@@ -95,7 +98,10 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng, c
     const cart = new CartPage(page);
 
     const target = await findSearchTarget(catalog, search, rng, new Set(addedProducts.map((p) => p.productId)));
-    expect(target, "a product outside the cart with a word of its name that the search finds only in names").not.toBeNull();
+    expect(
+      target,
+      "a product outside the cart that can be added, with a word of its name that the search finds only in names",
+    ).not.toBeNull();
     const { product: searched, query } = target;
 
     await search.searchFromHeader(query);
