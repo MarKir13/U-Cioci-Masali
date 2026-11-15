@@ -15,7 +15,8 @@
  * Kept for other code:
  * - .js-product-miniature with data-id-product: Classic's scripts and blockwishlist, which puts its heart
  *   button into .thumbnail-container;
- * - a.product-thumbnail: the E2E tests open a product through it (tests/support/temp-cart.js).
+ * - a.product-thumbnail, .product-flag.out_of_stock and #js-product-list .product-miniature: the E2E tests
+ *   read lists and open products through them (tests/pages/catalog.js).
  * The cart button deliberately has no data-button-action="add-to-cart": the E2E tests click
  * button[data-button-action="add-to-cart"] on the product page, where ps_categoryproducts also shows cards.
  * custom.js sends this form without a reload and opens the same cart window; without JavaScript the form
