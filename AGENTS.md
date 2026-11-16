@@ -84,6 +84,7 @@ Run from the repository root unless noted.
 | JavaScript lint (after `npm ci` once) | `npx eslint` |
 | E2E setup, once (from `tests/`) | `npm ci` and `npx playwright install chromium` |
 | E2E tests (from `tests/`; another shop: `BASE_URL=https://host:port npm test`) | `npm test` |
+| E2E stability, 3 runs in a row (from `tests/`; same seed, run `npm test` 3 times for different picks) | `npm test -- --repeat-each=3` |
 | Open the last E2E report (from `tests/`) | `npm run report` |
 | Smoke test of the running shop (ports from `HTTP_PORT`, `HTTPS_PORT`) | `sh .github/scripts/smoke-test.sh` |
 | Review the open PRs that wait for your review (Claude Code; prints review comments to paste, posts nothing) | `/review-prs`, or `/review-prs 67` for chosen PRs |
