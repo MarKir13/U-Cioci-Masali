@@ -4783,11 +4783,8 @@ body#checkout #wrapper #checkout-addresses-step .js-address-error {
  *
  * Room for D3: the Omnibus line prints into .product-prices through displayProductPriceBlock
  * ("after_price", "omnibus_price", "unit_price"); the variant selector styles are in this section too.
- * --ciocia-bottom-nav-height is set by the mobile bottom navigation bar (#32); until then it is 0.
+ * --ciocia-bottom-nav-height belongs to the mobile bottom navigation bar (#32, defined on :root); it is only read here, with a fallback.
  */
-body#product {
-  --ciocia-bottom-nav-height: 0px;
-}
 
 /* No sideways scrolling on phones, whatever is inside the page. */
 body#product #wrapper,
@@ -4997,17 +4994,35 @@ body#product .images-container .scroll-box-arrows {
   display: none;
 }
 
-/* Zoom window: the large photo fits the screen, and stays sharp instead of being stretched. */
+/* Zoom window. Classic shifts .modal-body by -30% and fixes its width; reset that and lay it out ourselves. */
+body#product #product-modal .modal-dialog {
+  width: auto;
+  max-width: min(60rem, calc(100vw - 1rem));
+  margin: 0.5rem auto;
+}
+
 body#product #product-modal .modal-content {
+  padding: 0.75rem;
   border-radius: 8px;
+  background: #fff;
 }
 
 body#product #product-modal .modal-body {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 1rem;
   align-items: flex-start;
   justify-content: center;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+body#product #product-modal figure {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
 }
 
 body#product #product-modal .product-cover-modal {
@@ -5017,12 +5032,106 @@ body#product #product-modal .product-cover-modal {
   max-height: 80vh;
   height: auto;
   margin: 0 auto;
+  background: #fff;
   object-fit: contain;
 }
 
-body#product #product-modal .modal-body > aside,
-body#product #product-modal .js-modal-product-images {
+body#product #product-modal .image-caption {
+  width: auto;
   max-width: 100%;
+  padding: 0.5rem 0 0;
+  background: transparent;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Thumbnails: a side column on desktop, scrolling inside its own height. */
+body#product #product-modal aside.thumbnails {
+  flex: 0 0 8.75rem;
+  width: 8.75rem;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+body#product #product-modal .arrows {
+  display: none;
+}
+
+body#product #product-modal .js-modal-mask,
+body#product #product-modal .mask {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+body#product #product-modal .js-modal-product-images {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body#product #product-modal .thumb-container {
+  margin: 0 0 0.5rem;
+}
+
+body#product #product-modal .thumb-container img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Phones: the large photo at its natural size in a box that scrolls and pinch-zooms, thumbnails in one strip below. */
+@media (max-width: 767.98px) {
+  body#product #product-modal .modal-dialog {
+    max-width: none;
+    margin: 0.5rem;
+  }
+
+  body#product #product-modal .modal-content {
+    padding: 0.5rem;
+  }
+
+  body#product #product-modal .modal-body {
+    display: block;
+  }
+
+  body#product #product-modal figure {
+    max-height: calc(100vh - 9rem);
+    max-height: calc(100dvh - 9rem);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+
+  body#product #product-modal .product-cover-modal {
+    max-width: none;
+    max-height: none;
+    margin: 0;
+  }
+
+  body#product #product-modal .image-caption {
+    position: sticky;
+    left: 0;
+    width: 100%;
+  }
+
+  body#product #product-modal aside.thumbnails {
+    width: auto;
+    max-height: none;
+    margin-top: 0.5rem;
+    overflow: visible;
+  }
+
+  body#product #product-modal .js-modal-product-images {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+  }
+
+  body#product #product-modal .thumb-container {
+    flex: 0 0 4.5rem;
+    margin: 0;
+  }
 }
 
 /* Name, brand and index. */
@@ -5418,13 +5527,9 @@ body#product #main .product-minimal-quantity {
   font-size: 0.8125rem;
 }
 
-/* The button stays in reach on phones: space under the page for the bottom navigation bar and the notches. */
-body#product #wrapper {
-  padding-bottom: calc(var(--ciocia-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
-}
-
+/* The button stays in reach on phones: the bottom navigation bar (#32) brings its own spacer, so only a scroll margin here. */
 body#product #main .product-add-to-cart {
-  scroll-margin-bottom: calc(var(--ciocia-bottom-nav-height) + 6rem);
+  scroll-margin-bottom: calc(var(--ciocia-bottom-nav-height, 0px) + 6rem);
 }
 
 /* Share links: small and quiet under the form. */
