@@ -77,10 +77,14 @@ def run(api: ShopApi, args: argparse.Namespace) -> int:
         report.reject("products", source_id, reason)
     for line_number, reason in unreadable:
         report.reject("products", f"products.jsonl line {line_number}", reason)
-    # Rejected products are still in the data: the delete step must keep their copies in the shop
-    rejected_product_ids = {source_id for source_id, _ in rejected}
     full_run = not args.limit and not args.categories
     selected = select_products(products, categories, args)
+    # Image files only for the selected products: a subset run does not need the images of the others
+    selected, without_images = data.with_images(selected, args.data_dir)
+    for source_id, reason in without_images:
+        report.reject("products", source_id, reason)
+    # Rejected products are still in the data: the delete step must keep their copies in the shop
+    rejected_product_ids = {source_id for source_id, _ in rejected + without_images}
     log.info("data: %d categories, %d products (%d selected)", len(categories), len(products), len(selected))
 
     api.load_languages()

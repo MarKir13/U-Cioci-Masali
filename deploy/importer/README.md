@@ -7,8 +7,9 @@ images. A second run finds everything and changes nothing. Design and reasons:
 
 ## Running it
 
-The shop must be running, and the images unpacked into `scraper-results/images/` (see the scraper README). From the
-repository root:
+The shop must be running, and the images unpacked into `scraper-results/images/` (see the scraper README). Only the
+images of the selected products are needed: with `--categories 85,99`, the files of other products may be missing.
+From the repository root:
 
 ```sh
 docker compose -f deploy/compose.yaml --profile init run --rm --build importer
