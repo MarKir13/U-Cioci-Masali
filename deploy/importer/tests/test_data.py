@@ -43,14 +43,15 @@ def write_products(data_dir: Path, *products: dict) -> None:
 
 def test_a_valid_product_is_loaded(data_dir):
     write_products(data_dir, PRODUCT)
-    products, rejected = data.load_products(data_dir, data.load_schema(data_dir))
+    products, rejected, unreadable = data.load_products(data_dir, data.load_schema(data_dir))
     assert [p["id"] for p in products] == [100]
     assert rejected == []
+    assert unreadable == []
 
 
 def test_a_product_without_a_name_is_rejected_with_the_reason(data_dir):
     write_products(data_dir, {**PRODUCT, "name": ""})
-    products, rejected = data.load_products(data_dir, data.load_schema(data_dir))
+    products, rejected, _ = data.load_products(data_dir, data.load_schema(data_dir))
     assert products == []
     assert rejected[0][0] == 100
     assert rejected[0][1].startswith("name:")
@@ -59,9 +60,20 @@ def test_a_product_without_a_name_is_rejected_with_the_reason(data_dir):
 def test_a_product_whose_image_file_is_missing_is_rejected(data_dir):
     write_products(data_dir, PRODUCT)
     (data_dir / "images" / "100-1.jpg").unlink()
-    products, rejected = data.load_products(data_dir, data.load_schema(data_dir))
+    products, rejected, _ = data.load_products(data_dir, data.load_schema(data_dir))
     assert products == []
     assert "image file missing" in rejected[0][1]
+
+
+def test_an_unreadable_line_is_reported_and_the_other_products_still_load(data_dir):
+    good = json.dumps(PRODUCT, ensure_ascii=False)
+    (data_dir / "products.jsonl").write_text(f'{{"id": 7, "name": "cut off\n[1, 2]\n{good}\n', encoding="utf-8")
+    products, rejected, unreadable = data.load_products(data_dir, data.load_schema(data_dir))
+    assert [p["id"] for p in products] == [100]
+    assert rejected == []
+    assert [number for number, _ in unreadable] == [1, 2]
+    assert unreadable[0][1].startswith("not valid JSON")
+    assert unreadable[1][1] == "not a JSON object"
 
 
 def test_the_real_categories_are_valid():

@@ -54,7 +54,9 @@ def read_shop(api: ShopApi) -> Shop:
     products = api.list("products", display="full")
     stock_rows = api.list("stock_availables", display="full", filters={"id_product_attribute": 0})
     specific_prices: dict[int, list[dict]] = {}
-    for price in api.list("specific_prices", display="full"):
+    # Only prices not made by a catalogue price rule: set_promotion deletes the ones it does not want, and
+    # prices from a rule belong to that rule (the shop recreates them from it)
+    for price in api.list("specific_prices", display="full", filters={"id_specific_price_rule": 0}):
         specific_prices.setdefault(int(price["id_product"]), []).append(price)
 
     return Shop(
@@ -364,6 +366,7 @@ def remove_other_records(
     category_ids: dict[int, int],
     brand_ids: dict[str, int],
     report: Report,
+    all_lines_read: bool = True,
 ) -> None:
     """Deletes products, categories and manufacturers that are not in the data, such as the demo ones.
 
@@ -373,13 +376,17 @@ def remove_other_records(
     with the image archive half unpacked would delete every product whose image file is missing. Products are
     kept by their source ID. A rejected category or manufacturer cannot be matched to its copy in the shop, so
     when any was rejected, that whole kind is left alone in this run; manufacturers also when a product was
-    rejected, because its brand is unknown.
+    rejected, because its brand is unknown. An unreadable line of products.jsonl (all_lines_read False) has no
+    product ID at all, so then no product and no manufacturer is deleted.
     """
-    references = {str(p["id"]) for p in products} | {str(i) for i in rejected_product_ids}
-    for product in shop.all_products:
-        reference = str(product.get("reference", ""))
-        if reference not in references:
-            _delete(api, "products", int(product["id"]), reference or text(product.get("name")), report)
+    if not all_lines_read:
+        log.warning("products.jsonl has unreadable lines, so no product is deleted")
+    else:
+        references = {str(p["id"]) for p in products} | {str(i) for i in rejected_product_ids}
+        for product in shop.all_products:
+            reference = str(product.get("reference", ""))
+            if reference not in references:
+                _delete(api, "products", int(product["id"]), reference or text(product.get("name")), report)
 
     if report.rejected_of("categories"):
         log.warning("categories rejected in this run, so no category is deleted")
@@ -390,7 +397,7 @@ def remove_other_records(
         for category in sorted(others, key=lambda c: -int(c["level_depth"])):
             _delete(api, "categories", int(category["id"]), text(category["name"]), report)
 
-    if report.rejected_of("manufacturers") or rejected_product_ids:
+    if report.rejected_of("manufacturers") or rejected_product_ids or not all_lines_read:
         log.warning("manufacturers or products rejected in this run, so no manufacturer is deleted")
     else:
         for name, manufacturer in shop.manufacturers.items():

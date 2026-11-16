@@ -1,12 +1,18 @@
 <?php
 /**
- * Keeps the top menu (module ps_mainmenu) in step with the product categories (issue #70).
+ * Keeps the storefront in step with the catalogue the importer writes through the Webservice API (issue #70).
  *
- * The importer creates the categories through the Webservice API, which cannot change the menu settings,
- * and their IDs differ between installs. This module listens to PrestaShop's category events, which fire
- * for API requests too, and after every change points the menu at the top-level categories named in
- * shop/config/shop-settings.php ('catalog' => 'menu_categories'). configure-shop.php stores that list as
- * CIOCIA_MENU_CATEGORIES, installs this module and calls rebuildMenu() once.
+ * 1. The top menu (module ps_mainmenu). The API cannot change the menu settings, and category IDs differ
+ *    between installs. After every category change this module points the menu at the top-level categories
+ *    named in shop/config/shop-settings.php ('catalog' => 'menu_categories').
+ * 2. The page cache. The home page sections (new products, specials, featured, best sellers) are cached by
+ *    Smarty and cleared by hooks that only the back office fires, so after an API write they would keep old
+ *    prices, stock and images. After every change to a product, a specific price, a stock row, an image or a
+ *    category, this module clears that cache.
+ *
+ * Both work through PrestaShop's object events (actionObject...After), which fire for API requests too.
+ * configure-shop.php stores the menu list as CIOCIA_MENU_CATEGORIES, installs this module, registers its
+ * hooks and calls rebuildMenu() once.
  */
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -16,6 +22,10 @@ class Ciociamenu extends Module
 {
     const MENU_CATEGORIES = 'CIOCIA_MENU_CATEGORIES';
     const MENU_ITEMS = 'MOD_BLOCKTOPMENU_ITEMS';
+
+    // Fired for every object PrestaShop saves or deletes; the module reacts only to CATALOG_CLASSES
+    const HOOKS = ['actionObjectAddAfter', 'actionObjectUpdateAfter', 'actionObjectDeleteAfter'];
+    const CATALOG_CLASSES = ['Category', 'Product', 'SpecificPrice', 'StockAvailable', 'Image'];
 
     public function __construct()
     {
@@ -27,31 +37,49 @@ class Ciociamenu extends Module
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];
         parent::__construct();
 
-        $this->displayName = 'Ciocia: menu kategorii';
-        $this->description = 'Ustawia górne menu na kategorie z listy w shop-settings.php.';
+        $this->displayName = 'Ciocia: menu kategorii i odświeżanie katalogu';
+        $this->description = 'Ustawia górne menu na kategorie z listy w shop-settings.php i czyści pamięć '
+            . 'podręczną stron po zmianach katalogu, także przez API.';
     }
 
     public function install()
     {
-        return parent::install()
-            && $this->registerHook('actionObjectCategoryAddAfter')
-            && $this->registerHook('actionObjectCategoryUpdateAfter')
-            && $this->registerHook('actionObjectCategoryDeleteAfter');
+        return parent::install() && $this->registerHooks();
     }
 
-    public function hookActionObjectCategoryAddAfter()
+    /** Safe to call again: PrestaShop skips a hook the module is already registered on. */
+    public function registerHooks()
     {
-        $this->rebuildMenu();
+        return $this->registerHook(self::HOOKS);
     }
 
-    public function hookActionObjectCategoryUpdateAfter()
+    public function hookActionObjectAddAfter($params)
     {
-        $this->rebuildMenu();
+        $this->catalogChanged($params['object']);
     }
 
-    public function hookActionObjectCategoryDeleteAfter()
+    public function hookActionObjectUpdateAfter($params)
     {
-        $this->rebuildMenu();
+        $this->catalogChanged($params['object']);
+    }
+
+    public function hookActionObjectDeleteAfter($params)
+    {
+        $this->catalogChanged($params['object']);
+    }
+
+    private function catalogChanged($object)
+    {
+        // get_class() gives the class without "Core" (SpecificPrice, not SpecificPriceCore)
+        if (!in_array(get_class($object), self::CATALOG_CLASSES, true)) {
+            return;
+        }
+        if ($object instanceof Category) {
+            $this->rebuildMenu();
+        }
+        // The cached page parts only, not the compiled templates (Tools::clearSmartyCache() would drop those
+        // too and make the next page views slow). Cheap while the cache is empty, as during an import.
+        Tools::clearCache();
     }
 
     /**

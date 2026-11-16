@@ -72,9 +72,11 @@ def run(api: ShopApi, args: argparse.Namespace) -> int:
     categories, rejected = data.load_categories(args.data_dir, schema)
     for source_id, reason in rejected:
         report.reject("categories", source_id, reason)
-    products, rejected = data.load_products(args.data_dir, schema)
+    products, rejected, unreadable = data.load_products(args.data_dir, schema)
     for source_id, reason in rejected:
         report.reject("products", source_id, reason)
+    for line_number, reason in unreadable:
+        report.reject("products", f"products.jsonl line {line_number}", reason)
     # Rejected products are still in the data: the delete step must keep their copies in the shop
     rejected_product_ids = {source_id for source_id, _ in rejected}
     full_run = not args.limit and not args.categories
@@ -94,7 +96,9 @@ def run(api: ShopApi, args: argparse.Namespace) -> int:
 
     # Step 7: the installer's demo catalogue and anything else that is not in the data
     if full_run:
-        steps.remove_other_records(api, shop, products, rejected_product_ids, category_ids, brand_ids, report)
+        steps.remove_other_records(
+            api, shop, products, rejected_product_ids, category_ids, brand_ids, report, all_lines_read=not unreadable
+        )
     else:
         log.info("subset run (--limit or --categories): nothing is deleted")
 

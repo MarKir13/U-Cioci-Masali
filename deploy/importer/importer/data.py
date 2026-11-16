@@ -32,14 +32,28 @@ def load_categories(data_dir: Path, schema: dict) -> tuple[list[dict], list[tupl
     return _split(records, validator)
 
 
-def load_products(data_dir: Path, schema: dict) -> tuple[list[dict], list[tuple[int, str]]]:
-    """Valid products, and (id, reason) for the rest. A product whose image file is missing is invalid."""
+def load_products(data_dir: Path, schema: dict) -> tuple[list[dict], list[tuple[int, str]], list[tuple[int, str]]]:
+    """Valid products, (id, reason) for the invalid ones, and (line number, reason) for unreadable lines.
+
+    A product whose image file is missing is invalid. A line that is not a JSON object is unreadable: it has
+    no product ID, so the caller cannot tell which product it was.
+    """
     validator = validator_for(schema, "Product")
     records = []
+    unreadable = []
     with (data_dir / "products.jsonl").open(encoding="utf-8") as lines:
-        for line in lines:
-            if line.strip():
-                records.append(json.loads(line))
+        for number, line in enumerate(lines, 1):
+            if not line.strip():
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError as error:
+                unreadable.append((number, f"not valid JSON: {error.msg}"))
+                continue
+            if isinstance(record, dict):
+                records.append(record)
+            else:
+                unreadable.append((number, "not a JSON object"))
     valid, rejected = _split(records, validator)
 
     ok = []
@@ -49,7 +63,7 @@ def load_products(data_dir: Path, schema: dict) -> tuple[list[dict], list[tuple[
             rejected.append((product["id"], f"image file missing: {', '.join(missing)}"))
         else:
             ok.append(product)
-    return ok, rejected
+    return ok, rejected, unreadable
 
 
 def _split(records: list[dict], validator: Draft202012Validator) -> tuple[list[dict], list[tuple[int, str]]]:

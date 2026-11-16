@@ -171,7 +171,8 @@ Documentation is in English, except `docs/AI_LOG.md`.
   leaves out, so send the complete record; two product saves at the same time deadlock in PrestaShop's search index,
   so the importer saves products one at a time; and the HTML cleaner needs `var/cache/prod/purifier`, which
   `sync-code.sh` recreates. The top menu follows `catalog.menu_categories` in `shop/config/shop-settings.php` through
-  the module `ciociamenu`.
+  the module `ciociamenu`, which also clears the page cache after catalogue changes: PrestaShop's own cache hooks
+  fire only in the back office, not for API writes.
 - Scripts run on Linux but are edited on Windows and macOS. `.gitattributes` forces LF for `*.sh`, `*.php`, Dockerfiles
   and YAML; keep new script types covered.
 - `.gitignore` excludes `*.crt`, `*.key`, `*.pem`, `*.zip` and `*.tar.gz`, so certificates and archives must be

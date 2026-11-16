@@ -405,8 +405,15 @@ function configureCatalog(array $catalog)
     if (!$menu) {
         throw new RuntimeException('Module ciociamenu not found in modules/ (shop/modules/ciociamenu)');
     }
-    if (!Module::isInstalled('ciociamenu') && !$menu->install()) {
-        throw new RuntimeException('Could not install module ciociamenu');
+    if (!Module::isInstalled('ciociamenu')) {
+        if (!$menu->install()) {
+            throw new RuntimeException('Could not install module ciociamenu');
+        }
+    } elseif (!$menu->registerHooks()) {
+        // Already installed: a shop with an earlier version of the module gets the new hooks. Not right
+        // after install(), which registered them: PrestaShop's "already registered" check is cached within a
+        // request, so a second call would insert them twice (duplicate key error).
+        throw new RuntimeException('Could not register the hooks of module ciociamenu');
     }
     $items = $menu->rebuildMenu();
     echo 'Catalog: out-of-stock orders ' . ($catalog['order_out_of_stock'] ? 'allowed' : 'denied')

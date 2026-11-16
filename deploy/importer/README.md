@@ -30,7 +30,8 @@ Options go after `importer`, for example `... run --rm importer --limit 20`. Onl
 `--categories`) deletes products, categories and manufacturers that are not in the data, such as the installer's
 demo catalogue; a subset run never deletes anything. A rejected record still counts as in the data: its copy from
 an earlier run stays in the shop, and if a category or manufacturer was rejected, no category or manufacturer is
-deleted in that run.
+deleted in that run. If a line of `products.jsonl` cannot be read, no product is deleted either, since that line's
+product is unknown. Specific prices made by a catalogue price rule are never touched.
 
 ## What it prints
 
@@ -45,8 +46,12 @@ images                   0          0       4822          0          0
 
 - **created**, **updated**, **deleted**: written to the shop in this run.
 - **unchanged**: already in the shop with the same values.
-- **rejected**: not saved, with the reason in the log as a `REJECTED` line: a record that breaks
-  `scraper-results/schema.json`, a missing image file, or an error message from the shop.
+- **rejected**: not saved, with the reason in the log as a `REJECTED` line: a line of `products.jsonl` that is not
+  valid JSON, a record that breaks `scraper-results/schema.json`, a missing image file, or an error message from the
+  shop.
+
+After the import the storefront shows the new data at once: the shop module `ciociamenu` updates the top menu and
+clears the page cache whenever the API changes a category, product, price, stock row or image.
 
 The full log is in `deploy/logs/importer.log` (gitignored). The exit code is 0 when nothing was rejected, 1 when
 something was, and 2 when the import could not start (no key, shop not reachable, API off).

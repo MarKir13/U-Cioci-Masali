@@ -107,3 +107,22 @@ def test_a_rejected_category_stops_deleting_categories():
     remove_other_records(api, shop_after_an_earlier_import(), [{"id": 100}, {"id": 200}], set(), {}, {}, report)
     assert ("products", 1) in api.deleted
     assert not [d for d in api.deleted if d[0] == "categories"]
+
+
+def test_an_unreadable_line_stops_deleting_products_and_manufacturers():
+    # Line 2 of products.jsonl could not be read: it may be product 200, whose copy must stay
+    api = RecordingApi()
+    report = Report()
+    report.reject("products", "products.jsonl line 2", "not valid JSON")
+    remove_other_records(
+        api,
+        shop_after_an_earlier_import(),
+        [{"id": 100}],
+        set(),
+        {8: 10},
+        {"Himalaya": 5},
+        report,
+        all_lines_read=False,
+    )
+    # Only the demo category: no product (not even the demo one) and no manufacturer
+    assert api.deleted == [("categories", 3)]

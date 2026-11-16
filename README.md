@@ -222,7 +222,9 @@ check. The top menu shows the categories listed under `catalog` in
 The Playwright suite in [`tests/`](tests/) runs the W4 purchase scenario in headless Chromium against a running
 shop. It has its own [`package.json`](tests/package.json), separate from the ESLint tools in the root one.
 
-Requirements: [Node.js](https://nodejs.org/) 24 and a running shop (see [Running the shop](#running-the-shop)).
+Requirements: [Node.js](https://nodejs.org/) 24 and a running shop with the data imported (see
+[Running the shop](#running-the-shop) and [Loading the data into the shop](#loading-the-data-into-the-shop)). Until
+the import, the shop has no categories and the top menu is empty, so the first steps fail.
 
 1. Install the dependencies and the browser once, from `tests/`:
    ```sh

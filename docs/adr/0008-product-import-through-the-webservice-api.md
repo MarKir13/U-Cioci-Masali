@@ -26,6 +26,11 @@ What a test install showed before the design was fixed:
   without the folder every product save answered HTTP 500 although the product was saved.
 - The API refuses a description with `<iframe>` (product 9536 embeds a YouTube video) unless iframes are allowed.
 - The top menu (`ps_mainmenu`) points at category IDs, which the API cannot set and which differ between installs.
+- API writes leave the home page stale (found in review). The home page sections (new products, specials, featured,
+  best sellers) are cached by Smarty and cleared by `actionProductAdd`, `actionProductUpdate` and similar hooks that
+  only the back office fires; `ps_specials` listens to `actionObjectSpecificPriceCore...`, which never fires, because
+  the event uses the class name `SpecificPrice`. A first import looks right only because deleting the demo products
+  clears those caches as a side effect.
 - One image upload takes about 0.35 s, because PrestaShop makes 5 thumbnail sizes from it; a product save about 0.1 s.
 
 ## Options considered
@@ -77,6 +82,12 @@ cluster; the hash spreads them. Python's `hash()` is not used: it changes every 
 - **A small module, `ciociamenu` (chosen):** it listens to category events, which fire for API requests too, and points
   the menu at the top-level categories named in `shop/config/shop-settings.php` after every change.
 
+The stale page cache has the same choices: a host command after the import (`exec` or `restart shop`) would not
+work from the one-command init (#71). The same module therefore also listens to the general object events and,
+after a change to a category, product, specific price, stock row or image, clears Smarty's page cache
+(`Tools::clearCache()`, not the compiled templates). During an import the cache is empty, so this costs almost
+nothing.
+
 ### Speed
 
 Sequentially the import would take about 35 minutes, most of it image uploads. Measured on the test install
@@ -104,6 +115,8 @@ saves from uploads did not help: the limit is the shop making 5 thumbnails of ev
   and promotion; their images; on a full run, delete products, categories and manufacturers that are not in the data
   (the installer's demo catalogue). Each step creates, updates or leaves a record alone, comparing with what the shop
   has. A rejected record is not deleted: a run with missing image files must not remove products imported before.
+  An unreadable line of `products.jsonl` is rejected too, and then no product is deleted in that run. Specific prices
+  made by a catalogue price rule are left alone.
 - Updates always send the complete set of fields the importer manages.
 - Prices: net = gross / (1 + VAT), 6 decimals, which gives back every source price to the grosz (unit test on all
   products). The VAT group is the active group whose only rate is the product's rate, found through the API.
@@ -112,7 +125,7 @@ saves from uploads did not help: the limit is the shop making 5 thumbnails of ev
 - Weight and stock: the rules above, in `importer/mapping.py` with unit tests.
 - Shop side: `sync-code.sh` recreates `var/cache/prod/purifier` after clearing the cache; `shop-settings.php` gets a
   `catalog` section (menu categories, out-of-stock orders denied, iframes allowed) applied by `configure-shop.php`,
-  which also installs `ciociamenu`; `php.ini` sets `zend.exception_ignore_args = On`, because a crash inside the API
+  which also installs `ciociamenu` (menu and page cache); `php.ini` sets `zend.exception_ignore_args = On`, because a crash inside the API
   wrote the first 15 characters of the key into the container log as a stack trace argument.
 
 ## Consequences
