@@ -4871,8 +4871,13 @@ body#product .images-container .layer:focus-visible {
   color: var(--ciocia-primary);
 }
 
+/* The flags list is a direct child of #content (next to .images-container, not inside it); #content is their positioning parent. */
+body#product #content {
+  position: relative;
+}
+
 /* Flags over the photo: the discount is shown by the badge next to the price, as on the source; "Nowy" stays, small. */
-body#product .images-container .product-flags {
+body#product #content > .product-flags {
   top: 0.75rem;
   left: 0.75rem;
   z-index: 2;
@@ -4881,7 +4886,7 @@ body#product .images-container .product-flags {
   list-style: none;
 }
 
-body#product .images-container .product-flags li.product-flag {
+body#product #content > .product-flags li.product-flag {
   position: static;
   min-height: 0;
   margin: 0 0 0.375rem;
@@ -4896,8 +4901,8 @@ body#product .images-container .product-flags li.product-flag {
   text-transform: uppercase;
 }
 
-body#product .images-container .product-flags li.product-flag.discount,
-body#product .images-container .product-flags li.product-flag.on-sale {
+body#product #content > .product-flags li.product-flag.discount,
+body#product #content > .product-flags li.product-flag.on-sale {
   display: none;
 }
 
