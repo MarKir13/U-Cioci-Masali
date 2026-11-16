@@ -4,6 +4,7 @@ import { CartPage } from "../pages/cart.js";
 import { CatalogPage, canBeAdded } from "../pages/catalog.js";
 import { SearchPage } from "../pages/search.js";
 import { CheckoutPage } from "../pages/checkout.js";
+import { OrdersPage } from "../pages/orders.js";
 import { cartSnapshot } from "../support/cart-state.js";
 import { chooseCarrier, newCarriers, newCustomer, testAddress } from "../support/data.js";
 import { mailpitUrl, messagesTo } from "../support/mailpit.js";
@@ -45,7 +46,6 @@ async function findSearchTarget(catalog, search, rng, skipProductIds) {
 }
 
 // The W4 scenario is one test: every step needs what the previous one left (cart, customer, order).
-// Issues E2E 2/5 to 5/5 replace each test.step.skip with the real step.
 test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng, consoleErrors }) => {
   const addedProducts = await test.step("1. Add 10 products in varying quantities from 2 categories to the cart", async () => {
     const catalog = new CatalogPage(page);
@@ -179,7 +179,7 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng, c
     );
   });
 
-  // Step 8 looks for the order e-mail to this address; steps 9–10 log in again with it
+  // Step 8 looks for the order e-mail to this address. The customer stays logged in up to step 10.
   const customer = await test.step("4. Register a new account", async () => {
     const account = new AccountPage(page);
     const customer = newCustomer();
@@ -257,7 +257,6 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng, c
   });
 
   // Steps 9–10 look this order up in the customer's order history
-  // eslint-disable-next-line no-unused-vars -- used by steps 9–10 (E2E 5/5)
   const orderReference = await test.step("8. Confirm the order", async () => {
     // The total the customer sees before confirming: products + delivery, and later the order's total (#91)
     const shownTotal = await checkout.summaryTotalGrosze();
@@ -288,6 +287,27 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng, c
     return reference;
   });
 
-  await test.step.skip("9. Check the order status", async () => {});
-  await test.step.skip("10. Download the VAT invoice", async () => {});
+  const orders = new OrdersPage(page);
+
+  // Invoice link of the order, for step 10
+  const invoiceUrl = await test.step("9. Check the order status", async () => {
+    await orders.openFromHeader();
+    const order = await orders.readOrder(orderReference);
+    expect(order.status, `status of order ${orderReference}`).toBe(texts.history.cashOnDeliveryStatus);
+    expect(order.payment, `payment of order ${orderReference}`).toBe(texts.checkout.cashOnDelivery);
+    test.info().annotations.push({ type: "order", description: `${orderReference}: ${order.status}` });
+    return order.invoiceUrl;
+  });
+
+  await test.step("10. Download the VAT invoice", async () => {
+    // The shop issues the invoice when a cash on delivery order is placed (#47)
+    expect(invoiceUrl, `invoice link of order ${orderReference} in the order history`).not.toBeNull();
+    // page.request shares the page's cookies, so the shop sees the logged-in customer who owns the order
+    const response = await page.request.get(invoiceUrl);
+    expect(response.status(), `GET ${invoiceUrl}`).toBe(200);
+    expect(response.headers()["content-type"], "invoice content type").toContain("application/pdf");
+    const body = await response.body();
+    expect(body.subarray(0, 4).toString("latin1"), "invoice file starts like a PDF").toBe("%PDF");
+    await test.info().attach(`invoice-${orderReference}.pdf`, { body, contentType: "application/pdf" });
+  });
 });
