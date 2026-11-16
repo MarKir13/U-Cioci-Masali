@@ -72,12 +72,15 @@ Run from the repository root unless noted.
 | Apply changes from `shop/` | same command as above |
 | Follow install logs (done at `Starting web server`) | `docker compose -f deploy/compose.yaml logs -f shop` |
 | Re-apply `shop/config/shop-settings.php` and shop content to a running shop, after a rebuild (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh`, then the same with `30-configure-shop.sh` |
+| Re-apply the Webservice API key and its permissions (`PS_WEBSERVICE_KEY`) to a running shop, after `up -d` (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/40-webservice.sh` |
 | Stop, keeping data | `docker compose -f deploy/compose.yaml down` |
+| Import the scraped data into the running shop (images unpacked into `scraper-results/images/`; `--limit N` for a quick run) | `docker compose -f deploy/compose.yaml --profile init run --rm --build importer` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
+| Importer unit tests (from `deploy/importer/`) | `python -m pytest` |
 | Scraper lint | `ruff check .` and `ruff format --check .` |
 | Secret scan, as on a PR (Git Bash on Windows: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"` |
 | Repository limits (`--all` for every branch) | `sh .github/scripts/check-repo-limits.sh` |
-| Dockerfile lint (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile` |
+| Dockerfile lint (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile` |
 | Shell lint (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
 | Compose check, must print nothing. Never drop `--quiet` or use `deploy/.env` | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
@@ -154,6 +157,22 @@ Documentation is in English, except `docs/AI_LOG.md`.
   page IDs.
 - `PS_COUNTRY` must be lowercase (`pl`): the installer loads `localization/<value>.xml`, and with `PL` it silently
   falls back to EUR/USD and no VAT rates.
+- The Webservice API is reachable only inside the Compose network: the proxy answers 404 for `/api/` and
+  `/webservice/`. Call `http://shop/api/...` with the key as the Basic auth user and the headers
+  `Host: localhost:<HTTPS_PORT>` (required, any other host gets 302) and `X-Forwarded-Proto: https` (as the proxy
+  sends it); never put the key in the URL (`?ws_key=`), since
+  URLs reach the access log. To try it by hand, run curl in the shop container with its own `$PS_WEBSERVICE_KEY`.
+  In committed files write `auth="$KEY:"` and then `curl -u "$auth"`: gitleaks (rule `curl-auth-user`) reports
+  `curl -u "...:..."` written out, even when the value is only a variable name.
+  The key's permissions are `PERMISSIONS` in `shop/scripts/setup/webservice.php`; add a resource there, not in the
+  back office.
+- The importer (`deploy/importer`, ADR 0008) owns the catalogue: change products and categories in the data, not in
+  the back office. A full run deletes what is not in the data. Through the API, an update (PUT) empties every field it
+  leaves out, so send the complete record; two product saves at the same time deadlock in PrestaShop's search index,
+  so the importer saves products one at a time; and the HTML cleaner needs `var/cache/prod/purifier`, which
+  `sync-code.sh` recreates. The top menu follows `catalog.menu_categories` in `shop/config/shop-settings.php` through
+  the module `ciociamenu`, which also clears the page cache after catalogue changes: PrestaShop's own cache hooks
+  fire only in the back office, not for API writes.
 - Scripts run on Linux but are edited on Windows and macOS. `.gitattributes` forces LF for `*.sh`, `*.php`, Dockerfiles
   and YAML; keep new script types covered.
 - `.gitignore` excludes `*.crt`, `*.key`, `*.pem`, `*.zip` and `*.tar.gz`, so certificates and archives must be

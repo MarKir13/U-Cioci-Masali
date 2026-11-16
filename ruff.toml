@@ -1,8 +1,8 @@
 # Ruff settings for all Python code in this repository.
-# `src` marks `scraper` as our own package, so imports sort the same from any directory.
+# `src` marks `scraper` and `importer` as our own packages, so imports sort the same from any directory.
 line-length = 120
 target-version = "py312"
-src = ["scraper"]
+src = ["scraper", "deploy/importer"]
 
 [lint]
 select = ["E", "F", "I", "UP", "B"]

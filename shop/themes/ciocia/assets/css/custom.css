@@ -831,6 +831,15 @@ body#checkout section.checkout-step.-unreachable .step-title {
   border-top-color: #67302a;
 }
 
+/*
+ * Search in the checkout header. Classic hides it there (theme.css: "#checkout #search_widget
+ * { display: none; }"); the source shows it at every width. Same specificity as Classic's rule and
+ * loaded later, so this wins. The field is styled by the #header #search_widget rules above.
+ */
+#checkout #search_widget {
+  display: block;
+}
+
 #header #search_widget input[type="text"] {
   background: #fdfaf2;
   color: #30211e;
@@ -2076,6 +2085,14 @@ body#checkout #footer:has(> .ciocia-trust) {
   cursor: pointer;
 }
 
+/* On phones the source keeps the tab in the bottom right corner; from 768 px it stays on the left. */
+@media (max-width: 767.98px) {
+  .ciocia-cookie-reopen {
+    right: 0.75rem;
+    left: auto;
+  }
+}
+
 .ciocia-cookie-reopen:hover,
 .ciocia-cookie-reopen:focus-visible {
   background: #fff;
@@ -2106,6 +2123,191 @@ body#checkout #footer:has(> .ciocia-trust) {
   .ciocia-cookie__btn--primary,
   .ciocia-cookie__btn--ghost {
     width: 100%;
+  }
+}
+
+/*
+ * Cart preview (modules/ps_shoppingcart/ps_shoppingcart.tpl), from 768 px only. It opens with
+ * :hover and :focus-within on .blockcart and is a child of it, so the pointer can move into the
+ * panel without closing it (WCAG 1.4.13). custom.js adds .is-dismissed on Escape. It cannot use
+ * display: none to hide: visibility keeps the closed panel out of hit-testing and the Tab order
+ * and lets it fade.
+ */
+#header .ciocia-cart-panel {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  #header .ciocia-header-cart .blockcart {
+    position: relative;
+  }
+
+  #header .ciocia-cart-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 1030;
+    display: block;
+    width: 24rem;
+    max-width: calc(100vw - 2rem);
+    /* Transparent strip between the cart link and the box, so the gap does not end the hover. */
+    padding-top: 0.5rem;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-0.25rem);
+    transition:
+      opacity 0.15s,
+      transform 0.15s,
+      visibility 0s 0.15s;
+    color: var(--ciocia-text);
+    font-family: var(--ciocia-font);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    text-align: left;
+    white-space: normal;
+  }
+
+  #header .blockcart:hover .ciocia-cart-panel,
+  #header .blockcart:focus-within .ciocia-cart-panel {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition-delay: 0s;
+  }
+
+  /* After Escape: closed until the pointer and the focus have both left the cart. */
+  #header .blockcart.is-dismissed .ciocia-cart-panel {
+    visibility: hidden;
+    opacity: 0;
+    transition: none;
+  }
+
+  #header .ciocia-cart-link:focus-visible,
+  #header .ciocia-cart-panel a:focus-visible {
+    outline: 2px solid var(--ciocia-gold);
+    outline-offset: 2px;
+  }
+
+  #header .ciocia-cart-panel a:focus-visible {
+    outline-color: var(--ciocia-primary);
+  }
+
+  #header .ciocia-cart-panel__box {
+    padding: 1.25rem 1.4rem;
+    border: 1px solid var(--ciocia-border);
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow: 0 0.5rem 1.5rem rgba(44, 0, 1, 0.35);
+  }
+
+  #header .ciocia-cart-panel__items {
+    max-height: 17rem;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+  }
+
+  #header .ciocia-cart-panel__item {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0 0 1rem;
+  }
+
+  #header .ciocia-cart-panel__item + .ciocia-cart-panel__item {
+    padding-top: 1rem;
+    border-top: 1px solid var(--ciocia-border);
+  }
+
+  #header .ciocia-cart-panel__info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  #header .ciocia-cart-panel a.ciocia-cart-panel__name {
+    color: var(--ciocia-text);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-decoration: none;
+  }
+
+  #header .ciocia-cart-panel a.ciocia-cart-panel__name:hover {
+    color: var(--ciocia-primary);
+    text-decoration: underline;
+  }
+
+  #header .ciocia-cart-panel__attr {
+    color: var(--ciocia-text-muted);
+    font-size: 0.8125rem;
+  }
+
+  #header .ciocia-cart-panel a.ciocia-cart-panel__remove {
+    align-self: flex-start;
+    color: var(--ciocia-primary);
+    font-size: 0.9375rem;
+    text-decoration: none;
+  }
+
+  #header .ciocia-cart-panel a.ciocia-cart-panel__remove:hover {
+    color: var(--ciocia-primary-hover);
+    text-decoration: underline;
+  }
+
+  #header .ciocia-cart-panel__line {
+    color: var(--ciocia-text);
+    font-size: 1rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  #header .ciocia-cart-panel__totals {
+    margin: 0;
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--ciocia-border);
+  }
+
+  #header .ciocia-cart-panel__totals > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0;
+    font-size: 1rem;
+  }
+
+  #header .ciocia-cart-panel__totals dt,
+  #header .ciocia-cart-panel__totals dd {
+    margin: 0;
+    color: var(--ciocia-text);
+    font-weight: 300;
+  }
+
+  #header .ciocia-cart-panel__totals .ciocia-cart-panel__total {
+    margin-top: 0.5rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--ciocia-border);
+    font-size: 1.125rem;
+  }
+
+  #header .ciocia-cart-panel__totals .ciocia-cart-panel__total dt,
+  #header .ciocia-cart-panel__totals .ciocia-cart-panel__total dd {
+    font-weight: 700;
+  }
+
+  #header .ciocia-cart-panel__empty {
+    margin: 0;
+    padding: 0.25rem 0;
+    font-size: 1rem;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #header .ciocia-cart-panel {
+    transition: none;
   }
 }
 
