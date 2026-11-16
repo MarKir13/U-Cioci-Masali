@@ -198,6 +198,12 @@ a failed run with the same picks, pass that seed: `E2E_SEED=123456789 npm test` 
 `$env:E2E_SEED = "123456789"; npm test`). The new customer's e-mail is unique on every run, with or without a seed,
 so the suite can run many times on the same shop.
 
+Step 1 takes its two categories from the top menu, one product branch each: the category itself or, when it has
+fewer than 5 products that can be added in their planned quantities (for example none of its own, only in its
+subcategories), one of its subcategories. A branch with none of them is skipped before anything is added. To use
+other categories, list their URLs: `E2E_CATEGORIES="https://localhost:8443/6-accessories,https://localhost:8443/9-art" npm test`
+(PowerShell: `$env:E2E_CATEGORIES = "..."; npm test`).
+
 Step 7 orders with one of the two new carriers, "Kurier" or "Paczkomat", picked from the seed. To force one, set
 `E2E_CARRIER` (`E2E_CARRIER=Paczkomat npm test`, PowerShell: `$env:E2E_CARRIER = "Paczkomat"; npm test`). The
 report shows the carrier used (`carrier` annotation). The checkout asks for the carrier before the payment, so
