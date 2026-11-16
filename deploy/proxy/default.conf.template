@@ -1,11 +1,19 @@
 # Rendered at start by the nginx image (envsubst): only defined env vars are replaced,
 # so ${HTTPS_PORT} is filled in and nginx variables like $host stay as they are.
 
+# The image's "main" log format, without $remote_user. That is the HTTP Basic auth user, and for the
+# Webservice API it is the key, so a request that sends one must not write it to the log.
+# Set in both servers, which replaces the image's `access_log ... main` for them.
+log_format noauth '$remote_addr - - [$time_local] "$request" '
+                  '$status $body_bytes_sent "$http_referer" '
+                  '"$http_user_agent" "$http_x_forwarded_for"';
+
 # HTTP: every request goes to the same URL over HTTPS (301).
 # $host has no port, so the published HTTPS port is added explicitly.
 server {
     listen 80;
     server_name _;
+    access_log /var/log/nginx/access.log noauth;
 
     return 301 https://$host:${HTTPS_PORT}$request_uri;
 }
@@ -15,6 +23,7 @@ server {
     listen 443 ssl;
     http2 on;
     server_name _;
+    access_log /var/log/nginx/access.log noauth;
 
     ssl_certificate     /etc/nginx/certs/shop.crt;
     ssl_certificate_key /etc/nginx/certs/shop.key;
@@ -29,6 +38,14 @@ server {
     client_max_body_size 32m;
     proxy_read_timeout   300s;
     proxy_send_timeout   300s;
+
+    # The Webservice API is only for the importer inside the Compose network (http://shop/api/,
+    # see shop/scripts/setup/webservice.php), so it is never reachable from outside Docker.
+    # /api/ is only a rewrite to /webservice/dispatcher.php, so both paths are blocked. A regex
+    # location wins over `location /`; ~* ignores case, and nginx decodes %XX and merges // first.
+    location ~* ^/(api|webservice)(/|$) {
+        return 404;
+    }
 
     location / {
         proxy_pass http://shop:80;
