@@ -13,6 +13,7 @@ as "Superseded by NNNN".
 - [0005. Shop content and settings set by PHP setup scripts](0005-shop-data-set-by-php-setup-scripts.md)
 - [0006. How the shop images are built and distributed](0006-image-build-and-distribution.md)
 - [0007. Products left out on purpose, and publishing the images](0007-rejected-products-and-image-publishing.md)
+- [0008. Product import through the Webservice API](0008-product-import-through-the-webservice-api.md)
 
 ## Template
 

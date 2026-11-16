@@ -39,6 +39,7 @@ configurePayments($settings, $carrierReferences);
 configureMail($settings['mail']);
 configureInvoices();
 configurePromoCode($settings['promo_code']);
+configureCatalog($settings['catalog']);
 
 Tools::clearSmartyCache();
 Cache::clear();
@@ -387,4 +388,35 @@ function configurePromoCode(array $promo)
     $rule->active = true;
     $rule->id ? $rule->update() : $rule->add();
     echo 'Promo code ' . $promo['code'] . ': ' . $promo['percent'] . "% off the products, once per customer.\n";
+}
+
+/**
+ * Stock rules, HTML in descriptions, and the top menu for the categories the importer creates (issue #70).
+ */
+function configureCatalog(array $catalog)
+{
+    Configuration::updateValue('PS_STOCK_MANAGEMENT', 1);
+    Configuration::updateValue('PS_ORDER_OUT_OF_STOCK', $catalog['order_out_of_stock'] ? 1 : 0);
+    Configuration::updateValue('PS_ALLOW_HTML_IFRAME', $catalog['allow_iframes'] ? 1 : 0);
+
+    // The module rebuilds the menu after every category change, also those made through the API
+    Configuration::updateValue('CIOCIA_MENU_CATEGORIES', json_encode($catalog['menu_categories'], JSON_UNESCAPED_UNICODE));
+    $menu = Module::getInstanceByName('ciociamenu');
+    if (!$menu) {
+        throw new RuntimeException('Module ciociamenu not found in modules/ (shop/modules/ciociamenu)');
+    }
+    if (!Module::isInstalled('ciociamenu')) {
+        if (!$menu->install()) {
+            throw new RuntimeException('Could not install module ciociamenu');
+        }
+    } elseif (!$menu->registerHooks()) {
+        // Already installed: a shop with an earlier version of the module gets the new hooks. Not right
+        // after install(), which registered them: PrestaShop's "already registered" check is cached within a
+        // request, so a second call would insert them twice (duplicate key error).
+        throw new RuntimeException('Could not register the hooks of module ciociamenu');
+    }
+    $items = $menu->rebuildMenu();
+    echo 'Catalog: out-of-stock orders ' . ($catalog['order_out_of_stock'] ? 'allowed' : 'denied')
+        . ', iframes ' . ($catalog['allow_iframes'] ? 'allowed' : 'not allowed')
+        . ', top menu: ' . ($items ?: 'empty until the import creates the categories') . ".\n";
 }
