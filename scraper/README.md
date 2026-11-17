@@ -35,6 +35,19 @@ python -m scraper archive --categories 85,99                    # only these cat
 Options before the command: `--delay SECONDS` (default 1.0, minimum 0.5, maximum 3600), `-v` for DEBUG messages in the console.
 Everything, including DEBUG messages, is also written to `scraper.log` (not committed).
 
+### Without Python: in a container
+
+The same commands run in the Compose service `scraper` (image from [`Dockerfile`](Dockerfile)), from the repository
+root. The data init points to this when the image archive cannot be downloaded:
+
+```sh
+docker compose -f deploy/compose.yaml --profile init run --rm --build scraper images   # or crawl, verify, ...
+```
+
+It reads and writes `scraper-results/` as above; the log goes to `deploy/logs/scraper.log` (`SCRAPER_LOG`), since
+files inside the container are gone after the run. The page cache (`scraper/cache/`) is not kept between runs there.
+`images` and `crawl` contact the source shop: run them only when a person decides to, never in CI.
+
 ## Crawl
 
 `python -m scraper crawl` runs these stages in order ([scraper/crawl.py](scraper/crawl.py)). Why the data comes from
@@ -208,14 +221,16 @@ tar xzf /tmp/product-images.tar.gz -C scraper-results     # creates scraper-resu
 
 `scraper-results/sample-images/` holds 20 of them in the repository. To make a new archive after a new run, run
 `python -m scraper archive`, upload it with `gh release upload images-v1 scraper-results/product-images.tar.gz --clobber`
-and update the hash above.
+and update the hash above and `FULL` in [`deploy/importer/importer/init.py`](../deploy/importer/importer/init.py):
+the data init refuses an archive with another hash.
 
 The same Release holds `subset-images.tar.gz`: only the images of the products in categories 85 (Przyprawy, under
 Żywność) and 99 (Pielęgnacja okolic oczu, under Kosmetyki), with their subcategories. The init command's subset mode
 imports exactly those products (issue #71): two branches of the top menu with enough products in stock for the E2E
 scenario, in under 10 MB instead of 585 MB. After a new run, or to change the categories, run
 `python -m scraper archive --categories 85,99` and upload it the same way. The archive's hash changes on every build,
-even for the same images (the files' dates are inside), so update the hash above and in the init command with it.
+even for the same images (the files' dates are inside), so update the hash above and `SUBSET` in
+[`deploy/importer/importer/init.py`](../deploy/importer/importer/init.py) with it.
 
 ## Politeness
 
