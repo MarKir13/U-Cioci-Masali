@@ -396,7 +396,7 @@ npm ci
 | Secret scan, as on a PR (needs Docker) | `docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"` |
 | Secret scan, every branch | The same command with `--log-opts="--all"` |
 | Repository limits (add `--all` for every branch) | `sh .github/scripts/check-repo-limits.sh` |
-| Dockerfiles | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile` |
+| Dockerfiles | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile scraper/Dockerfile` |
 | Shell scripts | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
 | Compose file (prints nothing when valid) | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |

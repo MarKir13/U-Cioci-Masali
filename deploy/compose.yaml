@@ -140,6 +140,23 @@ services:
       - ../scraper-results:/data
       - ./logs:/logs
 
+  # The scraper (scraper/Dockerfile): init's fallback when the image archive cannot be downloaded. It downloads
+  # the images from the source shop, about 1 h 40 min, and can be stopped and resumed:
+  #   docker compose -f deploy/compose.yaml --profile init run --rm --build scraper images
+  # It talks to the source shop, so only a person starts it, never CI (AGENTS.md rule 7).
+  scraper:
+    build: ../scraper
+    # Same as SHOP_IMAGE above
+    image: ${SCRAPER_IMAGE:-ciocia-scraper:local}
+    profiles: [init]
+    environment:
+      # deploy/logs/scraper.log instead of a file inside the container, which is gone after the run
+      SCRAPER_LOG: /logs/scraper.log
+    volumes:
+      # Read-write: images go into scraper-results/images/ and their names into products.jsonl
+      - ../scraper-results:/app/scraper-results
+      - ./logs:/logs
+
 volumes:
   db-data:
   shop-data:

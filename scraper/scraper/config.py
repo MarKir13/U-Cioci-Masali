@@ -1,5 +1,6 @@
 """Settings shared by the whole scraper."""
 
+import os
 from pathlib import Path
 
 BASE_URL = "https://www.magiczne-indie.pl"
@@ -27,7 +28,9 @@ MAX_ROBOTS_REDIRECTS = 5
 
 # Path from pathlib takes the absolute path of file independently from system
 SCRAPER_DIR = Path(__file__).resolve().parent.parent
-LOG_FILE = SCRAPER_DIR / "scraper.log"
+# SCRAPER_LOG moves it: the Compose service `scraper` writes it to deploy/logs/, since files inside its container
+# are gone when the run ends
+LOG_FILE = Path(os.environ.get("SCRAPER_LOG") or SCRAPER_DIR / "scraper.log")
 RESULTS_DIR = SCRAPER_DIR.parent / "scraper-results"
 SCHEMA_FILE = RESULTS_DIR / "schema.json"
 

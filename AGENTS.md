@@ -80,7 +80,7 @@ Run from the repository root unless noted.
 | Scraper lint | `ruff check .` and `ruff format --check .` |
 | Secret scan, as on a PR (Git Bash on Windows: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"` |
 | Repository limits (`--all` for every branch) | `sh .github/scripts/check-repo-limits.sh` |
-| Dockerfile lint (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile` |
+| Dockerfile lint (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile scraper/Dockerfile` |
 | Shell lint (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
 | Compose check, must print nothing. Never drop `--quiet` or use `deploy/.env` | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
