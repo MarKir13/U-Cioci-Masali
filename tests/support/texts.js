@@ -14,4 +14,9 @@ export const texts = {
     payment: "Metoda płatności:",
     carrier: "Sposób dostawy:",
   },
+  history: {
+    // Status of a new cash on delivery order (PS_OS_COD_VALIDATION). The shop issues the invoice in this
+    // status (configureInvoices() in shop/scripts/setup/configure-shop.php), so step 10 can download it.
+    cashOnDeliveryStatus: "Oczekiwanie na płatność przy odbiorze",
+  },
 };
