@@ -6068,18 +6068,25 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
 }
 
 /*
- * "Added to cart" dialog (modules/ps_shoppingcart/modal.tpl, issue #98), as on the source: the title on the left
- * with a green check, product and totals in two columns without a divider, totals as label/value rows without a
- * grey stripe, and "Kontynuuj zakupy" (outline) and "Przejdź do kasy" (solid) at opposite ends under them.
- * Below 768 px the columns stack and the buttons take the full width, the checkout one on top.
+ * "Added to cart" dialog (modules/ps_shoppingcart/modal.tpl, issue #98), as on the source, centred on the screen.
+ * - From 992 px: the title on the left with a green check, product and cart totals in two columns without a
+ *   divider, totals as label/value rows without a grey stripe, and "Kontynuuj zakupy" (outline) and
+ *   "Przejdź do kasy" (solid) at opposite ends under them.
+ * - Below 992 px the window is narrower and shows only the product image, name and price; the quantity and the
+ *   cart totals are hidden.
+ * - Below 576 px the title is smaller and green, and the buttons take the full width, the checkout one on top.
  */
 #blockcart-modal .modal-dialog {
+  display: flex;
+  align-items: center;
   width: calc(100% - 2rem);
-  max-width: 50rem;
+  max-width: 31rem;
+  min-height: calc(100% - 2rem);
   margin: 1rem auto;
 }
 
 #blockcart-modal .modal-content {
+  width: 100%;
   border: 0;
   border-radius: 0.5rem;
   color: var(--ciocia-text);
@@ -6090,7 +6097,7 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.25rem 1.25rem 0.5rem;
+  padding: 1rem 1rem 0.5rem;
   border-bottom: 0;
   border-radius: 0.5rem 0.5rem 0 0;
 }
@@ -6104,18 +6111,18 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--ciocia-text);
+  color: #2e7d32;
 }
 
 /* i.material-icons: Classic's rule for this icon has a type selector, so it needs one too. */
 #blockcart-modal .modal-title i.material-icons {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.5rem;
   color: #2e7d32;
 }
 
@@ -6136,7 +6143,7 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
 }
 
 #blockcart-modal .modal-body {
-  padding: 1rem 1.25rem 1.25rem;
+  padding: 1rem;
 }
 
 #blockcart-modal .ciocia-added {
@@ -6153,6 +6160,7 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
   display: flex;
   align-items: flex-start;
   gap: 1.25rem;
+  padding-left: 1.25rem;
 }
 
 #blockcart-modal .product-image {
@@ -6172,7 +6180,7 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
   padding: 0;
   font-size: 1rem;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.6;
   color: var(--ciocia-text);
   overflow-wrap: anywhere;
 }
@@ -6180,7 +6188,14 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
 #blockcart-modal .product-price {
   display: block;
   padding: 0;
-  color: var(--ciocia-text-muted);
+  font-weight: 600;
+  color: var(--ciocia-text);
+}
+
+/* Only the image, name and price below 992 px, as on the source. */
+#blockcart-modal .ciocia-added__info > :not(.product-name, .product-price),
+#blockcart-modal .ciocia-added__cart {
+  display: none;
 }
 
 #blockcart-modal .ciocia-added__cart {
@@ -6233,13 +6248,37 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
 
 @media (min-width: 576px) {
   #blockcart-modal .modal-dialog {
+    min-height: calc(100% - 3.5rem);
     margin: 1.75rem auto;
+  }
+
+  #blockcart-modal .modal-header {
+    padding: 1.25rem 1.25rem 0.5rem;
+  }
+
+  #blockcart-modal .modal-body {
+    padding: 1rem 1.25rem 1.25rem;
+  }
+
+  #blockcart-modal .modal-title {
+    gap: 0.75rem;
+    font-size: 1.5rem;
+    color: var(--ciocia-text);
+  }
+
+  #blockcart-modal .modal-title i.material-icons {
+    font-size: 2rem;
+  }
+
+  #blockcart-modal .ciocia-added__actions {
+    flex-direction: row;
+    justify-content: space-between;
   }
 }
 
-@media (min-width: 768px) {
-  #blockcart-modal .modal-title {
-    font-size: 1.5rem;
+@media (min-width: 992px) {
+  #blockcart-modal .modal-dialog {
+    max-width: 50rem;
   }
 
   #blockcart-modal .ciocia-added {
@@ -6251,8 +6290,20 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
     padding-left: 2rem;
   }
 
-  #blockcart-modal .ciocia-added__actions {
-    flex-direction: row;
-    justify-content: space-between;
+  #blockcart-modal .ciocia-added__info > :not(.product-name, .product-price) {
+    display: block;
+  }
+
+  #blockcart-modal .ciocia-added__cart {
+    display: block;
+  }
+
+  #blockcart-modal .product-name {
+    line-height: 1.4;
+  }
+
+  #blockcart-modal .product-price {
+    font-weight: 400;
+    color: var(--ciocia-text-muted);
   }
 }
