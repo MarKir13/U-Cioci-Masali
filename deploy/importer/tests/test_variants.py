@@ -187,6 +187,49 @@ def test_every_real_combination_gives_back_its_source_price():
             assert Decimal(gross) == Decimal(variant.product["regular_price"]), (product.name, variant.value)
 
 
+# --- Stock of combinations ---
+
+
+def test_variant_stock_is_the_source_stock_when_the_sum_is_at_most_10():
+    # Pasta Dant Kanti would be 9 + 10, Mysore 6 + 4
+    assert mapping.variant_quantities([5212, 5211]) == [mapping.stock_quantity(5212), mapping.stock_quantity(5211)]
+    assert sum(mapping.variant_quantities([5212, 5211])) == 10
+
+
+def test_variant_stock_is_scaled_down_when_the_sum_is_above_10():
+    # Bollywood: the source products have 2 + 7 + 9 = 18
+    assert [mapping.stock_quantity(i) for i in (7736, 8347, 8345)] == [2, 7, 9]
+    assert mapping.variant_quantities([7736, 8347, 8345]) == [1, 3, 5]
+
+
+def test_a_sold_out_variant_stays_sold_out_and_one_variant_keeps_stock(monkeypatch):
+    stock = {1: 0, 2: 10, 3: 10, 4: 10}
+    monkeypatch.setattr(mapping, "stock_quantity", stock.get)
+    assert mapping.variant_quantities([1, 2, 3, 4]) == [0, 3, 3, 3]
+    # Twelve variants with 1 each: 1 * 10 // 12 = 0 for all, so the first gets 1
+    monkeypatch.setattr(mapping, "stock_quantity", lambda _: 1)
+    assert mapping.variant_quantities(list(range(12))) == [1] + [0] * 11
+
+
+def test_every_real_product_with_variants_has_at_most_10_in_stock():
+    if not (RESULTS / "products.jsonl").is_file():
+        pytest.skip("scraper-results/products.jsonl not found")
+    products = [json.loads(line) for line in (RESULTS / "products.jsonl").open(encoding="utf-8") if line.strip()]
+    found, _ = variants.resolve(variants.load(variants.DEFAULT_PATH), products)
+    for product in found:
+        source_ids = [v.product["id"] for v in product.variants]
+        quantities = mapping.variant_quantities(source_ids)
+        # "Maximum stock <= 10 for every product and variant": the product's row is the sum
+        assert sum(quantities) <= mapping.MAX_STOCK, (product.name, quantities)
+        assert any(quantities), product.name
+        # A source product with 0 stays at 0 (Indian Summer 50 g, 8486: the variant that cannot be ordered)
+        for source_id, quantity in zip(source_ids, quantities, strict=True):
+            if mapping.stock_quantity(source_id) == 0:
+                assert quantity == 0, (product.name, source_id)
+    assert mapping.stock_quantity(8486) == 0
+    assert 8486 in {i for p in found for i in p.source_ids}
+
+
 # --- The import steps, on the fake shop ---
 
 
@@ -302,6 +345,17 @@ def test_a_discounted_variant_gets_its_own_promotion_and_the_product_none():
     # The same product, found by the default variant's source ID, now with a new name and combinations
     [product] = shop.api.all("products")
     assert product["name"] == "Krem odżywczy Himalaya"
+
+
+def test_a_product_with_much_stock_in_its_source_products_stays_at_10_or_less():
+    sachets = [source_product(i, f"{i}g", "9.99") for i in (7736, 8347, 8345)]  # source stock 2 + 7 + 9
+    entry = definition(("8 g", sachets[0]), ("50 g", sachets[1]), ("100 g", sachets[2]), group="Waga")
+    shop = Catalogue()
+    shop.import_variants(entry, products=sachets)
+    product_id = shop.product_id(sachets[0])
+    combinations = shop.combinations()
+    assert [shop.stock(product_id, int(combinations[str(i)]["id"])) for i in (7736, 8347, 8345)] == [1, 3, 5]
+    assert shop.stock(product_id) == 9
 
 
 def test_a_product_taken_out_of_the_file_loses_its_combinations():

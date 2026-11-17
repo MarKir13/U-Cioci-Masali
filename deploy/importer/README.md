@@ -99,8 +99,10 @@ and the importer makes one product with a combination per size instead (ADR 0009
 - `attribute_group`: the property that differs, shown above the buttons on the product page. A new name makes a new
   group.
 - `values`: one per variant, with the source product it comes from (its `id` in `products.jsonl`, the number at the
-  start of its source URL). The combination takes that product's price, weight, EAN, images, stock and promotion,
-  and its ID as `reference`.
+  start of its source URL). The combination takes that product's price, weight, EAN, images and promotion, and its
+  ID as `reference`. Its stock is that product's stock, scaled down when the variants together would have more
+  than 10, because the product's stock is their sum and no product may have more than 10
+  (`mapping.variant_quantities`; Bollywood: 2 + 7 + 9 becomes 1 + 3 + 5). A variant with stock 0 keeps 0.
 - The first value is the default variant. Its source product gives the product its description, brand, VAT and its
   `reference`, which is how the next run finds the product again. Put a variant with stock first.
 
@@ -120,6 +122,12 @@ The source products listed here are not imported on their own: a full run delete
 
    `--build` puts the edited file into the image. The summary shows `combinations created 1`, and
    `product_option_values created 1` if the value is new in its group. The product page shows the new button.
+   The other variants' stock may go down, if the sum would otherwise be above 10.
+
+Replacing a variant's `source_id` with another source product that has the same number of images does not refresh
+the images: the importer only compares how many images a product has, so the product keeps the old images and the
+combinations keep the old image IDs. Delete the product's images in the admin panel (or the product itself) and run
+the import again.
 
 Adding a whole product with variants is the same: a new entry with at least two values. An entry that cannot be used
 (a value or source product twice, a source product that is not in the data or already in another entry, different

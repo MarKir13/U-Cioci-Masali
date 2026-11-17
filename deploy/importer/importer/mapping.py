@@ -75,6 +75,25 @@ def stock_quantity(source_id: int) -> int:
     return 1 + (h // OUT_OF_STOCK_ONE_IN) % MAX_STOCK
 
 
+def variant_quantities(source_ids: list[int]) -> list[int]:
+    """Stock of each combination of a product with variants, in the order of `source_ids`.
+
+    Each variant starts from its source product's stock (stock_quantity). The product's own stock is the sum of
+    its combinations, and the course checks that no product has more than MAX_STOCK, so when the sum is above it,
+    every quantity is scaled down in proportion (rounded down): 2 + 7 + 9 = 18 becomes 1 + 3 + 5 = 9. A variant
+    with 0 stays at 0, so a sold-out variant stays sold out. If the scaling leaves nothing in stock while a
+    source product had some, the variant with the most gets 1.
+    """
+    quantities = [stock_quantity(i) for i in source_ids]
+    total = sum(quantities)
+    if total <= MAX_STOCK:
+        return quantities
+    scaled = [q * MAX_STOCK // total for q in quantities]
+    if not any(scaled):
+        scaled[quantities.index(max(quantities))] = 1
+    return scaled
+
+
 def ean_check_digit_ok(code: str) -> bool:
     """GTIN check digit (EAN-13, EAN-8, UPC-A): digits weighted 3 and 1 from the right."""
     digits = [int(c) for c in code]

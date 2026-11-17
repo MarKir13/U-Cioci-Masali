@@ -3,8 +3,9 @@
     "Products with variants (D3, issue #73). The importer joins the source products listed under `values` into one",
     "product with combinations. The first value is the default variant: its source product gives the product its",
     "description, brand, VAT and `reference`, which is how the next run finds the product again. The other source",
-    "products are not imported on their own. Each combination takes the price, weight, EAN, images and stock of its",
-    "own source product. To add a variant, add a line to `values` and run the import (deploy/importer/README.md).",
+    "products are not imported on their own. Each combination takes the price, weight, EAN and images of its own",
+    "source product, and its stock scaled down so that the variants together have at most 10. To add a variant,",
+    "add a line to `values` and run the import (deploy/importer/README.md).",
     "Why the products are joined this way: docs/adr/0009-variants-as-combinations-of-source-families.md"
   ],
   "products": [

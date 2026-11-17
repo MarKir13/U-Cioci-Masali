@@ -494,7 +494,8 @@ def import_variant_product(
     1. the product, made from the default variant's source product (variants.product_record);
     2. its images: those of all variants, the default variant's first;
     3. the combinations: each with its source product's price, weight, reference, barcode and images;
-    4. the stock of each combination, and the product's own stock row as their sum (how PrestaShop shows it);
+    4. the stock of each combination, and the product's own stock row as their sum (how PrestaShop shows it),
+       at most 10 (mapping.variant_quantities);
     5. a promotion on each combination whose source product is discounted, and none on the product itself.
     """
     record = variants.product_record(product)
@@ -532,9 +533,12 @@ def import_variant_product(
         stock = {_product_and_combination(r): r for r in rows}
     else:
         stock = shop.stock
+    # The stock of all variants, so that their sum stays within 0-10 (mapping.variant_quantities)
+    source_ids = [v.product["id"] for v in product.variants]
+    quantities = dict(zip(source_ids, mapping.variant_quantities(source_ids), strict=True))
     total = 0
     for variant, combination_id, new in combinations:
-        quantity = mapping.stock_quantity(variant.product["id"])
+        quantity = quantities[variant.product["id"]]
         total += quantity
         row = stock.get((product_id, combination_id))
         if new and row is not None:

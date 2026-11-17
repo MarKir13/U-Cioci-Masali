@@ -55,6 +55,21 @@ panel", so adding a variant must be quick and easy to explain.
 - Product price 0 and each combination carrying the full price: shows 0 zł wherever the product's own price is used
   without a combination.
 
+### How much stock a combination gets
+
+PrestaShop shows a product's own stock as the sum of its combinations, and the course checks "maximum stock ≤10 for
+every product and variant" (`SELECT MAX(quantity) FROM ps_stock_available`). With each variant's own stock 0–10
+(`mapping.stock_quantity` of its source ID), two products would have 19 (Dant Kanti, 9 + 10) and 18 (Bollywood,
+2 + 7 + 9).
+
+- **The source stock, scaled down in proportion only when the sum is above 10 (chosen,
+  `mapping.variant_quantities`).** Rounded down, so the sum is at most 10: Dant Kanti 4 + 5, Bollywood 1 + 3 + 5.
+  The other 5 products keep their source products' stock exactly. A variant with 0 stays at 0 (Indian Summer 50 g),
+  and if the scaling left nothing in stock, the variant with the most gets 1.
+- Every variant's stock divided by the number of variants. Also keeps the sum at most 10, but changes all 7
+  products, and leaves small stock: Bollywood's 8 g would get 0.
+- Keep the sum above 10 and note it as an exception. The lecturer's query would still find 19.
+
 ## Decision
 
 `deploy/importer/variants.json` lists 7 products (D3 needs 5; one more is a spare, and one has 3 variants). The
@@ -68,8 +83,8 @@ importer:
    the next run finds it like any other product, and a product that was imported plain before keeps its ID and URL;
    name and URL slug from the file, the categories and images of all variants;
 4. creates, updates or keeps one combination per value, found by its attribute value, with the source product's
-   price, weight, `reference` (source ID), EAN, images and stock (`mapping.stock_quantity` of the source ID, as for a
-   plain product); a combination whose value left the file is deleted;
+   price, weight, `reference` (source ID), EAN, images and stock (its source product's, scaled down so that the
+   product's sum is at most 10); a combination whose value left the file is deleted;
 5. sets a promotion on each combination whose source product is discounted, and none on the product itself.
 
 A full run deletes the separate copies of the source products that are now variants. Products that are now variants
@@ -102,7 +117,10 @@ subcategories.
   product and deletes the old one (new ID and URL). Adding, renaming or removing other values changes only the
   combinations.
 - When a value is added, the product's images change in number, so the importer replaces them all, and the
-  existing combinations are updated with the new image IDs.
+  existing combinations are updated with the new image IDs. The importer compares only the number of images, so
+  replacing a variant's source product with another one that has the same number of images does not refresh the
+  images (importer README, "Adding a variant").
+- Adding a variant can lower the other variants' stock, when the sum would otherwise be above 10.
 - Values are created in numeric order ("8 g" before "50 g"), and PrestaShop lists them in the order they were
   created. A value added later to a group goes to the end of its group's list.
 - The E2E scenario needs no change: it reads the chosen combination from the product page (`data-product`) and the
