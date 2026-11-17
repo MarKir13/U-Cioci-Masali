@@ -14,6 +14,7 @@ as "Superseded by NNNN".
 - [0006. How the shop images are built and distributed](0006-image-build-and-distribution.md)
 - [0007. Products left out on purpose, and publishing the images](0007-rejected-products-and-image-publishing.md)
 - [0008. Product import through the Webservice API](0008-product-import-through-the-webservice-api.md)
+- [0009. Products with variants made from families of source products](0009-variants-as-combinations-of-source-families.md)
 
 ## Template
 

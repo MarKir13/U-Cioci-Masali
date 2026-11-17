@@ -25,7 +25,6 @@ const KEY_DESCRIPTION = 'ciocia-importer';
 
 // What the importer may do, per API resource. Everything not listed here (customers, addresses, orders,
 // carts, employees, configurations, ...) is refused with 401.
-// The variants issue (#73) adds combinations, product_options and product_option_values.
 const PERMISSIONS = [
     // Read and write. DELETE because the import removes the installer's demo products and categories,
     // and replaces specific prices.
@@ -35,8 +34,14 @@ const PERMISSIONS = [
     'specific_prices' => ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
     // Brands. DELETE removes the installer's demo manufacturers.
     'manufacturers' => ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
-    // PrestaShop creates the stock row together with the product, so the import only updates it.
+    // PrestaShop creates the stock row together with the product or combination, so the import only updates it.
     'stock_availables' => ['GET', 'HEAD', 'PUT'],
+    // Products with variants (D3, issue #73, deploy/importer/variants.json). Combinations are deleted when a
+    // value leaves the file. Attribute groups (product_options) and their values (product_option_values) are
+    // only created: the import finds them by name and never changes or deletes them.
+    'combinations' => ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
+    'product_options' => ['GET', 'HEAD', 'POST'],
+    'product_option_values' => ['GET', 'HEAD', 'POST'],
     // Read only: the tax rule group for a VAT rate is found through group -> rule -> tax (rate),
     // and the Polish language ID through languages.
     'tax_rule_groups' => ['GET', 'HEAD'],

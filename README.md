@@ -148,8 +148,8 @@ The layout is in `shop/themes/ciocia/modules/ps_imageslider/views/templates/hook
 The product importer loads the scraped data through the PrestaShop Webservice API. A third setup script,
 [`webservice.php`](shop/scripts/setup/webservice.php), turns the API on and creates one key,
 `ciocia-importer`, from `PS_WEBSERVICE_KEY` in `deploy/.env` (32 characters, `A-Z` and `0-9`). The key can
-reach only what the import needs: categories, products, images, specific prices, manufacturers and stock (read
-and write), and taxes and languages (read only). The list is `PERMISSIONS` at the top of the script. Everything else,
+reach only what the import needs: categories, products, images, specific prices, manufacturers, stock and
+combinations (read and write), attribute groups and values (read and create), and taxes and languages (read only). The list is `PERMISSIONS` at the top of the script. Everything else,
 such as customers and orders, is refused.
 
 The API is reachable only inside the Docker network. The proxy answers 404 for `/api/` and `/webservice/`,
@@ -215,6 +215,13 @@ It prints created, updated, unchanged, deleted and rejected counts and writes ev
 check. The top menu shows the categories listed under `catalog` in
 [`shop/config/shop-settings.php`](shop/config/shop-settings.php). Design notes:
 [ADR 0008](docs/adr/0008-product-import-through-the-webservice-api.md).
+
+Seven products have variants (sizes or weights, D3). The source shop sells each size as a separate product; the
+importer joins them into one product with combinations, as listed in
+[`deploy/importer/variants.json`](deploy/importer/variants.json). To add a variant, add a line to that file and run
+the import again: [Adding a variant](deploy/importer/README.md#adding-a-variant). Why:
+[ADR 0009](docs/adr/0009-variants-as-combinations-of-source-families.md). A shop installed before this needs the
+key's new permissions once: `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/40-webservice.sh`.
 
 
 ## E2E tests

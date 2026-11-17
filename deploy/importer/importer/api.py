@@ -23,7 +23,10 @@ from urllib3.util.retry import Retry
 # Name of one record in the XML body, for each resource
 SINGULAR = {
     "categories": "category",
+    "combinations": "combination",
     "manufacturers": "manufacturer",
+    "product_option_values": "product_option_value",
+    "product_options": "product_option",
     "products": "product",
     "specific_prices": "specific_price",
     "stock_availables": "stock_available",
