@@ -168,7 +168,9 @@ Documentation is in English, except `docs/AI_LOG.md`.
   The key's permissions are `PERMISSIONS` in `shop/scripts/setup/webservice.php`; add a resource there, not in the
   back office.
 - The importer (`deploy/importer`, ADR 0008) owns the catalogue: change products and categories in the data, not in
-  the back office. A full run deletes what is not in the data. Through the API, an update (PUT) empties every field it
+  the back office. Products with variants (combinations) come from `deploy/importer/variants.json` (ADR 0009): its
+  source products are joined into one product, found by the source ID of the first value, and are not imported
+  on their own. A full run deletes what is not in the data. Through the API, an update (PUT) empties every field it
   leaves out, so send the complete record; two product saves at the same time deadlock in PrestaShop's search index,
   so the importer saves products one at a time; and the HTML cleaner needs `var/cache/prod/purifier`, which
   `sync-code.sh` recreates. The top menu follows `catalog.menu_categories` in `shop/config/shop-settings.php` through

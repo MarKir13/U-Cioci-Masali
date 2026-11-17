@@ -28,10 +28,10 @@ export class CatalogPage {
     this.quantityInput = page.locator("#quantity_wanted");
     // Disabled by the shop when the product cannot be bought as it is (no stock, required customisation)
     this.addToCartButton = page.locator('.product-add-to-cart button[data-button-action="add-to-cart"]');
-    // "Produkt dodany poprawnie do Twojego koszyka", from ps_shoppingcart
+    // "Dodano do koszyka", from ps_shoppingcart (theme override modules/ps_shoppingcart/modal.tpl)
     this.addedModal = page.locator("#blockcart-modal");
     this.addedModalName = this.addedModal.locator(".product-name");
-    this.continueShoppingButton = this.addedModal.locator('button.btn-secondary[data-dismiss="modal"]');
+    this.continueShoppingButton = this.addedModal.locator('.ciocia-added__actions button[data-dismiss="modal"]');
     this.headerCartCount = headerCartCount(page);
   }
 
