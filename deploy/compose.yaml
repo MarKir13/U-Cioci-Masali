@@ -117,6 +117,29 @@ services:
       # deploy/logs/importer.log: every rejection and API error (gitignored)
       - ./logs:/logs
 
+  # One-command data init (deploy/importer/importer/init.py, issue #71), run right after `up -d`:
+  #   docker compose -f deploy/compose.yaml --profile init run --rm --build init [--subset] [importer options]
+  # Downloads and unpacks the images if any are missing, waits until the shop is ready, then runs the importer.
+  # No depends_on on purpose: the download needs no shop, so it runs while the shop is still installing, and
+  # init waits for the shop itself (the same check as the healthcheck above).
+  init:
+    build: ./importer
+    # The importer's image: init is a module of it (python -m importer.init)
+    image: ${IMPORTER_IMAGE:-ciocia-importer:local}
+    profiles: [init]
+    entrypoint: ["python", "-m", "importer.init"]
+    environment:
+      PS_WEBSERVICE_KEY: ${PS_WEBSERVICE_KEY:?set PS_WEBSERVICE_KEY in deploy/.env (see .env.example)}
+      HTTPS_PORT: "${HTTPS_PORT:?set HTTPS_PORT in deploy/.env (see .env.example)}"
+      # Empty: the GitHub Release. Optional, from deploy/.env or the shell (see .env.example)
+      IMAGES_URL: ${IMAGES_URL:-}
+      # Set by GitHub Actions: then init never suggests downloading from the source shop (AGENTS.md rule 7)
+      CI: ${CI:-}
+    volumes:
+      # Read-write: the images are unpacked into scraper-results/images/
+      - ../scraper-results:/data
+      - ./logs:/logs
+
 volumes:
   db-data:
   shop-data:
