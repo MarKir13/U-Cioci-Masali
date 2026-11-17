@@ -10,7 +10,17 @@ from collections import Counter
 log = logging.getLogger("importer")
 
 # Order of the rows in the summary
-RESOURCES = ["categories", "manufacturers", "products", "stock", "specific_prices", "images"]
+RESOURCES = [
+    "categories",
+    "manufacturers",
+    "products",
+    "stock",
+    "specific_prices",
+    "images",
+    "product_options",
+    "product_option_values",
+    "combinations",
+]
 COLUMNS = ["created", "updated", "unchanged", "deleted", "rejected"]
 
 

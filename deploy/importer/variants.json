@@ -1,0 +1,69 @@
+{
+  "$comment": [
+    "Products with variants (D3, issue #73). The importer joins the source products listed under `values` into one",
+    "product with combinations. The first value is the default variant: its source product gives the product its",
+    "description, brand, VAT and `reference`, which is how the next run finds the product again. The other source",
+    "products are not imported on their own. Each combination takes the price, weight, EAN, images and stock of its",
+    "own source product. To add a variant, add a line to `values` and run the import (deploy/importer/README.md).",
+    "Why the products are joined this way: docs/adr/0009-variants-as-combinations-of-source-families.md"
+  ],
+  "products": [
+    {
+      "name": "Krem odżywczy do twarzy Himalaya (Nourishing Skin Cream)",
+      "attribute_group": "Pojemność",
+      "values": [
+        {"value": "50 ml", "source_id": 7392},
+        {"value": "150 ml", "source_id": 120}
+      ]
+    },
+    {
+      "name": "Krem oliwkowy Himalaya Herbals",
+      "attribute_group": "Pojemność",
+      "values": [
+        {"value": "50 ml", "source_id": 5551},
+        {"value": "150 ml", "source_id": 5723}
+      ]
+    },
+    {
+      "name": "Pasta do zębów Dant Kanti Patanjali",
+      "attribute_group": "Waga",
+      "values": [
+        {"value": "100 g", "source_id": 4871},
+        {"value": "200 g", "source_id": 8019}
+      ]
+    },
+    {
+      "name": "Mydło Sandałowe MYSORE SOAP SANDALWOOD",
+      "attribute_group": "Waga",
+      "values": [
+        {"value": "75 g", "source_id": 5212},
+        {"value": "150 g", "source_id": 5211}
+      ]
+    },
+    {
+      "name": "Kadzidło zapachowe w suszu Bollywood saszetka Song of India",
+      "attribute_group": "Waga",
+      "values": [
+        {"value": "8 g", "source_id": 7736},
+        {"value": "50 g", "source_id": 8347},
+        {"value": "100 g", "source_id": 8345}
+      ]
+    },
+    {
+      "name": "Żel do mycia twarzy Różany Patanjali",
+      "attribute_group": "Waga",
+      "values": [
+        {"value": "60 g", "source_id": 4869},
+        {"value": "100 g", "source_id": 8701}
+      ]
+    },
+    {
+      "name": "Kadzidło w suszu Indian Summer mieszanka zapachowa saszetka Song of India",
+      "attribute_group": "Waga",
+      "values": [
+        {"value": "100 g", "source_id": 8355},
+        {"value": "50 g", "source_id": 8486}
+      ]
+    }
+  ]
+}
