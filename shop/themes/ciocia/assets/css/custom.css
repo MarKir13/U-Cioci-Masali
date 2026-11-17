@@ -6066,3 +6066,193 @@ body#product #main .ciocia-product-info > .ciocia-summary-trust,
 body#product #main .ciocia-product-info > .blockreassurance_product {
   margin: 0;
 }
+
+/*
+ * "Added to cart" dialog (modules/ps_shoppingcart/modal.tpl, issue #98), as on the source: the title on the left
+ * with a green check, product and totals in two columns without a divider, totals as label/value rows without a
+ * grey stripe, and "Kontynuuj zakupy" (outline) and "Przejdź do kasy" (solid) at opposite ends under them.
+ * Below 768 px the columns stack and the buttons take the full width, the checkout one on top.
+ */
+#blockcart-modal .modal-dialog {
+  width: calc(100% - 2rem);
+  max-width: 50rem;
+  margin: 1rem auto;
+}
+
+#blockcart-modal .modal-content {
+  border: 0;
+  border-radius: 0.5rem;
+  color: var(--ciocia-text);
+}
+
+#blockcart-modal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.25rem 0.5rem;
+  border-bottom: 0;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+/* Classic's clearfix would be a third flex item and push the close button away from the edge. */
+#blockcart-modal .modal-header::after {
+  content: none;
+}
+
+#blockcart-modal .modal-title {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ciocia-text);
+}
+
+/* i.material-icons: Classic's rule for this icon has a type selector, so it needs one too. */
+#blockcart-modal .modal-title i.material-icons {
+  margin: 0;
+  font-size: 2rem;
+  color: #2e7d32;
+}
+
+#blockcart-modal .modal-header .close {
+  float: none;
+  margin: 0;
+  padding: 0.25rem;
+  line-height: 1;
+}
+
+#blockcart-modal .modal-header .close .material-icons {
+  font-size: 1.75rem;
+  color: var(--ciocia-text-muted);
+}
+
+#blockcart-modal .modal-header .close:hover .material-icons {
+  color: var(--ciocia-text);
+}
+
+#blockcart-modal .modal-body {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+#blockcart-modal .ciocia-added {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+#blockcart-modal .ciocia-added p {
+  margin: 0 0 0.5rem;
+}
+
+#blockcart-modal .ciocia-added__product {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+
+#blockcart-modal .product-image {
+  flex: 0 0 auto;
+  width: 6.5rem;
+  max-width: none;
+  height: auto;
+  margin: 0;
+}
+
+#blockcart-modal .ciocia-added__info {
+  min-width: 0;
+  color: var(--ciocia-text-muted);
+}
+
+#blockcart-modal .product-name {
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ciocia-text);
+  overflow-wrap: anywhere;
+}
+
+#blockcart-modal .product-price {
+  display: block;
+  padding: 0;
+  color: var(--ciocia-text-muted);
+}
+
+#blockcart-modal .ciocia-added__cart {
+  color: var(--ciocia-text-muted);
+}
+
+#blockcart-modal .ciocia-added__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+#blockcart-modal .ciocia-added__row .label,
+#blockcart-modal .ciocia-added__row .value {
+  color: inherit;
+}
+
+#blockcart-modal .ciocia-added__row .value {
+  text-align: right;
+  white-space: nowrap;
+}
+
+#blockcart-modal .ciocia-added__row.product-total,
+#blockcart-modal .ciocia-added__row.product-tax {
+  font-weight: 600;
+  color: var(--ciocia-text);
+}
+
+#blockcart-modal .ciocia-added__actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+#blockcart-modal .ciocia-added__actions .btn {
+  padding: 0.5rem 0.875rem;
+  white-space: normal;
+}
+
+/* The outline button sits on white here, not on the cream card. */
+#blockcart-modal .ciocia-added__actions .btn-outline-primary {
+  background-color: #fff;
+}
+
+#blockcart-modal .ciocia-added__actions .btn-outline-primary:hover,
+#blockcart-modal .ciocia-added__actions .btn-outline-primary:focus {
+  background-color: var(--ciocia-primary);
+}
+
+@media (min-width: 576px) {
+  #blockcart-modal .modal-dialog {
+    margin: 1.75rem auto;
+  }
+}
+
+@media (min-width: 768px) {
+  #blockcart-modal .modal-title {
+    font-size: 1.5rem;
+  }
+
+  #blockcart-modal .ciocia-added {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  #blockcart-modal .ciocia-added__product {
+    padding-left: 2rem;
+  }
+
+  #blockcart-modal .ciocia-added__actions {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
