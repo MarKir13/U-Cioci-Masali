@@ -75,6 +75,25 @@ def stock_quantity(source_id: int) -> int:
     return 1 + (h // OUT_OF_STOCK_ONE_IN) % MAX_STOCK
 
 
+def variant_quantities(source_ids: list[int]) -> list[int]:
+    """Stock of each combination of a product with variants, in the order of `source_ids`.
+
+    Each variant starts from its source product's stock (stock_quantity). The product's own stock is the sum of
+    its combinations, and the course checks that no product has more than MAX_STOCK, so when the sum is above it,
+    every quantity is scaled down in proportion (rounded down): 2 + 7 + 9 = 18 becomes 1 + 3 + 5 = 9. A variant
+    with 0 stays at 0, so a sold-out variant stays sold out. If the scaling leaves nothing in stock while a
+    source product had some, the variant with the most gets 1.
+    """
+    quantities = [stock_quantity(i) for i in source_ids]
+    total = sum(quantities)
+    if total <= MAX_STOCK:
+        return quantities
+    scaled = [q * MAX_STOCK // total for q in quantities]
+    if not any(scaled):
+        scaled[quantities.index(max(quantities))] = 1
+    return scaled
+
+
 def ean_check_digit_ok(code: str) -> bool:
     """GTIN check digit (EAN-13, EAN-8, UPC-A): digits weighted 3 and 1 from the right."""
     digits = [int(c) for c in code]
@@ -100,11 +119,41 @@ def link_rewrite(url: str, name: str) -> str:
     Falls back to the name, written in ASCII, if the source slug is not valid in PrestaShop.
     """
     last = url.rstrip("/").rsplit("/", 1)[-1].removesuffix(".html")
-    slug = re.sub(r"^\d+-", "", last)
-    if LINK_REWRITE.match(slug):
-        return slug[:128]
+    from_url = re.sub(r"^\d+-", "", last)
+    if LINK_REWRITE.match(from_url):
+        return from_url[:128]
+    return slug(name)
+
+
+def slug(name: str) -> str:
+    """A URL slug made from a name: lowercase ASCII words joined by hyphens, such as `krem-oliwkowy`."""
     ascii_name = name.translate(POLISH_TO_ASCII).lower()
     return re.sub(r"[^a-z0-9]+", "-", ascii_name).strip("-")[:128] or "produkt"
+
+
+def price_impact(regular_price: str, default_regular_price: str, vat_rate: float) -> str:
+    """A combination's price as PrestaShop stores it: the difference to the product's net price (its "impact").
+
+    The product holds the default variant's net price, so the default combination's impact is 0. Both net prices
+    have 6 decimals, so the product's price plus the impact is the variant's own net price exactly, and the shop
+    shows the variant's gross price from the source.
+    """
+    impact = Decimal(net_price(regular_price, vat_rate)) - Decimal(net_price(default_regular_price, vat_rate))
+    return str(impact.quantize(NET_PLACES))
+
+
+def weight_impact(weight: dict | None, default_weight: dict | None) -> float:
+    """A combination's weight as PrestaShop stores it: the difference to the product's weight, in kilograms."""
+    return round(weight_kg(weight) - weight_kg(default_weight), 6)
+
+
+def value_order(value: str) -> tuple[float, str]:
+    """Sort key for attribute values: by the first number in them, so "8 g" comes before "50 g" and "100 g".
+
+    Values without a number come last, in alphabetical order.
+    """
+    number = re.search(r"\d+(?:[.,]\d+)?", value)
+    return (float(number.group().replace(",", ".")) if number else float("inf"), value)
 
 
 def visible_text(html: str) -> str:

@@ -87,6 +87,7 @@ Run from the repository root unless noted.
 | JavaScript lint (after `npm ci` once) | `npx eslint` |
 | E2E setup, once (from `tests/`) | `npm ci` and `npx playwright install chromium` |
 | E2E tests (from `tests/`; another shop: `BASE_URL=https://host:port npm test`) | `npm test` |
+| E2E stability, 3 runs in a row (from `tests/`; same seed, run `npm test` 3 times for different picks) | `npm test -- --repeat-each=3` |
 | Open the last E2E report (from `tests/`) | `npm run report` |
 | Smoke test of the running shop (ports from `HTTP_PORT`, `HTTPS_PORT`) | `sh .github/scripts/smoke-test.sh` |
 | Review the open PRs that wait for your review (Claude Code; prints review comments to paste, posts nothing) | `/review-prs`, or `/review-prs 67` for chosen PRs |
@@ -167,7 +168,9 @@ Documentation is in English, except `docs/AI_LOG.md`.
   The key's permissions are `PERMISSIONS` in `shop/scripts/setup/webservice.php`; add a resource there, not in the
   back office.
 - The importer (`deploy/importer`, ADR 0008) owns the catalogue: change products and categories in the data, not in
-  the back office. A full run deletes what is not in the data. Through the API, an update (PUT) empties every field it
+  the back office. Products with variants (combinations) come from `deploy/importer/variants.json` (ADR 0009): its
+  source products are joined into one product, found by the source ID of the first value, and are not imported
+  on their own. A full run deletes what is not in the data. Through the API, an update (PUT) empties every field it
   leaves out, so send the complete record; two product saves at the same time deadlock in PrestaShop's search index,
   so the importer saves products one at a time; and the HTML cleaner needs `var/cache/prod/purifier`, which
   `sync-code.sh` recreates. The top menu follows `catalog.menu_categories` in `shop/config/shop-settings.php` through

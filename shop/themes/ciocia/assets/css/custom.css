@@ -4975,3 +4975,1335 @@ body#checkout #wrapper #checkout-addresses-step .js-address-error {
 #wrapper .featured-products::before {
   display: none;
 }
+
+/*
+ * Product page (issue #76), as on the source: the gallery on the left (large photo, zoom button, thumbnails
+ * below), on the right the name, brand, index, price block, short description, availability and the row
+ * with quantity, "Dodaj do koszyka" and the heart; the description and details in tabs below, and the
+ * related products after them. Classic's own markup is kept (its scripts refresh the price, the variants
+ * and the stock without a reload), so everything here is CSS, scoped to body#product.
+ *
+ * Room for D3: the Omnibus line prints into .product-prices through displayProductPriceBlock
+ * ("after_price", "omnibus_price", "unit_price"); the variant selector styles are in this section too.
+ * --ciocia-bottom-nav-height belongs to the mobile bottom navigation bar (#32, defined on :root); it is only read here, with a fallback.
+ */
+
+/* No sideways scrolling on phones, whatever is inside the page. */
+body#product #wrapper,
+body#product #content-wrapper {
+  overflow-x: clip;
+}
+
+body#product #main .product-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+body#product #main .product-container::before,
+body#product #main .product-container::after {
+  display: none;
+}
+
+/* Classic's two .col-md-6 become two grid columns from 768 px, the photo column a little narrower, as on the source. */
+body#product #main .product-container > [class*="col-"] {
+  float: none;
+  width: auto;
+  max-width: none;
+  padding: 0;
+}
+
+@media (min-width: 768px) {
+  body#product #main .product-container {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 2rem;
+  }
+}
+
+/* Gallery: the photo in a framed square, the zoom button at its bottom right corner. */
+body#product .images-container {
+  position: relative;
+}
+
+body#product .images-container .product-cover {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: transparent;
+}
+
+body#product .images-container .product-cover img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  box-shadow: none;
+}
+
+/* Classic shows the zoom icon over the whole photo on hover; the source has a round button in the corner. */
+body#product .images-container .layer {
+  top: auto;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(44, 0, 1, 0.25);
+  color: var(--ciocia-text);
+  cursor: zoom-in;
+  opacity: 1;
+}
+
+/* Classic draws the magnifier in white, which vanishes on the white button. */
+body#product .images-container .layer .material-icons,
+body#product .images-container .layer .zoom-in {
+  color: var(--ciocia-text);
+  font-size: 1.5rem;
+}
+
+body#product .images-container .layer:hover,
+body#product .images-container .layer:focus-visible {
+  background: #fff;
+  color: var(--ciocia-primary);
+}
+
+/* The flags list is a direct child of #content (next to .images-container, not inside it); #content is their positioning parent. */
+body#product #content {
+  position: relative;
+}
+
+/* Flags over the photo: the discount is shown by the badge next to the price, as on the source; "Nowy" stays, small. */
+body#product #content > .product-flags {
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body#product #content > .product-flags li.product-flag {
+  position: static;
+  min-height: 0;
+  margin: 0 0 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  background: #0b69f6;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+body#product #content > .product-flags li.product-flag.discount,
+body#product #content > .product-flags li.product-flag.on-sale {
+  display: none;
+}
+
+/* Previous and next photo (custom.js): white squares at the sides of the photo, as on the source. */
+body#product .images-container .ciocia-gallery-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 3rem;
+  margin: -1.5rem 0 0;
+  padding: 0;
+  border: 0;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ciocia-text);
+}
+
+body#product .images-container .ciocia-gallery-arrow--prev {
+  left: 0;
+  border-radius: 0 6px 6px 0;
+}
+
+body#product .images-container .ciocia-gallery-arrow--next {
+  right: 0;
+  border-radius: 6px 0 0 6px;
+}
+
+body#product .images-container .ciocia-gallery-arrow:hover,
+body#product .images-container .ciocia-gallery-arrow:focus-visible {
+  background: #fff;
+  color: var(--ciocia-primary);
+}
+
+/* Phones: Classic hides the zoom icon below 768 px, so the photo itself opens the zoom (custom.js). */
+@media (max-width: 767.98px) {
+  body#product .images-container .layer {
+    display: flex !important;
+  }
+
+  body#product .images-container .product-cover img {
+    cursor: zoom-in;
+  }
+}
+
+/* Thumbnails: a row under the photo, the chosen one framed in burgundy; on a narrow screen the row scrolls. */
+body#product .images-container .js-qv-mask {
+  position: static;
+  width: auto;
+  margin: 0.75rem 0 0;
+  overflow-x: auto;
+  white-space: normal;
+}
+
+body#product .images-container .product-images {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0 0 0.25rem;
+  list-style: none;
+}
+
+body#product .images-container .product-images > li.thumb-container {
+  flex: 0 0 6rem;
+  float: none;
+  width: 6rem;
+  margin: 0;
+}
+
+body#product .images-container .product-images img.thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  border: 3px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+}
+
+body#product .images-container .product-images img.thumb:hover {
+  border-color: var(--ciocia-border);
+}
+
+body#product .images-container .product-images img.thumb.selected {
+  border-color: #0b69f6;
+}
+
+body#product .images-container .scroll-box-arrows {
+  display: none;
+}
+
+/* Zoom window. Classic shifts .modal-body by -30% and fixes its width; reset that and lay it out ourselves. */
+body#product #product-modal .modal-dialog {
+  width: auto;
+  max-width: min(60rem, calc(100vw - 1rem));
+  margin: 0.5rem auto;
+}
+
+body#product #product-modal .modal-content {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #fff;
+}
+
+body#product #product-modal .modal-body {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: center;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+body#product #product-modal figure {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+body#product #product-modal .product-cover-modal {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 80vh;
+  height: auto;
+  margin: 0 auto;
+  background: #fff;
+  object-fit: contain;
+}
+
+body#product #product-modal .image-caption {
+  width: auto;
+  max-width: 100%;
+  padding: 0.5rem 0 0;
+  background: transparent;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Thumbnails: a side column on desktop, scrolling inside its own height. */
+body#product #product-modal aside.thumbnails {
+  flex: 0 0 8.75rem;
+  width: 8.75rem;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+body#product #product-modal .arrows {
+  display: none;
+}
+
+body#product #product-modal .js-modal-mask,
+body#product #product-modal .mask {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+body#product #product-modal .js-modal-product-images {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body#product #product-modal .thumb-container {
+  margin: 0 0 0.5rem;
+}
+
+body#product #product-modal .thumb-container img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Phones: the large photo at its natural size in a box that scrolls and pinch-zooms, thumbnails in one strip below. */
+@media (max-width: 767.98px) {
+  body#product #product-modal .modal-dialog {
+    max-width: none;
+    margin: 0.5rem;
+  }
+
+  body#product #product-modal .modal-content {
+    padding: 0.5rem;
+  }
+
+  body#product #product-modal .modal-body {
+    display: block;
+  }
+
+  body#product #product-modal figure {
+    max-height: calc(100vh - 9rem);
+    max-height: calc(100dvh - 9rem);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+
+  body#product #product-modal .product-cover-modal {
+    max-width: none;
+    max-height: none;
+    margin: 0;
+  }
+
+  body#product #product-modal .image-caption {
+    position: sticky;
+    left: 0;
+    width: 100%;
+  }
+
+  body#product #product-modal aside.thumbnails {
+    width: auto;
+    max-height: none;
+    margin-top: 0.5rem;
+    overflow: visible;
+  }
+
+  body#product #product-modal .js-modal-product-images {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+  }
+
+  body#product #product-modal .thumb-container {
+    flex: 0 0 4.5rem;
+    margin: 0;
+  }
+}
+
+/* Name, brand and index. */
+body#product #main h1 {
+  margin: 0 0 0.25rem;
+  color: var(--ciocia-text);
+  font-size: clamp(1.375rem, 1.1rem + 1vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  text-transform: none;
+}
+
+body#product #main .product-manufacturer,
+body#product #main .product-manufacturer a {
+  margin: 0 0 0.75rem;
+  color: var(--ciocia-link);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+body#product #main .product-manufacturer a:hover,
+body#product #main .product-manufacturer a:focus-visible {
+  color: var(--ciocia-link-hover);
+  text-decoration: underline;
+}
+
+body#product #main .product-manufacturer img {
+  max-height: 2.5rem;
+  width: auto;
+}
+
+body#product #main .product-reference,
+body#product #main .product-information .product-reference {
+  margin: 0 0 1rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+body#product #main .product-reference .label {
+  color: inherit;
+  font-weight: 400;
+}
+
+body#product #main .product-reference span {
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+/* Price block: the price large and burgundy, the old price struck through, the discount as a gold-on-burgundy badge. */
+body#product #main .product-prices {
+  margin: 0 0 1rem;
+}
+
+body#product #main .product-prices > div {
+  margin-bottom: 0.25rem;
+}
+
+body#product #main .product-prices .current-price,
+body#product #main .product-prices .product-price {
+  color: var(--ciocia-primary);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+body#product #main .product-prices .product-discount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  color: var(--ciocia-text-muted);
+}
+
+body#product #main .product-prices .regular-price {
+  color: var(--ciocia-text-muted);
+  font-size: 1rem;
+  font-weight: 400;
+  text-decoration: line-through;
+}
+
+body#product #main .product-prices .discount,
+body#product #main .product-prices .discount-percentage,
+body#product #main .product-prices .discount-amount {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  background: var(--ciocia-primary);
+  color: var(--ciocia-gold);
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+/* "Brutto" / the VAT note, the unit price and the Omnibus line: small grey text under the price. */
+body#product #main .product-prices .tax-shipping-delay-label,
+body#product #main .product-prices .product-unit-price,
+body#product #main .product-prices .ciocia-omnibus,
+body#product #main .product-prices .omnibus-price,
+body#product #main .product-prices .product-without-taxes {
+  display: block;
+  margin: 0.25rem 0 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+body#product #main .product-prices .product-without-taxes {
+  font-size: 0.8125rem;
+}
+
+body#product #main .product-prices .product-unit-price {
+  font-size: 0.875rem;
+}
+
+body#product #main .product-description-short {
+  margin: 0 0 1rem;
+  color: var(--ciocia-text);
+  line-height: 1.5;
+}
+
+body#product #main .product-description-short p:last-child {
+  margin-bottom: 0;
+}
+
+/* Variant selector (D3 variants): text options as pills, colours as swatches, lists as plain selects. */
+body#product #main .product-variants {
+  margin: 0 0 1rem;
+}
+
+body#product #main .product-variants > .product-variants-item {
+  margin: 0 0 0.75rem;
+}
+
+body#product #main .product-variants .control-label {
+  display: block;
+  margin: 0 0 0.375rem;
+  color: var(--ciocia-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+body#product #main .product-variants ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body#product #main .product-variants li.input-container {
+  float: none;
+  margin: 0;
+}
+
+body#product #main .product-variants .radio-label {
+  display: inline-block;
+  min-width: 2.75rem;
+  margin: 0;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ciocia-text);
+  font-size: 0.875rem;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+body#product #main .product-variants .input-container:hover .radio-label {
+  border-color: var(--ciocia-primary);
+}
+
+body#product #main .product-variants input.input-radio:checked + .radio-label {
+  border-color: var(--ciocia-primary);
+  background: var(--ciocia-primary);
+  color: #fff;
+}
+
+body#product #main .product-variants input.input-radio:focus-visible + .radio-label,
+body#product #main .product-variants input.input-color:focus-visible + .color {
+  outline: 2px solid var(--ciocia-field-focus-border);
+  outline-offset: 2px;
+}
+
+body#product #main .product-variants .color,
+body#product #main .product-variants .custom-radio {
+  border: 1px solid var(--ciocia-border);
+}
+
+body#product #main .product-variants input.input-color:checked + .color,
+body#product #main .product-variants input.input-color:checked + .texture {
+  border: 2px solid var(--ciocia-primary);
+}
+
+body#product #main .product-variants select.form-control-select {
+  max-width: 20rem;
+}
+
+/* Add to cart: availability first, then quantity, button and heart in one row. */
+body#product #main .product-add-to-cart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+}
+
+body#product #main .product-add-to-cart > .control-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+body#product #main .product-add-to-cart #product-availability {
+  order: -1;
+  display: none;
+  margin: 0;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 4px;
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+body#product #main .product-add-to-cart #product-availability:has(.product-available, .product-last-items, .product-unavailable) {
+  display: block;
+}
+
+body#product #main .product-add-to-cart #product-availability .material-icons {
+  margin-right: 0.375rem;
+  font-size: 1.25rem;
+  vertical-align: text-bottom;
+}
+
+/* Classic colours: green #4cbb6c, orange #ff9a52, red #ff4c4c (all under 3:1); the same hues, darker. */
+body#product #main #product-availability .product-available {
+  color: #1e6b3a;
+}
+
+body#product #main #product-availability .product-last-items {
+  color: var(--ciocia-text);
+}
+
+body#product #main #product-availability .product-last-items .material-icons {
+  color: #9a5a00;
+}
+
+body#product #main #product-availability .product-unavailable {
+  color: #b02a37;
+}
+
+body#product #main .product-add-to-cart .product-quantity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+body#product #main .product-add-to-cart .product-quantity::before,
+body#product #main .product-add-to-cart .product-quantity::after {
+  display: none;
+}
+
+body#product #main .product-add-to-cart .product-quantity .qty,
+body#product #main .product-add-to-cart .product-quantity .add {
+  float: none;
+  margin: 0;
+}
+
+body#product #main .product-add-to-cart .product-quantity .qty {
+  flex: 0 0 auto;
+}
+
+body#product #main .product-add-to-cart .product-quantity .add {
+  flex: 1 1 12rem;
+}
+
+body#product #main .product-add-to-cart .product-quantity .add .btn,
+body#product #main .product-add-to-cart .product-quantity .add .add-to-cart {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+}
+
+body#product #main .product-add-to-cart .product-quantity .add .btn .material-icons {
+  position: static;
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+body#product #main .product-add-to-cart .product-quantity .bootstrap-touchspin {
+  display: inline-flex;
+  float: none;
+  width: auto;
+  height: 2.75rem;
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .input-group-btn-vertical {
+  display: contents;
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .btn-touchspin {
+  display: flex;
+  order: 1;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ciocia-field-border);
+  border-radius: 0 0.375rem 0.375rem 0;
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-text);
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .bootstrap-touchspin-down {
+  order: -1;
+  border-radius: 0.375rem 0 0 0.375rem;
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .btn-touchspin:hover {
+  background: var(--ciocia-border);
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .btn-touchspin i {
+  position: static;
+  font-size: 1.25rem;
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .touchspin-up::after {
+  content: "\E145";
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .touchspin-down::after {
+  content: "\E15B";
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin input.form-control {
+  order: 0;
+  width: 3.5rem;
+  height: 2.75rem;
+  border-radius: 0;
+  text-align: center;
+}
+
+/* The heart of blockwishlist: a 44 px square next to the button, as on the source. */
+body#product #main .product-add-to-cart .wishlist-button-add {
+  flex: 0 0 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: none;
+  color: var(--ciocia-primary);
+}
+
+body#product #main .product-add-to-cart .wishlist-button-add:hover,
+body#product #main .product-add-to-cart .wishlist-button-add:focus-visible {
+  border-color: var(--ciocia-primary);
+  background: var(--ciocia-surface-light);
+}
+
+body#product #main .product-minimal-quantity {
+  margin: 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* The button stays in reach on phones: the bottom navigation bar (#32) brings its own spacer, so only a scroll margin here. */
+body#product #main .product-add-to-cart {
+  scroll-margin-bottom: calc(var(--ciocia-bottom-nav-height, 0px) + 6rem);
+}
+
+/* Share links: small and quiet under the form. */
+body#product #main .social-sharing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+body#product #main .social-sharing ul {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body#product #main .social-sharing li {
+  float: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: 0;
+  background-color: transparent;
+}
+
+/* Description and details: tabs on the page card, the active tab underlined in burgundy. */
+body#product #main .tabs {
+  margin: 2rem 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body#product #main .tabs .nav-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--ciocia-border);
+}
+
+body#product #main .tabs .nav-tabs .nav-item {
+  float: none;
+  margin: 0 0 -1px;
+}
+
+body#product #main .tabs .nav-tabs .nav-link {
+  padding: 0.75rem 1.25rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--ciocia-text-muted);
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: none;
+}
+
+body#product #main .tabs .nav-tabs .nav-link:hover,
+body#product #main .tabs .nav-tabs .nav-link:focus-visible {
+  color: var(--ciocia-primary);
+}
+
+body#product #main .tabs .nav-tabs .nav-link.active {
+  border-bottom-color: var(--ciocia-primary);
+  color: var(--ciocia-primary);
+}
+
+body#product #main .tabs .tab-content {
+  padding: 1.25rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+body#product #main .tabs .tab-content img,
+body#product #main .tabs .tab-content table {
+  max-width: 100%;
+  height: auto;
+}
+
+body#product #main .tabs .tab-content table {
+  display: block;
+  overflow-x: auto;
+}
+
+body#product #main .product-description {
+  color: var(--ciocia-text);
+  line-height: 1.6;
+}
+
+/* Details: brand, index, weight, EAN... in a two-column list with thin lines between the rows. */
+body#product #main .product-features > dl.data-sheet {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 2fr;
+  margin: 0;
+  border-top: 1px solid var(--ciocia-border);
+}
+
+body#product #main .product-features > dl.data-sheet dt.name,
+body#product #main .product-features > dl.data-sheet dd.value {
+  float: none;
+  width: auto;
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--ciocia-border);
+  background: transparent;
+  color: var(--ciocia-text);
+  font-size: 0.9375rem;
+}
+
+body#product #main .product-features > dl.data-sheet dt.name {
+  font-weight: 600;
+}
+
+body#product #main .product-reference,
+body#product #main .product-quantities,
+body#product #main .product-manufacturer-details,
+body#product #main .product-condition {
+  color: var(--ciocia-text);
+}
+
+body#product #main .product-quantities label {
+  font-weight: 600;
+}
+
+/* Related and same-category products: spacing from the tabs; the grid itself is the product card list (#75). */
+body#product #main .featured-products.product-accessories,
+body#product #main .featured-products.js-product-accessories,
+body#product #main section.featured-products {
+  margin-top: 2.5rem;
+}
+
+@media (max-width: 575.98px) {
+  body#product #main .tabs .nav-tabs .nav-link {
+    padding: 0.625rem 0.875rem;
+  }
+
+  body#product #main .product-features > dl.data-sheet {
+    grid-template-columns: minmax(6rem, 1fr) 1.5fr;
+  }
+
+  body#product #main .product-prices .current-price,
+  body#product #main .product-prices .product-price {
+    font-size: 1.5rem;
+  }
+}
+
+/* Breadcrumb: the home icon before "Strona główna", as on the source. */
+body#product #wrapper .breadcrumb li:first-child a::before {
+  content: "\E88A";
+  display: inline-block;
+  margin-right: 0.375rem;
+  color: #f0a030;
+  font-family: "Material Icons";
+  font-size: 1.25rem;
+  line-height: 1;
+  vertical-align: text-bottom;
+  -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+}
+
+/* Index and brand under the name (custom.js copies them from the details tab). */
+body#product #main .ciocia-product-meta {
+  margin: 0 0 1rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+body#product #main .ciocia-product-meta__brand {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--ciocia-link);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+body#product #main a.ciocia-product-meta__brand:hover,
+body#product #main a.ciocia-product-meta__brand:focus-visible {
+  color: var(--ciocia-link-hover);
+  text-decoration: underline;
+}
+
+body#product #main .ciocia-product-meta__reference strong {
+  color: var(--ciocia-text);
+}
+
+/* Comments (productcomments): a heading in burgundy and a light card, without the white box and the icon. */
+body#product #product-comments-list-header {
+  margin: 2rem 0 0;
+  padding: 1.25rem 1.25rem 0;
+  border: 1px solid var(--ciocia-border);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: var(--ciocia-surface-light);
+}
+
+body#product #product-comments-list-header .comments-nb {
+  color: var(--ciocia-primary);
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+body#product #product-comments-list-header .comments-nb .material-icons {
+  display: none;
+}
+
+/* An empty list would draw a second, empty card under the first. */
+body#product #product-comments-list:not(:has(*)) {
+  display: none;
+}
+
+body#product #empty-product-comment,
+body#product #product-comments-list {
+  margin: 0;
+  padding: 1rem 1.25rem 1.25rem;
+  border: 1px solid var(--ciocia-border);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  background: var(--ciocia-surface-light);
+  color: var(--ciocia-text);
+  text-align: left;
+}
+
+body#product #empty-product-comment .alert,
+body#product #empty-product-comment p {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+/*
+ * Description and details: an accordion at every width, in one rounded card, as on the source: both rows closed
+ * at first, a chevron on each; the open row is cream with burgundy text.
+ * custom.js adds the buttons (.ciocia-accordion__toggle) in front of Classic's tab panes; the tabs are hidden.
+ */
+body#product #main .tabs .nav-tabs {
+  display: none;
+}
+
+body#product #main .tabs .tab-content {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(95, 6, 2, 0.06);
+}
+
+body#product #main .tabs .tab-content > .tab-pane {
+  display: none !important;
+  padding: 1.25rem 1rem;
+  opacity: 1;
+}
+
+body#product #main .tabs .tab-content > .tab-pane.ciocia-is-open {
+  display: block !important;
+}
+
+body#product #main .ciocia-accordion__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 0;
+  padding: 1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ciocia-text);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: left;
+}
+
+body#product #main .ciocia-accordion__toggle[aria-expanded="true"] {
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-primary);
+}
+
+body#product #main .tabs .tab-content > .tab-pane + .ciocia-accordion__toggle,
+body#product #main .tabs .tab-content > .ciocia-accordion__toggle:not(:first-child) {
+  border-top: 1px solid var(--ciocia-border);
+}
+
+body#product #main .ciocia-accordion__toggle:focus-visible {
+  outline: 2px solid var(--ciocia-field-focus-border);
+  outline-offset: -2px;
+}
+
+body#product #main .ciocia-accordion__toggle .material-icons {
+  font-size: 1.5rem;
+  transition: transform 0.15s;
+}
+
+body#product #main .ciocia-accordion__toggle[aria-expanded="true"] .material-icons {
+  transform: rotate(180deg);
+}
+
+/* The accordion on the left and the trust block on the right from 768 px, as on the source; stacked below. */
+body#product #main .ciocia-product-info {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+  margin-top: 2rem;
+}
+
+@media (min-width: 768px) {
+  body#product #main .ciocia-product-info {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  }
+
+  body#product #main .ciocia-product-info--solo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+body#product #main .ciocia-product-info > .tabs,
+body#product #main .ciocia-product-info > .ciocia-summary-trust,
+body#product #main .ciocia-product-info > .blockreassurance_product {
+  margin: 0;
+}
+
+/*
+ * "Added to cart" dialog (modules/ps_shoppingcart/modal.tpl, issue #98), as on the source, centred on the screen.
+ * - From 992 px: the title on the left with a green check, product and cart totals in two columns without a
+ *   divider, totals as label/value rows without a grey stripe, and "Kontynuuj zakupy" (outline) and
+ *   "Przejdź do kasy" (solid) at opposite ends under them.
+ * - Below 992 px the window is narrower and shows only the product image, name and price; the quantity and the
+ *   cart totals are hidden.
+ * - Below 576 px the title is smaller and green, and the buttons take the full width, the checkout one on top.
+ */
+#blockcart-modal .modal-dialog {
+  display: flex;
+  align-items: center;
+  width: calc(100% - 2rem);
+  max-width: 31rem;
+  min-height: calc(100% - 2rem);
+  margin: 1rem auto;
+}
+
+#blockcart-modal .modal-content {
+  width: 100%;
+  border: 0;
+  border-radius: 0.5rem;
+  color: var(--ciocia-text);
+}
+
+#blockcart-modal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1rem 0.5rem;
+  border-bottom: 0;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+/* Classic's clearfix would be a third flex item and push the close button away from the edge. */
+#blockcart-modal .modal-header::after {
+  content: none;
+}
+
+#blockcart-modal .modal-title {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #2e7d32;
+}
+
+/* i.material-icons: Classic's rule for this icon has a type selector, so it needs one too. */
+#blockcart-modal .modal-title i.material-icons {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #2e7d32;
+}
+
+#blockcart-modal .modal-header .close {
+  float: none;
+  margin: 0;
+  padding: 0.25rem;
+  line-height: 1;
+}
+
+#blockcart-modal .modal-header .close .material-icons {
+  font-size: 1.75rem;
+  color: var(--ciocia-text-muted);
+}
+
+#blockcart-modal .modal-header .close:hover .material-icons {
+  color: var(--ciocia-text);
+}
+
+#blockcart-modal .modal-body {
+  padding: 1rem;
+}
+
+#blockcart-modal .ciocia-added {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+#blockcart-modal .ciocia-added p {
+  margin: 0 0 0.5rem;
+}
+
+#blockcart-modal .ciocia-added__product {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding-left: 1.25rem;
+}
+
+#blockcart-modal .product-image {
+  flex: 0 0 auto;
+  width: 6.5rem;
+  max-width: none;
+  height: auto;
+  margin: 0;
+}
+
+#blockcart-modal .ciocia-added__info {
+  min-width: 0;
+  color: var(--ciocia-text-muted);
+}
+
+#blockcart-modal .product-name {
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--ciocia-text);
+  overflow-wrap: anywhere;
+}
+
+#blockcart-modal .product-price {
+  display: block;
+  padding: 0;
+  font-weight: 600;
+  color: var(--ciocia-text);
+}
+
+/* Only the image, name and price below 992 px, as on the source. */
+#blockcart-modal .ciocia-added__info > :not(.product-name, .product-price),
+#blockcart-modal .ciocia-added__cart {
+  display: none;
+}
+
+#blockcart-modal .ciocia-added__cart {
+  color: var(--ciocia-text-muted);
+}
+
+#blockcart-modal .ciocia-added__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+#blockcart-modal .ciocia-added__row .label,
+#blockcart-modal .ciocia-added__row .value {
+  color: inherit;
+}
+
+#blockcart-modal .ciocia-added__row .value {
+  text-align: right;
+  white-space: nowrap;
+}
+
+#blockcart-modal .ciocia-added__row.product-total,
+#blockcart-modal .ciocia-added__row.product-tax {
+  font-weight: 600;
+  color: var(--ciocia-text);
+}
+
+#blockcart-modal .ciocia-added__actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+#blockcart-modal .ciocia-added__actions .btn {
+  padding: 0.5rem 0.875rem;
+  white-space: normal;
+}
+
+/* The outline button sits on white here, not on the cream card. */
+#blockcart-modal .ciocia-added__actions .btn-outline-primary {
+  background-color: #fff;
+}
+
+#blockcart-modal .ciocia-added__actions .btn-outline-primary:hover,
+#blockcart-modal .ciocia-added__actions .btn-outline-primary:focus {
+  background-color: var(--ciocia-primary);
+}
+
+@media (min-width: 576px) {
+  #blockcart-modal .modal-dialog {
+    min-height: calc(100% - 3.5rem);
+    margin: 1.75rem auto;
+  }
+
+  #blockcart-modal .modal-header {
+    padding: 1.25rem 1.25rem 0.5rem;
+  }
+
+  #blockcart-modal .modal-body {
+    padding: 1rem 1.25rem 1.25rem;
+  }
+
+  #blockcart-modal .modal-title {
+    gap: 0.75rem;
+    font-size: 1.5rem;
+    color: var(--ciocia-text);
+  }
+
+  #blockcart-modal .modal-title i.material-icons {
+    font-size: 2rem;
+  }
+
+  #blockcart-modal .ciocia-added__actions {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+@media (min-width: 992px) {
+  #blockcart-modal .modal-dialog {
+    max-width: 50rem;
+  }
+
+  #blockcart-modal .ciocia-added {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  #blockcart-modal .ciocia-added__product {
+    padding-left: 2rem;
+  }
+
+  #blockcart-modal .ciocia-added__info > :not(.product-name, .product-price) {
+    display: block;
+  }
+
+  #blockcart-modal .ciocia-added__cart {
+    display: block;
+  }
+
+  #blockcart-modal .product-name {
+    line-height: 1.4;
+  }
+
+  #blockcart-modal .product-price {
+    font-weight: 400;
+    color: var(--ciocia-text-muted);
+  }
+}

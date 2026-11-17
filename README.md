@@ -148,8 +148,8 @@ The layout is in `shop/themes/ciocia/modules/ps_imageslider/views/templates/hook
 The product importer loads the scraped data through the PrestaShop Webservice API. A third setup script,
 [`webservice.php`](shop/scripts/setup/webservice.php), turns the API on and creates one key,
 `ciocia-importer`, from `PS_WEBSERVICE_KEY` in `deploy/.env` (32 characters, `A-Z` and `0-9`). The key can
-reach only what the import needs: categories, products, images, specific prices, manufacturers and stock (read
-and write), and taxes and languages (read only). The list is `PERMISSIONS` at the top of the script. Everything else,
+reach only what the import needs: categories, products, images, specific prices, manufacturers, stock and
+combinations (read and write), attribute groups and values (read and create), and taxes and languages (read only). The list is `PERMISSIONS` at the top of the script. Everything else,
 such as customers and orders, is refused.
 
 The API is reachable only inside the Docker network. The proxy answers 404 for `/api/` and `/webservice/`,
@@ -216,6 +216,13 @@ check. The top menu shows the categories listed under `catalog` in
 [`shop/config/shop-settings.php`](shop/config/shop-settings.php). Design notes:
 [ADR 0008](docs/adr/0008-product-import-through-the-webservice-api.md).
 
+Seven products have variants (sizes or weights, D3). The source shop sells each size as a separate product; the
+importer joins them into one product with combinations, as listed in
+[`deploy/importer/variants.json`](deploy/importer/variants.json). To add a variant, add a line to that file and run
+the import again: [Adding a variant](deploy/importer/README.md#adding-a-variant). Why:
+[ADR 0009](docs/adr/0009-variants-as-combinations-of-source-families.md). A shop installed before this needs the
+key's new permissions once: `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/40-webservice.sh`.
+
 
 ## E2E tests
 
@@ -275,11 +282,29 @@ Step 7 orders with one of the two new carriers, "Kurier" or "Paczkomat", picked 
 report shows the carrier used (`carrier` annotation). The checkout asks for the carrier before the payment, so
 step 7 runs before step 6.
 
+Steps 9 and 10 open the order history from "Moje konto" and check the new order there: its status must be
+"Oczekiwanie na płatność przy odbiorze" (the shop's status for a new cash on delivery order) and its invoice link
+must return a PDF. The invoice is attached to the HTML report as `invoice-<order reference>.pdf`.
+
 | Path | Contents |
 |---|---|
 | `tests/e2e/` | `smoke.spec.js` (home page over HTTPS, no console errors) and `order.spec.js` (the W4 scenario, one step per point of the brief) |
 | `tests/pages/` | One file per area of the shop (catalog, search, cart, account, checkout, orders) with its selectors and actions |
 | `tests/support/` | Shared code: fixtures (`test`, `rng`, `consoleErrors`), seeded random numbers, test data |
+
+### Running the suite several times
+
+W4 counts 3 passes of 3 runs in a row. Run the suite three times in one command, from `tests/`:
+
+```sh
+npm test -- --repeat-each=3
+```
+
+The three repeats use the same seed, so they pick the same products. For three different picks, run `npm test`
+three times instead. One run of the W4 scenario takes about 40–50 seconds on a local shop, so three repeats take
+about 2 minutes. The 4-minute limit (`globalTimeout` in [`playwright.config.js`](tests/playwright.config.js)) covers
+the whole command, so all three repeats together; on a slower shop where they do not fit, run `npm test` three
+times instead.
 
 Rules for new tests: import `test` and `expect` from `tests/support/fixtures.js`, keep selectors in `tests/pages/`,
 and never wait a fixed time. Wait on a condition instead (`expect(...)`, `waitForURL`, `waitForResponse`);
@@ -417,7 +442,7 @@ same result as CI and never shows your passwords.
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
 | `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | done: crawl, images, verification |
 | `scraper-results/` | Scraped data (`categories.json`, `products.jsonl`, `schema.json`, `rejected.json`), `verification-report.md` and 20 sample images | done: 2159 products, 160 categories |
-| `tests/` | Playwright E2E tests | in progress |
+| `tests/` | Playwright E2E tests | done: W4 scenario, steps 1–10 |
 
 ## Team
 

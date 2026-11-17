@@ -7,8 +7,8 @@
  *    named in shop/config/shop-settings.php ('catalog' => 'menu_categories').
  * 2. The page cache. The home page sections (new products, specials, featured, best sellers) are cached by
  *    Smarty and cleared by hooks that only the back office fires, so after an API write they would keep old
- *    prices, stock and images. After every change to a product, a specific price, a stock row, an image or a
- *    category, this module clears that cache.
+ *    prices, stock and images. After every change to a product, a combination, a specific price, a stock row,
+ *    an image or a category, this module clears that cache.
  *
  * Both work through PrestaShop's object events (actionObject...After), which fire for API requests too.
  * configure-shop.php stores the menu list as CIOCIA_MENU_CATEGORIES, installs this module, registers its
@@ -25,7 +25,7 @@ class Ciociamenu extends Module
 
     // Fired for every object PrestaShop saves or deletes; the module reacts only to CATALOG_CLASSES
     const HOOKS = ['actionObjectAddAfter', 'actionObjectUpdateAfter', 'actionObjectDeleteAfter'];
-    const CATALOG_CLASSES = ['Category', 'Product', 'SpecificPrice', 'StockAvailable', 'Image'];
+    const CATALOG_CLASSES = ['Category', 'Product', 'Combination', 'SpecificPrice', 'StockAvailable', 'Image'];
 
     public function __construct()
     {
