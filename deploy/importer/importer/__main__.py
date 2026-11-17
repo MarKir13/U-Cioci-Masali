@@ -87,26 +87,40 @@ def run(api: ShopApi, args: argparse.Namespace) -> int:
     rejected_product_ids = {source_id for source_id, _ in rejected + without_images}
     log.info("data: %d categories, %d products (%d selected)", len(categories), len(products), len(selected))
 
-    api.load_languages()
-    shop = steps.read_shop(api)
+    timings = api.timings
+    with timings.phase("read the shop"):
+        api.load_languages()
+        shop = steps.read_shop(api)
     log.info("shop: %d products, %d categories before the import", len(shop.all_products), len(shop.categories))
 
     # Steps 1-2: categories (all of them, also for a subset) and brands
-    category_ids = steps.import_categories(api, shop, categories, report)
-    brand_ids = steps.import_manufacturers(api, shop, products, report)
+    with timings.phase("categories"):
+        category_ids = steps.import_categories(api, shop, categories, report)
+    with timings.phase("manufacturers"):
+        brand_ids = steps.import_manufacturers(api, shop, products, report)
 
     # Steps 3-6: each product with its stock, promotion and images, several at a time
-    steps.import_products(api, shop, selected, category_ids, brand_ids, args.data_dir, args.workers, report)
+    with timings.phase(f"products and images ({args.workers} workers)"):
+        steps.import_products(api, shop, selected, category_ids, brand_ids, args.data_dir, args.workers, report)
 
     # Step 7: the installer's demo catalogue and anything else that is not in the data
     if full_run:
-        steps.remove_other_records(
-            api, shop, products, rejected_product_ids, category_ids, brand_ids, report, all_lines_read=not unreadable
-        )
+        with timings.phase("delete what is not in the data"):
+            steps.remove_other_records(
+                api,
+                shop,
+                products,
+                rejected_product_ids,
+                category_ids,
+                brand_ids,
+                report,
+                all_lines_read=not unreadable,
+            )
     else:
         log.info("subset run (--limit or --categories): nothing is deleted")
 
     log.info("summary%s:\n%s", " (dry run, nothing written)" if args.dry_run else "", report.summary())
+    log.info("time spent:\n%s", timings.summary())
     log.info("finished in %.0f s; log: %s", time.monotonic() - started, args.log_file)
     if report.rejected:
         log.error("%d record(s) rejected, see REJECTED lines in the log", report.rejected)
