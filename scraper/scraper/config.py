@@ -70,6 +70,8 @@ IMAGE_SHRINK_STEP = 0.9
 SAMPLE_IMAGES_DIR = RESULTS_DIR / "sample-images"
 SAMPLE_COUNT = 20
 IMAGES_ARCHIVE = RESULTS_DIR / "product-images.tar.gz"
+# Only the images of a few categories (`archive --categories`), for the init command's subset mode (issue #71)
+SUBSET_ARCHIVE = RESULTS_DIR / "subset-images.tar.gz"
 # GitHub allows much more per Release asset; the course limit is 1 GB
 ARCHIVE_MAX_BYTES = 1_000_000_000
 VERIFICATION_REPORT = RESULTS_DIR / "verification-report.md"

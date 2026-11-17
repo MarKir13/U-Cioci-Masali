@@ -43,6 +43,17 @@ def positive_int(value):
     return number
 
 
+def category_ids(value):
+    """Comma-separated category IDs, such as "85,99"."""
+    try:
+        ids = {int(part) for part in value.split(",") if part.strip()}
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{value}' is not a list of category IDs such as 85,99") from None
+    if not ids:
+        raise argparse.ArgumentTypeError("give at least one category ID")
+    return ids
+
+
 def main(argv: list[str] | None = None) -> int:
 
     # Create a parser for running with args from terminal
@@ -92,7 +103,16 @@ def main(argv: list[str] | None = None) -> int:
         "sample", help=f"copy {config.SAMPLE_COUNT} sample images to {config.SAMPLE_IMAGES_DIR.name}/ (committed)"
     )
     sample.add_argument("--seed", type=int, default=1, help="random seed, so the same selection can be repeated")
-    commands.add_parser("archive", help=f"pack all images into {config.IMAGES_ARCHIVE.name} for the GitHub Release")
+    archive = commands.add_parser(
+        "archive", help=f"pack all images into {config.IMAGES_ARCHIVE.name} for the GitHub Release"
+    )
+    archive.add_argument(
+        "--categories",
+        type=category_ids,
+        metavar="ID,ID",
+        help=f"only the images of products in these categories and their subcategories, into "
+        f"{config.SUBSET_ARCHIVE.name} (the init command's subset, e.g. 85,99)",
+    )
 
     # Schema subcommand
     commands.add_parser("schema", help=f"write the JSON schema of the results to {config.SCHEMA_FILE.name}")
@@ -112,7 +132,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "sample":
         return make_samples(seed=args.seed)
     if args.command == "archive":
-        return make_archive()
+        return make_archive(categories=args.categories)
     client = HttpClient(delay=args.delay)
     if args.command == "fetch":  # start fetching
         return fetch_page(client, args.url, args.output)

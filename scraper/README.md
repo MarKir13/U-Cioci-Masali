@@ -29,6 +29,7 @@ python -m scraper schema                                        # write ../scrap
 python -m scraper verify                                        # check the results against the requirements, write the report
 python -m scraper sample                                        # copy 20 sample images to ../scraper-results/sample-images/
 python -m scraper archive                                       # pack all images into ../scraper-results/product-images.tar.gz
+python -m scraper archive --categories 85,99                    # only these categories' images, into subset-images.tar.gz
 ```
 
 Options before the command: `--delay SECONDS` (default 1.0, minimum 0.5, maximum 3600), `-v` for DEBUG messages in the console.
@@ -76,6 +77,7 @@ Other commands write these files into the same folder:
 | `verification-report.md` | `verify`: one line per check | Yes |
 | `sample-images/` | `sample`: 20 images, one per randomly chosen product | Yes |
 | `product-images.tar.gz` | `archive`: all images in one file | No (`.gitignore`); attached to the GitHub Release |
+| `subset-images.tar.gz` | `archive --categories`: the images of a few categories, for the init command's subset mode | No (`.gitignore`); attached to the GitHub Release |
 
 All files are UTF-8 with Polish characters as they are (`ensure_ascii=False`). Whole files are written to a `.tmp` file
 first and then renamed over the old one, so Ctrl+C leaves either the old or the new version. A product line is written
@@ -178,6 +180,7 @@ python -m scraper archive
 | Categories | 160, in 5 top-level categories that have at least 2 non-empty subcategories (Kosmetyki, Zdrowie, Żywność, Różności, Aromaterapia i Masaż) |
 | Images | 4822 JPEGs, 800-1600 px on the longer side, at most 300 000 bytes each. 1308 products have two or more |
 | Archive | `product-images.tar.gz`, 584 619 393 bytes, sha256 `54e3a0d705e5256a2f1bfee998f6176dc7164d78bd43c9208b0355d7b5f770c5` |
+| Subset archive | `subset-images.tar.gz` (`archive --categories 85,99`: Przyprawy and Pielęgnacja okolic oczu, 53 products, 121 images), 9 772 701 bytes, sha256 `ee7bab8b91855d2c75c1140384815c4643c5d993819617f1ac897925a06b63b6` |
 
 ### Verification
 
@@ -206,6 +209,13 @@ tar xzf /tmp/product-images.tar.gz -C scraper-results     # creates scraper-resu
 `scraper-results/sample-images/` holds 20 of them in the repository. To make a new archive after a new run, run
 `python -m scraper archive`, upload it with `gh release upload images-v1 scraper-results/product-images.tar.gz --clobber`
 and update the hash above.
+
+The same Release holds `subset-images.tar.gz`: only the images of the products in categories 85 (Przyprawy, under
+Żywność) and 99 (Pielęgnacja okolic oczu, under Kosmetyki), with their subcategories. The init command's subset mode
+imports exactly those products (issue #71): two branches of the top menu with enough products in stock for the E2E
+scenario, in under 10 MB instead of 585 MB. After a new run, or to change the categories, run
+`python -m scraper archive --categories 85,99` and upload it the same way. The archive's hash changes on every build,
+even for the same images (the files' dates are inside), so update the hash above and in the init command with it.
 
 ## Politeness
 
@@ -289,7 +299,7 @@ with `REMOVED` before committing a new fixture.
 | `scraper/crawl.py` | Full run: stages, saving and resuming, page cache |
 | `scraper/images.py` | Image download, resizing and recompression (Pillow), `local_path` |
 | `scraper/verify.py` | Checks of the finished results (`verify`), writes `verification-report.md` |
-| `scraper/publish.py` | Sample images (`sample`) and the archive for the Release (`archive`) |
+| `scraper/publish.py` | Sample images (`sample`) and the archives for the Release (`archive`, `archive --categories`) |
 | `scraper/logging_config.py` | Logging to the console and `scraper.log` |
 | `scraper/models.py` | Schema of the results and validation of records |
 | `scraper/parsers.py` | Parsers of the sitemap, category, listing and product pages (no network) |
