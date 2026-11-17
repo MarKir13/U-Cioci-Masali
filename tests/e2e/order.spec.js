@@ -305,7 +305,9 @@ test("W4: from an empty cart to the VAT invoice", async ({ page, request, rng, c
     // page.request shares the page's cookies, so the shop sees the logged-in customer who owns the order
     const response = await page.request.get(invoiceUrl);
     expect(response.status(), `GET ${invoiceUrl}`).toBe(200);
-    expect(response.headers()["content-type"], "invoice content type").toContain("application/pdf");
+    // TCPDF's download mode calls header() four times (force-download, octet-stream, download, pdf), but
+    // Apache keeps only the last Content-Type, so the response has exactly one: application/pdf
+    expect(response.headers()["content-type"], "invoice content type").toBe("application/pdf");
     const body = await response.body();
     expect(body.subarray(0, 4).toString("latin1"), "invoice file starts like a PDF").toBe("%PDF");
     await test.info().attach(`invoice-${orderReference}.pdf`, { body, contentType: "application/pdf" });
