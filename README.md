@@ -205,7 +205,7 @@ and password of the backed-up shop, because the admin account is part of the dat
 `app/config/parameters.php` (database password, cookie keys) and `.htaccess` are not in the backup:
 they belong to one install, and the environment you restore into keeps its own. Customers still log
 in with their old passwords. Design notes:
-[ADR 0009](docs/adr/0009-backup-contents-and-settings-export.md).
+[ADR 0012](docs/adr/0012-backup-contents-and-settings-export.md).
 
 **Restore onto a clean environment** (the acceptance demo):
 

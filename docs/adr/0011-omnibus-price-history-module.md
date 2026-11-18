@@ -50,7 +50,9 @@ Module `shop/modules/ciociaomnibus`, installed by `configure-shop.php` (ADR 0005
   without combinations. Install and the setup script add a starting row with the regular price for every product
   that has none.
 - Rows written ahead for the end of a promotion: for every promotion with a "to" date in the future, a row with
-  the regular price dated "to", marked with the promotion's ID (`id_specific_price`; 0 for a row written on a save).
+  the regular price dated at the start of the minute after "to" (PrestaShop compares "to" with the current time cut
+  to the minute, so a promotion applies until the end of that minute), marked with the promotion's ID
+  (`id_specific_price`; 0 for a row written on a save).
   Nothing runs when a promotion expires, so without them the last row would stay at the promotion price and a later
   promotion would count it. They are rewritten on every save of the product, and rows dated in the future are not
   read as the current price.

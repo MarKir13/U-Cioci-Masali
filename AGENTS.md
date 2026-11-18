@@ -213,7 +213,7 @@ Documentation is in English, except `docs/AI_LOG.md`.
   module's tables: a back-office "Reset" of `ciociaomnibus` deletes it. The importer updates promotions in place
   (`set_promotion`); keep it that way, since a deleted and re-added promotion gets a new start date (ADR 0011).
 - A backup holds the database, `img/` and the banner slides, but not `app/config/parameters.php` or `.htaccess`
-  (ADR 0009). After a restore the back office login is the one from the backup. A new kind of file that lives
+  (ADR 0012). After a restore the back office login is the one from the backup. A new kind of file that lives
   only in the `shop-data` volume and is not rebuilt from the image must be added to both `deploy/backup.sh` and
   `deploy/restore.sh`.
   

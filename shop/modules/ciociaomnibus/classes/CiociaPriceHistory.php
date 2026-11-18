@@ -32,7 +32,8 @@ class CiociaPriceHistory
         }
         self::planPromoEnds($idProduct);
     }
-        /**
+
+    /**
      * Rows written ahead for the moment each promotion ends (its "to" date), with the regular price. Nothing runs
      * when a promotion expires, so without them the last row would stay at the promotion price, and a later
      * promotion would count it. Runs after every save of the product, so a changed or deleted promotion, or a new
@@ -49,11 +50,12 @@ class CiociaPriceHistory
             'id_product = ' . $idProduct . ' AND id_specific_price > 0 AND date_add > \'' . $now . '\''
         );
 
-        // "to" is 0000-00-00 00:00:00 for a promotion without an end, so it is left out here
+        // Promotions that PrestaShop applies now or will apply later and that have an end. "to" is
+        // 0000-00-00 00:00:00 for a promotion without an end, so it is left out here.
         $promotions = $db->executeS(
             'SELECT id_specific_price, id_product_attribute, `to` FROM `' . _DB_PREFIX_ . 'specific_price`
             WHERE id_product = ' . $idProduct . ' AND id_cart = 0 AND id_customer = 0
-                AND `to` > \'' . $now . '\'',
+                AND `to` >= \'' . self::currentMinute() . '\'',
             true,
             false
         );
@@ -72,10 +74,34 @@ class CiociaPriceHistory
                 if ($promotionAttribute !== 0 && $promotionAttribute !== $idProductAttribute) {
                     continue;
                 }
-                self::insert($idProduct, $idProductAttribute, $price, $promotion['to'], (int) $promotion['id_specific_price']);
+                self::insert(
+                    $idProduct,
+                    $idProductAttribute,
+                    $price,
+                    self::promoEnd($promotion['to']),
+                    (int) $promotion['id_specific_price']
+                );
             }
         }
     }
+
+    /**
+     * The moment PrestaShop stops applying a promotion. It compares "to" with the current time cut to the minute
+     * (SpecificPrice::computeExtraConditions), so a promotion still applies until the end of the minute of its
+     * "to" date. A row dated "to" itself would be followed by the promotion price again if the product were saved
+     * within that minute.
+     */
+    private static function promoEnd(string $to): string
+    {
+        return (new DateTimeImmutable($to))->modify('+1 minute')->format('Y-m-d H:i:00');
+    }
+
+    /** The current time cut to the minute, as PrestaShop compares it with promotion dates. */
+    private static function currentMinute(): string
+    {
+        return (new DateTimeImmutable())->format('Y-m-d H:i:00');
+    }
+
     /**
      * Starting rows: the regular price (without promotions) for every product and combination that has no row
      * yet, and a start date for every promotion that has none. Safe to run again. Returns the number of new rows.
@@ -111,16 +137,18 @@ class CiociaPriceHistory
             FROM `' . _DB_PREFIX_ . 'specific_price`
             WHERE id_cart = 0'
         );
-         // Planned rows for promotions that end in the future, also for products that already had rows
+
+        // Planned rows for promotions that end in the future, also for products that already had rows
         $withEnd = $db->executeS(
             'SELECT DISTINCT id_product FROM `' . _DB_PREFIX_ . 'specific_price`
-            WHERE id_product > 0 AND id_cart = 0 AND `to` > \'' . self::now() . '\'',
+            WHERE id_product > 0 AND id_cart = 0 AND `to` >= \'' . self::currentMinute() . '\'',
             true,
             false
         );
         foreach ($withEnd as $row) {
             self::planPromoEnds((int) $row['id_product']);
         }
+
         return count($missing);
     }
 

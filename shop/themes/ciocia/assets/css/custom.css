@@ -2996,12 +2996,6 @@ body#sitemap #wrapper .sitemap > [class*="col-"] {
   white-space: nowrap;
 }
 
-/* Product cards centre their prices. */
-.product-miniature .omnibus-price {
-  padding: 0 0.25rem;
-  text-align: center;
-}
-
 /*
  * Checkout steps bar (issue #44), templates/checkout/checkout.tpl: a card of its own above the
  * checkout card, as on the source, with numbered circles joined by lines. custom.js builds it and
