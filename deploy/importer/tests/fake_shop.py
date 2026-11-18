@@ -16,6 +16,7 @@ own logic finds what it wrote before and writes nothing twice.
 import itertools
 
 from importer.api import Lang
+from importer.report import Timings
 
 LANGUAGE_FIELDS = {"name", "public_name", "description", "link_rewrite"}
 
@@ -24,6 +25,8 @@ class FakeApi:
     def __init__(self) -> None:
         self.dry_run = False
         self.lang_ids = [1]
+        # Like ShopApi.timings: the steps record their waits here (steps.import_product)
+        self.timings = Timings()
         self.records: dict[str, dict[int, dict]] = {}
         self._ids = itertools.count(100)
         self.writes: list[tuple[str, str]] = []  # (method, resource) of every write, for the tests

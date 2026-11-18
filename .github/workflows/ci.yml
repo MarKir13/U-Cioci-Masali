@@ -66,7 +66,7 @@ jobs:
       - uses: actions/checkout@v7
       - name: Dockerfiles (hadolint)
         if: ${{ !cancelled() }}
-        run: docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile
+        run: docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile scraper/Dockerfile
       - name: Shell scripts (shellcheck)
         if: ${{ !cancelled() }}
         # -z and xargs -0 pass each path as one argument, even with spaces in it
@@ -91,6 +91,10 @@ jobs:
           fi
           git ls-files -z 'shop/*.php' |
             xargs -0 -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l
+      # Plain PHP test of the Omnibus rule (shop/modules/ciociaomnibus), no PrestaShop or database needed
+      - name: Omnibus rule test (PHP)
+        if: ${{ !cancelled() }}
+        run: docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php
       - uses: actions/setup-node@v7
         if: ${{ !cancelled() }}
         with:
@@ -103,8 +107,9 @@ jobs:
         run: npx eslint
 
   # Decides whether `smoke` runs: only when the change touches what the shop is built and started
-  # from. HEAD^1 is main: on a PR, HEAD is GitHub's test merge of the PR into main; on a push to
-  # main, HEAD is the PR's merge commit. So the diff lists every file the PR changes.
+  # from, or the E2E tests that run in it. HEAD^1 is main: on a PR, HEAD is GitHub's test merge of the
+  # PR into main; on a push to main, HEAD is the PR's merge commit. So the diff lists every file the PR
+  # changes.
   changes:
     runs-on: ubuntu-24.04
     outputs:
@@ -113,23 +118,32 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2
-      - name: Did shop/, deploy/ or the smoke test change?
+      # scraper-results/: the data the smoke job's init imports. tests/ and e2e-runs.sh: the E2E run at its end
+      - name: Did shop/, deploy/, scraper-results/, tests/ or the smoke or E2E scripts change?
         id: diff
         run: |
           git diff --name-only HEAD^1 HEAD | tee "$RUNNER_TEMP/changed-files.txt"
-          if grep -qE '^(shop/|deploy/|\.github/workflows/ci\.yml|\.github/scripts/smoke-test\.sh)' "$RUNNER_TEMP/changed-files.txt"; then
+          if grep -qE '^(shop/|deploy/|scraper-results/|tests/|\.github/workflows/ci\.yml|\.github/scripts/(smoke-test|e2e-runs)\.sh)' "$RUNNER_TEMP/changed-files.txt"; then
             echo "shop=true" >> "$GITHUB_OUTPUT"
           else
             echo "shop=false" >> "$GITHUB_OUTPUT"
           fi
 
   # A clean install, the way the lecturer starts the shop from the README: build, install, wait
-  # until every container is ready, then check the shop through the HTTPS proxy.
+  # until every container is ready, then check the shop through the HTTPS proxy. Then the subset data
+  # and one run of the E2E suite on it, so a PR that breaks the purchase scenario fails `ci-gate`.
+  # The 3 runs in a row for W4 stability are in e2e.yml (main, nightly, by hand).
   smoke:
     needs: changes
     if: needs.changes.outputs.shop == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # Install up to 10 minutes, two subset inits of about 2 minutes together, then Node.js, Chromium and
+    # one E2E run of up to 5 minutes
+    timeout-minutes: 30
+    env:
+      # Ports from deploy/.env.example
+      BASE_URL: https://localhost:8443
+      MAILPIT_URL: http://localhost:8025
     steps:
       - uses: actions/checkout@v7
       - name: Configure as in the README
@@ -140,11 +154,56 @@ jobs:
         run: docker compose -f deploy/compose.yaml up -d --build --wait --wait-timeout 600
       - name: Check the running shop
         run: sh .github/scripts/smoke-test.sh
+      # The data init command from the README (issue #71) with the small subset: the images of categories 85 and 99
+      # from the GitHub Release, then their import. GitHub sets CI=true, so init never points to the source shop.
+      - name: Data init (subset)
+        run: docker compose -f deploy/compose.yaml --profile init run --rm --build init --subset
+      # A second init must change nothing: no download, nothing created or deleted, so no duplicates.
+      # The summary has one row per resource: its name, then 5 whole numbers (created, updated, unchanged, deleted,
+      # rejected). No other line of the output has that shape, so new resources are checked without listing them.
+      # shell: bash runs with pipefail, so a failed init still fails the step behind `| tee`.
+      - name: Second data init changes nothing
+        shell: bash
+        run: |
+          docker compose -f deploy/compose.yaml --profile init run --rm init --subset 2>&1 | tee "$RUNNER_TEMP/second-init.txt"
+          grep -q "nothing to download" "$RUNNER_TEMP/second-init.txt"
+          awk 'NF == 6 && $2 $3 $4 $5 $6 ~ /^[0-9]+$/ && ($2 > 0 || $5 > 0) {
+                 print "changed on the second run: " $0; changed = 1
+               } END { exit changed }' "$RUNNER_TEMP/second-init.txt"
+      - name: Check the shop again, with data
+        run: sh .github/scripts/smoke-test.sh
+      # The same E2E steps as in e2e.yml, with one run: enough to catch a change that breaks the scenario
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          # Keeps npm's download cache between runs, keyed on the lock file
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+      - name: Install the test dependencies (versions from tests/package-lock.json)
+        working-directory: tests
+        run: npm ci
+      # --with-deps: also the system libraries Chromium needs on a Linux machine without a desktop
+      - name: Install Chromium
+        working-directory: tests
+        run: npx playwright install --with-deps chromium
+      - name: E2E run
+        run: sh .github/scripts/e2e-runs.sh 1
+      # Also after a failed run, since then the report matters most. Download it from the run's summary page.
+      - name: Upload the E2E report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          # The summary that e2e-runs.sh writes names this artifact: change both together
+          name: e2e-reports
+          path: tests/e2e-runs/
+          retention-days: 14
       - name: Container status and logs
         if: failure()
         run: |
           docker compose -f deploy/compose.yaml ps -a
           docker compose -f deploy/compose.yaml logs --no-color
+          # Every rejection and API error of the import (deploy/logs is gitignored)
+          cat deploy/logs/importer.log || true
       - name: Remove containers and volumes
         if: always()
         run: docker compose -f deploy/compose.yaml down -v

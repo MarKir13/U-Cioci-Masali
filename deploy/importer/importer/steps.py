@@ -219,7 +219,10 @@ def import_product(
         return None
     existing = shop.products.get(str(product["id"]))
     try:
+        waiting = time.monotonic()
         with PRODUCT_SAVE:
+            # Large next to "PUT/POST products": the one-at-a-time saves hold the other workers back
+            api.timings.add("wait for product save", time.monotonic() - waiting)
             saved = save_record("products", api, existing, fields, report)
     except ApiError as error:
         report.reject("products", product["id"], error.message)

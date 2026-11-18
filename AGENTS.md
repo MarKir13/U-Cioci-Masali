@@ -52,9 +52,9 @@ Full findings: `docs/scraper-recon.md` (on PR #4 until it merges). The essential
 | Path | Contents |
 |---|---|
 | `shop/` | Dockerfile, PHP config, child theme `ciocia`, own modules. PrestaShop itself is not stored here |
-| `scraper/` | Scraper source and unit tests |
+| `scraper/` | Scraper source, unit tests and its Dockerfile (the `scraper` service, init's fallback) |
 | `scraper-results/` | Scraped data in UTF-8 with source image URLs, plus up to 20 sample images |
-| `deploy/` | `compose.yaml`, `.env.example`, scripts for install, data init, backup and restore |
+| `deploy/` | `compose.yaml`, `.env.example`, the importer and data init (`importer/`), scripts for install, backup and restore |
 | `docs/` | `AI_LOG.md`, ADRs in `adr/`, [ci-cd-plan.md](docs/ci-cd-plan.md), other documentation |
 | `tests/` | Playwright E2E tests: specs in `e2e/`, page helpers in `pages/`, shared code in `support/`; own `package.json` |
 
@@ -74,27 +74,34 @@ Run from the repository root unless noted.
 | Re-apply `shop/config/shop-settings.php` and shop content to a running shop, after a rebuild (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh`, then the same with `30-configure-shop.sh` |
 | Re-apply the Webservice API key and its permissions (`PS_WEBSERVICE_KEY`) to a running shop, after `up -d` (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/40-webservice.sh` |
 | Stop, keeping data | `docker compose -f deploy/compose.yaml down` |
-| Import the scraped data into the running shop (images unpacked into `scraper-results/images/`; `--limit N` for a quick run) | `docker compose -f deploy/compose.yaml --profile init run --rm --build importer` |
+| Data init, right after `up -d`: downloads the images if missing, waits for the shop, imports (`--subset`: 53 products, as in CI) | `docker compose -f deploy/compose.yaml --profile init run --rm --build init` |
+| Only the import, with the images already in `scraper-results/images/` (`--limit N` for a quick run) | `docker compose -f deploy/compose.yaml --profile init run --rm --build importer` |
+| Download the images from the source shop (init's fallback; only when a person asks, rule 7) | `docker compose -f deploy/compose.yaml --profile init run --rm --build scraper images` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
 | Importer unit tests (from `deploy/importer/`) | `python -m pytest` |
 | Scraper lint | `ruff check .` and `ruff format --check .` |
 | Secret scan, as on a PR (Git Bash on Windows: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"` |
 | Repository limits (`--all` for every branch) | `sh .github/scripts/check-repo-limits.sh` |
-| Dockerfile lint (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile` |
+| Dockerfile lint (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile scraper/Dockerfile` |
 | Shell lint (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
 | Compose check, must print nothing. Never drop `--quiet` or use `deploy/.env` | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
+| Omnibus rule test (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php` |
 | JavaScript lint (after `npm ci` once) | `npx eslint` |
 | E2E setup, once (from `tests/`) | `npm ci` and `npx playwright install chromium` |
-| E2E tests (from `tests/`; another shop: `BASE_URL=https://host:port npm test`) | `npm test` |
+| E2E tests (from `tests/`; another shop: `BASE_URL=https://host:port npm test`, and `MAILPIT_URL=http://localhost:port` for its Mailpit) | `npm test` |
+| E2E stability, 3 runs in a row (from `tests/`; same seed, run `npm test` 3 times for different picks) | `npm test -- --repeat-each=3` |
+| E2E stability as in CI: 3 runs, each with its own seed, reports in `tests/e2e-runs/run-<n>/` (from the root, after the E2E setup) | `sh .github/scripts/e2e-runs.sh 3` |
 | Open the last E2E report (from `tests/`) | `npm run report` |
 | Smoke test of the running shop (ports from `HTTP_PORT`, `HTTPS_PORT`) | `sh .github/scripts/smoke-test.sh` |
 | Review the open PRs that wait for your review (Claude Code; prints review comments to paste, posts nothing) | `/review-prs`, or `/review-prs 67` for chosen PRs |
 | Run the published images instead of building (tags in README) | `SHOP_IMAGE=ghcr.io/markir13/u-cioci-masali/shop:main PROXY_IMAGE=ghcr.io/markir13/u-cioci-masali/proxy:main docker compose -f deploy/compose.yaml up -d --no-build` |
+| Back up the running shop into `deploy/backups/` (gitignored, holds customer data) | `sh deploy/backup.sh` |
+| Restore a backup into the running shop: replaces its database and images, asks first (`--yes` skips the question) | `sh deploy/restore.sh deploy/backups/<archive>.tar.gz` |
+| Preview the notes of a stage release (needs `gh` logged in; steps in README, "Handing in a stage") | `TAG=etap1 SHA=$(git rev-parse origin/main) sh .github/scripts/release-notes.sh` |
 
 Storefront: `https://localhost:8443` (HTTP on 8080 redirects there). Admin: `https://localhost:8443/admin-ciocia`.
-Shop e-mails: `http://localhost:8025` (Mailpit). A one-command data init is required but not built yet; update this
-table when it lands.
+Shop e-mails: `http://localhost:8025` (Mailpit).
 
 ## Hard rules
 
@@ -175,6 +182,13 @@ Documentation is in English, except `docs/AI_LOG.md`.
   `sync-code.sh` recreates. The top menu follows `catalog.menu_categories` in `shop/config/shop-settings.php` through
   the module `ciociamenu`, which also clears the page cache after catalogue changes: PrestaShop's own cache hooks
   fire only in the back office, not for API writes.
+- Data init (`deploy/importer/importer/init.py`, ADR 0010) puts the images into `scraper-results/images/` (gitignored),
+  which survives `down -v`, so it downloads once per machine. It trusts only the archives whose sha256 is in `FULL`
+  and `SUBSET`: a rebuilt archive has a new hash even with the same images, so change the hash there when you
+  publish one. The `init` service has no `depends_on` on purpose: the download runs while the shop installs, and
+  init waits for the shop itself. `--subset` means categories 85 and 99 (`SUBSET.categories`), which must match
+  `subset-images.tar.gz` and have the products the E2E scenario needs. With `CI` set, init never suggests the
+  source shop. On Docker Desktop, unpacking the full set into the bind mount takes about 3 minutes (10 s on Linux).
 - Scripts run on Linux but are edited on Windows and macOS. `.gitattributes` forces LF for `*.sh`, `*.php`, Dockerfiles
   and YAML; keep new script types covered.
 - `.gitignore` excludes `*.crt`, `*.key`, `*.pem`, `*.zip` and `*.tar.gz`, so certificates and archives must be
@@ -182,6 +196,9 @@ Documentation is in English, except `docs/AI_LOG.md`.
 - Images for the Stage 2 cluster come only from `publish.yml`, built on `amd64` runners. A local build on Apple Silicon
   is `arm64`, which will not run there, so never push a locally built image. `compose.yaml` sets no `platform:`, so
   local builds stay native and fast.
+- An `etap*` tag runs the `publish.yml` of the tagged commit, and `build` fails unless that commit is on `main`. So
+  a change to the release flow can only be tried with a trial tag (`etap0-test`) after its PR is merged. Only a person
+  pushes tags; delete a trial tag with its release (`gh release delete <tag> --cleanup-tag`) and its GHCR versions.
 - GHCR image names must be lowercase, while the repository owner is `MarKir13`.
 - Without `SHOP_IMAGE` and `PROXY_IMAGE`, every Compose project builds into the same tags `ciocia-shop:local` and
   `ciocia-proxy:local`, whatever `-p` says. Set both to your own names for a second local stack.
@@ -191,6 +208,14 @@ Documentation is in English, except `docs/AI_LOG.md`.
   redirects any other host there. Tests import `test` from `tests/support/fixtures.js`, keep selectors in
   `tests/pages/` and never call `waitForTimeout`; ESLint fails on it. A failed run is repeated with the `E2E_SEED`
   shown in the report.
+- The Omnibus line comes from one hook call in the child theme's `catalog/_partials/product-prices.tpl` and
+  `catalog/_partials/miniatures/product.tpl`. Keep it when rewriting those templates. The price history lives in the
+  module's tables: a back-office "Reset" of `ciociaomnibus` deletes it. The importer updates promotions in place
+  (`set_promotion`); keep it that way, since a deleted and re-added promotion gets a new start date (ADR 0011).
+- A backup holds the database, `img/` and the banner slides, but not `app/config/parameters.php` or `.htaccess`
+  (ADR 0012). After a restore the back office login is the one from the backup. A new kind of file that lives
+  only in the `shop-data` volume and is not rebuilt from the image must be added to both `deploy/backup.sh` and
+  `deploy/restore.sh`.
   
 ## Requirements: Stage 1
 

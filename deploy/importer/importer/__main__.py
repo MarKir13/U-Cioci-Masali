@@ -81,8 +81,6 @@ def run(api: ShopApi, args: argparse.Namespace) -> int:
         report.reject("products", source_id, reason)
     for line_number, reason in unreadable:
         report.reject("products", f"products.jsonl line {line_number}", reason)
-    # Rejected products are still in the data: the delete step must keep their copies in the shop
-    rejected_product_ids = {source_id for source_id, _ in rejected}
     full_run = not args.limit and not args.categories
     selected = select_products(products, categories, args)
     log.info("data: %d categories, %d products (%d selected)", len(categories), len(products), len(selected))
@@ -111,34 +109,53 @@ def run(api: ShopApi, args: argparse.Namespace) -> int:
         len(selected_variants),
     )
 
-    api.load_languages()
-    try:
-        shop = steps.read_shop(api)
-    except ApiError as error:
-        hint = " (the key lacks a resource: run post-install/40-webservice.sh)" if error.status == 401 else ""
-        log.error("cannot read the shop: %s%s", error, hint)
-        return 2
+    # Image files only for what this run imports: a subset run does not need the images of other products
+    selected, without_images = data.with_images(selected, args.data_dir)
+    for source_id, reason in without_images:
+        report.reject("products", source_id, reason)
+    # A product with variants needs the images of all its source products; without them it is rejected whole
+    selected_variants, without_images_variants = variants.with_images(selected_variants, args.data_dir)
+    for name, reason in without_images_variants:
+        report.reject("combinations", name, reason)
+    # Rejected products are still in the data: the delete step must keep their copies in the shop
+    rejected_product_ids = {source_id for source_id, _ in rejected + without_images}
+
+    timings = api.timings
+    with timings.phase("read the shop"):
+        api.load_languages()
+        try:
+            shop = steps.read_shop(api)
+        except ApiError as error:
+            hint = " (the key lacks a resource: run post-install/40-webservice.sh)" if error.status == 401 else ""
+            log.error("cannot read the shop: %s%s", error, hint)
+            return 2
     log.info("shop: %d products, %d categories before the import", len(shop.all_products), len(shop.categories))
 
     # Steps 1-2: categories (all of them, also for a subset) and brands
-    category_ids = steps.import_categories(api, shop, categories, report)
-    brand_ids = steps.import_manufacturers(api, shop, products, report)
+    with timings.phase("categories"):
+        category_ids = steps.import_categories(api, shop, categories, report)
+    with timings.phase("manufacturers"):
+        brand_ids = steps.import_manufacturers(api, shop, products, report)
 
     # Steps 3-6: each product with its stock, promotion and images, several at a time; then the products with
     # variants, one at a time, with their attribute values and combinations
-    steps.import_products(api, shop, selected, category_ids, brand_ids, args.data_dir, args.workers, report)
-    steps.import_variant_products(api, shop, selected_variants, category_ids, brand_ids, args.data_dir, report)
+    with timings.phase(f"products and images ({args.workers} workers)"):
+        steps.import_products(api, shop, selected, category_ids, brand_ids, args.data_dir, args.workers, report)
+    with timings.phase("products with variants"):
+        steps.import_variant_products(api, shop, selected_variants, category_ids, brand_ids, args.data_dir, report)
 
     # Step 7: the installer's demo catalogue and anything else that is not in the data. Source products that are
     # now variants of another product are not kept, so their copies from an earlier run are deleted.
     if full_run:
-        steps.remove_other_records(
-            api, shop, kept, rejected_product_ids, category_ids, brand_ids, report, all_lines_read=not unreadable
-        )
+        with timings.phase("delete what is not in the data"):
+            steps.remove_other_records(
+                api, shop, kept, rejected_product_ids, category_ids, brand_ids, report, all_lines_read=not unreadable
+            )
     else:
         log.info("subset run (--limit or --categories): nothing is deleted")
 
     log.info("summary%s:\n%s", " (dry run, nothing written)" if args.dry_run else "", report.summary())
+    log.info("time spent:\n%s", timings.summary())
     log.info("finished in %.0f s; log: %s", time.monotonic() - started, args.log_file)
     if report.rejected:
         log.error("%d record(s) rejected, see REJECTED lines in the log", report.rejected)

@@ -105,6 +105,22 @@ def resolve(definitions: list, products: list[dict]) -> tuple[list[VariantProduc
     return valid, rejected
 
 
+def with_images(products: list[VariantProduct], data_dir: Path) -> tuple[list[VariantProduct], list[tuple[str, str]]]:
+    """The products whose source products all have their image files, and (name, reason) for the others.
+
+    A product with variants uploads the images of all its source products, so one missing file rejects it whole.
+    It still counts as in the data, so the delete step keeps its copy from an earlier run.
+    """
+    complete, rejected = [], []
+    for product in products:
+        _, missing = data.with_images([v.product for v in product.variants], data_dir)
+        if missing:
+            rejected.append((product.name, "; ".join(f"source product {i}: {reason}" for i, reason in missing)))
+        else:
+            complete.append(product)
+    return complete, rejected
+
+
 def _problem(definition: object, by_id: dict[int, dict], used: set[int]) -> str | None:
     reason = data.problem(DEFINITION, definition)
     if reason:

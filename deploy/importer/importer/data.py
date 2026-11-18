@@ -35,8 +35,8 @@ def load_categories(data_dir: Path, schema: dict) -> tuple[list[dict], list[tupl
 def load_products(data_dir: Path, schema: dict) -> tuple[list[dict], list[tuple[int, str]], list[tuple[int, str]]]:
     """Valid products, (id, reason) for the invalid ones, and (line number, reason) for unreadable lines.
 
-    A product whose image file is missing is invalid. A line that is not a JSON object is unreadable: it has
-    no product ID, so the caller cannot tell which product it was.
+    A line that is not a JSON object is unreadable: it has no product ID, so the caller cannot tell which
+    product it was. Image files are not checked here but by with_images(), only for the products a run imports.
     """
     validator = validator_for(schema, "Product")
     records = []
@@ -55,15 +55,23 @@ def load_products(data_dir: Path, schema: dict) -> tuple[list[dict], list[tuple[
             else:
                 unreadable.append((number, "not a JSON object"))
     valid, rejected = _split(records, validator)
+    return valid, rejected, unreadable
 
-    ok = []
-    for product in valid:
+
+def with_images(products: list[dict], data_dir: Path) -> tuple[list[dict], list[tuple[int, str]]]:
+    """The products whose image files are all there, and (id, reason) for the rest.
+
+    Called on the selected products only, so a subset run (--limit, --categories) needs only the images of its
+    own products, as with the small subset archive of the init command.
+    """
+    ok, rejected = [], []
+    for product in products:
         missing = [i["local_path"] for i in product["images"] if not (data_dir / i["local_path"]).is_file()]
         if missing:
             rejected.append((product["id"], f"image file missing: {', '.join(missing)}"))
         else:
             ok.append(product)
-    return ok, rejected, unreadable
+    return ok, rejected
 
 
 def _split(records: list[dict], validator: Draft202012Validator) -> tuple[list[dict], list[tuple[int, str]]]:

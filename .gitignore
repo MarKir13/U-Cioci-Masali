@@ -46,6 +46,8 @@ scraper-results/*.tmp
 # --- Playwright reports  ---
 tests/test-results/
 tests/playwright-report/
+# Reports of every run of .github/scripts/e2e-runs.sh
+tests/e2e-runs/
 # --- Claude Code: PR checkouts made by the review-prs skill ---
 .claude/worktrees/
 

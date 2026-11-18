@@ -8,7 +8,7 @@ import tarfile
 from pathlib import Path
 
 from . import config
-from .crawl import load_lines
+from .crawl import load_json, load_lines
 
 log = logging.getLogger(__name__)
 
@@ -39,14 +39,56 @@ def make_samples(results_dir: Path = config.RESULTS_DIR, count: int = config.SAM
     return 0
 
 
-def make_archive(results_dir: Path = config.RESULTS_DIR, output: Path | None = None) -> int:
-    """Pack images/ into one tar.gz for the GitHub Release. Returns 1 if there are no images or it is too big."""
+def subset_files(results_dir: Path, category_ids: set[int]) -> list[Path] | None:
+    """The image files of every product in these categories or their subcategories, or None if one is missing.
+
+    The init command imports exactly these products (importer --categories), so the archive must hold all
+    their images: the importer rejects a product with a missing image file.
+    """
+    categories = load_json(results_dir / config.CATEGORIES_FILE.name, [])
+    children: dict[int | None, list[int]] = {}
+    for category in categories:
+        children.setdefault(category["parent_id"], []).append(category["id"])
+    wanted, todo = set(), list(category_ids)
+    while todo:
+        category_id = todo.pop()
+        if category_id not in wanted:
+            wanted.add(category_id)
+            todo.extend(children.get(category_id, []))
+
+    products = [p for p in load_lines(results_dir / config.PRODUCTS_FILE.name) if wanted & set(p["category_ids"])]
+    if not products:
+        log.error("No product is in categories %s or their subcategories", sorted(category_ids))
+        return None
+    files = sorted({results_dir / i["local_path"] for p in products for i in p["images"] if i.get("local_path")})
+    missing = [file.name for file in files if not file.is_file()]
+    if missing:
+        log.error("%d image files missing, e.g. %s. Run `python -m scraper images`.", len(missing), missing[0])
+        return None
+    log.info("Categories %s and subcategories: %d products, %d images", sorted(category_ids), len(products), len(files))
+    return files
+
+
+def make_archive(
+    results_dir: Path = config.RESULTS_DIR, output: Path | None = None, categories: set[int] | None = None
+) -> int:
+    """Pack images/ into one tar.gz for the GitHub Release. Returns 1 if there are no images or it is too big.
+
+    With `categories`, only the images of those categories' products go in, into subset-images.tar.gz. Both
+    archives hold the files under images/, so they unpack the same way into scraper-results/.
+    """
     images_dir = results_dir / config.IMAGES_DIR.name
-    files = sorted(images_dir.glob("*.jpg")) if images_dir.is_dir() else []
+    if categories:
+        files = subset_files(results_dir, categories)
+        if files is None:
+            return 1
+    else:
+        files = sorted(images_dir.glob("*.jpg")) if images_dir.is_dir() else []
     if not files:
         log.error("No images in %s. Run `python -m scraper images` first.", images_dir)
         return 1
-    output = output or results_dir / config.IMAGES_ARCHIVE.name
+    default = config.SUBSET_ARCHIVE if categories else config.IMAGES_ARCHIVE
+    output = output or results_dir / default.name
     temporary = output.with_name(output.name + ".part")
     with tarfile.open(temporary, "w:gz") as archive:
         for file in files:

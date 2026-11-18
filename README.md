@@ -38,11 +38,16 @@ Requirements: [Docker Desktop](https://www.docker.com/products/docker-desktop/) 
    ```sh
    docker compose -f deploy/compose.yaml up -d --build
    ```
-4. Wait for the first-time installation to finish (about 3–5 minutes). It is done when the log shows
-   `Starting web server`:
+4. Load the data, right away (no need to wait for the shop's install to finish):
    ```sh
-   docker compose -f deploy/compose.yaml logs -f shop
+   docker compose -f deploy/compose.yaml --profile init run --rm --build init
    ```
+   It downloads the product images (585 MB, from the GitHub Release) while the shop installs, waits until the shop
+   is ready, then imports 2159 products in 160 categories. It ends with `init: done` and the shop's address. On a
+   team laptop this took about 35–40 minutes, mostly the download and the image uploads
+   ([ADR 0010](docs/adr/0010-one-command-data-init.md)). For a quick look, `init --subset` imports only 53 products
+   of two categories in about 2 minutes. Running init again downloads nothing and changes nothing. More:
+   [Loading the data into the shop](#loading-the-data-into-the-shop).
 5. Open the shop (HTTPS only; http://localhost:8080 redirects there with 301):
    - Storefront: https://localhost:8443
    - Admin panel: https://localhost:8443/admin-ciocia
@@ -75,9 +80,13 @@ no published port, so the only way in from outside is HTTPS through the proxy.
 
 | Task | Command |
 |---|---|
+| Follow the shop's install (done at `Starting web server`) | `docker compose -f deploy/compose.yaml logs -f shop` |
+| Load the data again after a change to `scraper-results/` or `variants.json` | `docker compose -f deploy/compose.yaml --profile init run --rm --build init` |
 | Stop the shop (data is kept) | `docker compose -f deploy/compose.yaml down` |
 | Apply changes from `shop/` (theme, modules, config) | `docker compose -f deploy/compose.yaml up -d --build` |
 | Reset everything and reinstall from scratch | `docker compose -f deploy/compose.yaml down -v` |
+| Back up the shop into `deploy/backups/` | `sh deploy/backup.sh` |
+| Restore a backup (replaces the shop's data, asks first) | `sh deploy/restore.sh deploy/backups/<archive>.tar.gz` |
 
 PrestaShop's cache (`var/cache/prod` and `var/cache/dev`) is cleared automatically on every start,
 so new module template overrides take effect after `up -d --build` with no manual step. The first
@@ -96,7 +105,7 @@ the database:
   up to 50 kg, free delivery from 2000 PLN gross, the delivery time shown for products in stock
   ("Wysyłka w ciągu 24h"), bank transfer and cash on delivery (no cheque), invoices, e-mail through
   Mailpit, and the promo code `WITAJ10` (10 % off the products, once per customer) for the
-  "Kod promocyjny" row in the cart and checkout.
+  "Kod promocyjny" row in the cart and checkout. It also installs our Omnibus price module (see below).
 
 All values for both are in [`shop/config/shop-settings.php`](shop/config/shop-settings.php): store
 details, free delivery threshold, delivery time, required address fields, carriers and fees, bank details, promo code. The "Dostawa" and "Formy płatności"
@@ -142,6 +151,81 @@ in the admin panel (Katalog > Kategorie, column ID) and set them as the buttons'
 
 The layout is in `shop/themes/ciocia/modules/ps_imageslider/views/templates/hook/slider.tpl` and in the
 "Home page banner" section of `custom.css`.
+
+### Omnibus price (lowest price from the 30 days before a promotion)
+
+Every product in a promotion shows "Najniższa cena z 30 dni przed obniżką: …" under its price, on the
+product page and on product cards. PrestaShop does not do this, so our module
+[`shop/modules/ciociaomnibus`](shop/modules/ciociaomnibus) keeps a price history in the database:
+
+- a row for every change of the gross price a visitor sees, written by hooks whenever a product,
+  combination or promotion is saved (back office, Webservice API, setup scripts);
+- the rule in `classes/CiociaOmnibusRule.php`: the lowest price in the 30 days before the promotion
+  started (its "from" date, or when it was added). With no history, the regular price.
+
+`configure-shop.php` installs the module and adds a starting row for products without one, so run it
+again after changing the module. The line comes from `{hook h='displayProductPriceBlock' product=$product type='omnibus_price'}`
+in `shop/themes/ciocia/templates/catalog/_partials/product-prices.tpl` and `miniatures/product.tpl`;
+its look is `.omnibus-price` in `custom.css`. Test of the rule (also run in CI):
+
+```sh
+docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php
+```
+
+Design notes and limitations: [ADR 0011](docs/adr/0011-omnibus-price-history-module.md).
+### Backup and restore
+
+`deploy/backup.sh` saves the running shop into one archive, and `deploy/restore.sh` puts it back, also
+onto a clean install. Both run from the repository root, also in Git Bash on Windows.
+
+```sh
+sh deploy/backup.sh
+```
+
+The archive is written to `deploy/backups/ciocia-backup-<date>-<time>.tar.gz` and holds:
+
+- `db.sql`: the whole database (products, categories, CMS pages, settings, customers, orders),
+- `img/`: product, category and other shop images with their thumbnails,
+- `modules/ps_imageslider/images/`: the home banner slides,
+- `manifest.txt`: date, git commit, PrestaShop version, number of products, shop domain.
+
+The archive contains customer data and password hashes. `deploy/backups/` is gitignored: never
+commit an archive or attach it to a release.
+
+```sh
+sh deploy/restore.sh deploy/backups/ciocia-backup-<date>-<time>.tar.gz
+```
+
+The restore replaces the database and the images of the running shop, so it asks you to type `yes`
+first; `--yes` before the archive skips the question. It then sets the shop domain to the current
+`HTTPS_PORT`, restarts `shop` and `proxy`, waits until the shop answers and prints how long it took.
+The shop must be running and installed. After a restore, log in to the admin panel with the e-mail
+and password of the backed-up shop, because the admin account is part of the database.
+
+`app/config/parameters.php` (database password, cookie keys) and `.htaccess` are not in the backup:
+they belong to one install, and the environment you restore into keeps its own. Customers still log
+in with their old passwords. Design notes:
+[ADR 0012](docs/adr/0012-backup-contents-and-settings-export.md).
+
+**Restore onto a clean environment** (the acceptance demo):
+
+```sh
+sh deploy/backup.sh
+docker compose -f deploy/compose.yaml down -v            # deletes the shop and its database
+docker compose -f deploy/compose.yaml up -d --build --wait
+sh deploy/restore.sh deploy/backups/ciocia-backup-<date>-<time>.tar.gz
+sh .github/scripts/smoke-test.sh
+```
+
+Then check in the browser that the products, images, CMS pages and orders are back and that a
+customer from before the backup can log in. On the demo data the restore takes about 30 seconds;
+the limit is 10 minutes.
+
+**Settings only.** The settings export is
+[`shop/config/shop-settings.php`](shop/config/shop-settings.php) with the setup scripts described
+in [Shop settings and content](#shop-settings-and-content). It holds no customer data and no
+secrets. A clean install applies it by itself, and the two commands in that section apply it to a
+running shop.
 
 ### Webservice API
 
@@ -191,7 +275,8 @@ docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/40-
 
 The data from the source shop is in `scraper-results/`: 2159 products in 160 categories, with 4822 product images.
 How it was made, what was left out and why: [scraper/README.md](scraper/README.md). The product images are not in git. They
-are one archive (585 MB) in the GitHub Release [`images-v1`](https://github.com/MarKir13/U-Cioci-Masali/releases/tag/images-v1):
+are one archive (585 MB) in the GitHub Release [`images-v1`](https://github.com/MarKir13/U-Cioci-Masali/releases/tag/images-v1).
+The data init (below) downloads and unpacks it into `scraper-results/images/` by itself; to do it by hand:
 
 ```sh
 gh release download images-v1 --pattern product-images.tar.gz --dir /tmp
@@ -202,17 +287,51 @@ Check the data with `python -m scraper verify` (from `scraper/`); it needs no ne
 
 ### Loading the data into the shop
 
-The importer ([deploy/importer](deploy/importer/README.md)) puts the categories, brands, products, stock,
-promotions and images into the running shop through the Webservice API, and removes the installer's demo
-catalogue. With the images unpacked as above, from the repository root:
+One command, from the repository root, right after `up -d` (step 4 of [Running the shop](#running-the-shop)):
 
 ```sh
-docker compose -f deploy/compose.yaml --profile init run --rm --build importer
+docker compose -f deploy/compose.yaml --profile init run --rm --build init            # all 2159 products
+docker compose -f deploy/compose.yaml --profile init run --rm --build init --subset   # 53 products, about 2 minutes
 ```
 
+Init does three things in order ([`deploy/importer/importer/init.py`](deploy/importer/importer/init.py)):
+
+1. **Images:** if any image file this run needs is missing from `scraper-results/images/`, it downloads the archive
+   from the Release, checks its sha256 and unpacks it. This needs no shop, so it runs while the shop installs. The
+   files stay there, also after `down -v`, so this happens once per machine.
+2. **Shop:** it waits until the shop answers (up to 15 minutes). If the shop container is not running, it stops
+   after 30 s and says to start it.
+3. **Import:** the importer ([deploy/importer](deploy/importer/README.md)) puts the categories, brands, products,
+   stock, promotions, variants and images into the shop through the Webservice API, and removes the installer's
+   demo catalogue.
+
 It prints created, updated, unchanged, deleted and rejected counts and writes every problem to
-`deploy/logs/importer.log`. Running it again changes nothing. `--limit 20` imports only 20 products, for a quick
-check. The top menu shows the categories listed under `catalog` in
+`deploy/logs/importer.log`. Running it again changes nothing. Importer options can be added at the end, such as
+`--workers 4` on a slow machine. `--subset` imports categories 85 (Przyprawy) and 99 (Pielęgnacja okolic oczu)
+with their subcategories, from a 10 MB archive: enough for the E2E tests, and what CI uses. A subset run deletes
+nothing, so the installer's demo products stay. The exit code is 0 when done, 1 when something was rejected and 2
+when init could not start or get the images.
+
+**If the image archive cannot be downloaded** (for example, the Release is gone), init stops and prints the command
+that downloads the images from the source shop instead, with the scraper in a container (no Python needed):
+
+```sh
+docker compose -f deploy/compose.yaml --profile init run --rm --build scraper images
+```
+
+That takes about 1 h 40 min (at most 2 requests per second, robots.txt respected) and can be stopped with Ctrl+C
+and started again where it stopped. Then run init again. In CI, init never suggests this: tests never contact the
+source shop. To try the fallback, set `IMAGES_URL` in `deploy/.env` to an address that answers 404 (see
+`.env.example`).
+
+The importer can also be run alone, without the image download and the wait, for example with `--limit 20` for a
+quick check or `--dry-run`:
+
+```sh
+docker compose -f deploy/compose.yaml --profile init run --rm --build importer --limit 20
+```
+
+The top menu shows the categories listed under `catalog` in
 [`shop/config/shop-settings.php`](shop/config/shop-settings.php). Design notes:
 [ADR 0008](docs/adr/0008-product-import-through-the-webservice-api.md).
 
@@ -231,7 +350,8 @@ shop. It has its own [`package.json`](tests/package.json), separate from the ESL
 
 Requirements: [Node.js](https://nodejs.org/) 24 and a running shop with the data imported (see
 [Running the shop](#running-the-shop) and [Loading the data into the shop](#loading-the-data-into-the-shop)). Until
-the import, the shop has no categories and the top menu is empty, so the first steps fail.
+the import, the shop has no categories and the top menu is empty, so the first steps fail. `init --subset` is
+enough: its two categories have the products the scenario needs.
 
 1. Install the dependencies and the browser once, from `tests/`:
    ```sh
@@ -282,11 +402,42 @@ Step 7 orders with one of the two new carriers, "Kurier" or "Paczkomat", picked 
 report shows the carrier used (`carrier` annotation). The checkout asks for the carrier before the payment, so
 step 7 runs before step 6.
 
+Steps 9 and 10 open the order history from "Moje konto" and check the new order there: its status must be
+"Oczekiwanie na płatność przy odbiorze" (the shop's status for a new cash on delivery order) and its invoice link
+must return a PDF. The invoice is attached to the HTML report as `invoice-<order reference>.pdf`.
+
 | Path | Contents |
 |---|---|
 | `tests/e2e/` | `smoke.spec.js` (home page over HTTPS, no console errors) and `order.spec.js` (the W4 scenario, one step per point of the brief) |
 | `tests/pages/` | One file per area of the shop (catalog, search, cart, account, checkout, orders) with its selectors and actions |
 | `tests/support/` | Shared code: fixtures (`test`, `rng`, `consoleErrors`), seeded random numbers, test data |
+
+### Running the suite several times
+
+W4 counts 3 passes of 3 runs in a row. Run the suite three times in one command, from `tests/`:
+
+```sh
+npm test -- --repeat-each=3
+```
+
+The three repeats use the same seed, so they pick the same products. For three different picks, run `npm test`
+three times instead. One run of the W4 scenario takes about 40–50 seconds on a local shop, so three repeats take
+about 2 minutes. The 4-minute limit (`globalTimeout` in [`playwright.config.js`](tests/playwright.config.js)) covers
+the whole command, so all three repeats together; on a slower shop where they do not fit, run `npm test` three
+times instead.
+
+[`.github/scripts/e2e-runs.sh`](.github/scripts/e2e-runs.sh) does exactly that, the way CI does it. From the
+repository root (Git Bash on Windows), after the setup above:
+
+```sh
+sh .github/scripts/e2e-runs.sh 3
+```
+
+Each run gets its own seed and its own 4-minute limit. The script prints a table with every run's seed, result
+and time, and fails if any run failed or took more than 5 minutes. `BASE_URL`, `MAILPIT_URL` and the `E2E_*`
+variables work as above. Playwright replaces its report folders on every run, so the script moves them to
+`tests/e2e-runs/run-<n>/` (ignored by git) after each one. Open a run's report from `tests/` with
+`npx playwright show-report e2e-runs/run-2/playwright-report`.
 
 Rules for new tests: import `test` and `expect` from `tests/support/fixtures.js`, keep selectors in `tests/pages/`,
 and never wait a fixed time. Wait on a condition instead (`expect(...)`, `waitForURL`, `waitForResponse`);
@@ -295,14 +446,16 @@ and never wait a fixed time. Wait on a condition instead (`expect(...)`, `waitFo
 
 ## Continuous integration
 
-GitHub Actions runs four workflows:
+GitHub Actions runs six workflows:
 
 | Workflow | When | What it checks |
 |---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and JavaScript (theme and E2E tests). `smoke`: a clean install of the shop, only when `changes` finds a change in `shop/`, `deploy/` or the smoke test itself. `ci-gate`: passes only if all jobs passed or were skipped |
+| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and JavaScript (theme and E2E tests). `smoke`: a clean install of the shop, then `init --subset` twice (the second run must download nothing and create or delete nothing) and the smoke test again, then one run of the E2E suite on that data (report as the `e2e-reports` artifact), only when `changes` finds a change in `shop/`, `deploy/`, `scraper-results/`, `tests/` or the smoke and E2E scripts. So a PR that breaks the purchase scenario fails `ci-gate`. `ci-gate`: passes only if all jobs passed or were skipped |
 | [`pr-policy.yml`](.github/workflows/pr-policy.yml) | A pull request is opened, updated or relabelled | `ai-log`: a PR labelled `ai-assisted` must add or update a row in `docs/AI_LOG.md` |
 | [`secret-scan.yml`](.github/workflows/secret-scan.yml) | Nightly, or by hand from the Actions tab | Secrets and repository limits over every branch, the way the lecturer measures it |
-| [`publish.yml`](.github/workflows/publish.yml) | Every push to `main`, tags `etap*`, by hand; pull requests that change `shop/` or `deploy/proxy/` | `build`: the shop and proxy images for `linux/amd64`, pushed to GHCR only from `main` or an `etap*` tag; pull requests and manual runs on other branches only build. `verify` (on `main` only): pulls them without logging in, checks they are `amd64` and runs the smoke test on them. Not a required check |
+| [`publish.yml`](.github/workflows/publish.yml) | Every push to `main`, tags `etap*`, by hand; pull requests that change `shop/` or `deploy/proxy/` | `build`: the shop and proxy images for `linux/amd64`, pushed to GHCR only from `main` or an `etap*` tag; pull requests and manual runs on other branches only build; an `etap*` tag on a commit that is not on `main` fails before anything is pushed. `verify` (on `main` and `etap*` tags): pulls them without logging in, checks they are `amd64` and runs the smoke test on them. `release` (on `etap*` tags): the GitHub Release, see [Handing in a stage](#handing-in-a-stage). Not a required check |
+| [`e2e.yml`](.github/workflows/e2e.yml) | Every push to `main`, nightly, by hand (with a number of runs, default 3) | W4 stability: starts the shop as in the README, runs `init --subset`, then the E2E suite 3 times in a row with [`e2e-runs.sh`](.github/scripts/e2e-runs.sh), each run with its own seed. Pull requests get one run in `smoke` instead. The run's summary page shows each run's seed, result and time. Not a required check |
+| [`init-timing.yml`](.github/workflows/init-timing.yml) | Only by hand from the Actions tab (with a "subset" checkbox) | A timed clean start as in the README: `up -d --build`, then init, then the smoke test. The run's summary page shows the time of each step and the total from a clean clone. Not a required check |
 
 A pull request must have passing `ci-gate` and `ai-log` checks before it is merged.
 
@@ -327,6 +480,7 @@ do not silence it. CI reports lines marked `gitleaks:allow` anyway, and the limi
 | Shell scripts | [shellcheck](https://www.shellcheck.net/) 0.11.0 on every tracked `*.sh` | Syntax errors, unquoted variables, commands that do not exist in POSIX `sh` |
 | Compose file | `docker compose config --quiet` with `deploy/.env.example` | Unknown keys, undefined services or volumes, invalid ports, missing variables. Compose only warns about an unknown variable and leaves it empty, so the step fails on any output |
 | PHP syntax | `php -l` from `php:8.1.34-cli` on every `*.php` under `shop/` | Syntax errors |
+| Omnibus rule | Plain PHP test from `php:8.1.34-cli`: `shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php` | Wrong lowest price from the 30 days before a promotion |
 | JavaScript | [ESLint](https://eslint.org/) 10.13.0, recommended rules, browser globals ([`eslint.config.mjs`](eslint.config.mjs)) | Undefined variables, unused variables, unreachable code |
 
 hadolint, shellcheck and PHP run from pinned Docker images, so nothing has to be installed for them. ESLint is pinned
@@ -403,10 +557,11 @@ npm ci
 | Secret scan, as on a PR (needs Docker) | `docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"` |
 | Secret scan, every branch | The same command with `--log-opts="--all"` |
 | Repository limits (add `--all` for every branch) | `sh .github/scripts/check-repo-limits.sh` |
-| Dockerfiles | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile` |
+| Dockerfiles | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile scraper/Dockerfile` |
 | Shell scripts | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
 | Compose file (prints nothing when valid) | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
+| Omnibus rule test | `docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php` |
 | JavaScript | `npx eslint` |
 | Smoke test of the running shop (ports from `HTTP_PORT` and `HTTPS_PORT`, default 8080 and 8443) | `sh .github/scripts/smoke-test.sh` |
 
@@ -415,16 +570,44 @@ uses it, otherwise the `/repo` path is rewritten. `--all` also covers your local
 that is not on GitHub. The compose check reads `deploy/.env.example` instead of your own `deploy/.env`, so it gives the
 same result as CI and never shows your passwords.
 
+### Handing in a stage
+
+Only the version with the tag `etap1` is graded, and it must exist, with its release, at least 48 hours before the
+project meeting. Pushing the tag does the rest: `publish.yml` checks that the tag points to a commit on `main`,
+pushes both images under the tag, runs the smoke test on them and creates the GitHub Release. The release notes
+([`.github/scripts/release-notes.sh`](.github/scripts/release-notes.sh)) show how to start that version, its images
+and the newest `ci.yml`, `e2e.yml` and `acceptance.yml` run of the commit. GitHub adds the source code (zip and
+tar.gz) by itself.
+
+1. Agree in the team that nothing is merged until the tag is pushed. The runs in the notes belong to one commit, so
+   a merge in between leaves the tag without them.
+2. Check that the newest `ci.yml` and `e2e.yml` runs on `main` passed, then start the acceptance run on `main`
+   (Actions > Acceptance > Run workflow, added by issue #21) and wait until it passes.
+3. Tag exactly that commit and push the tag:
+   ```sh
+   git fetch origin
+   git tag -a etap1 -m "Stage 1" origin/main
+   git push origin etap1
+   ```
+4. Wait for the "Publish images" run of the tag (Actions tab), then read the notes on the release page: every check
+   must say `success`. To see the notes before tagging, run
+   `TAG=etap1 SHA=$(git rev-parse origin/main) sh .github/scripts/release-notes.sh` (needs `gh` logged in).
+
+A graded tag must not move. If the run fails before the deadline, fix the cause in a pull request, then delete the
+tag and its release (`gh release delete etap1 --cleanup-tag`) and start again from step 2. To try the whole flow,
+use a tag such as `etap0-test`, then delete it the same way, and delete its image versions in GHCR (the repository's
+Packages > `shop` and `proxy` > Package settings > manage versions).
+
 ## Repository structure
 
 | Path | Contents | Status |
 |---|---|---|
 | `shop/` | Dockerfile, PHP config, child theme, own modules, setup scripts for shop content | in progress |
-| `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`), product importer (`importer/`); later: init, backup and restore scripts | in progress |
+| `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`), `backup.sh` and `restore.sh`, product importer and data init (`importer/`); later: backup and restore scripts | in progress |
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
-| `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | done: crawl, images, verification |
+| `scraper/` | Scraper source code, tests and its Dockerfile (init's fallback), see [scraper/README.md](scraper/README.md) | done: crawl, images, verification |
 | `scraper-results/` | Scraped data (`categories.json`, `products.jsonl`, `schema.json`, `rejected.json`), `verification-report.md` and 20 sample images | done: 2159 products, 160 categories |
-| `tests/` | Playwright E2E tests | in progress |
+| `tests/` | Playwright E2E tests | done: W4 scenario, steps 1–10 |
 
 ## Team
 
