@@ -94,6 +94,7 @@ Run from the repository root unless noted.
 | Smoke test of the running shop (ports from `HTTP_PORT`, `HTTPS_PORT`) | `sh .github/scripts/smoke-test.sh` |
 | Review the open PRs that wait for your review (Claude Code; prints review comments to paste, posts nothing) | `/review-prs`, or `/review-prs 67` for chosen PRs |
 | Run the published images instead of building (tags in README) | `SHOP_IMAGE=ghcr.io/markir13/u-cioci-masali/shop:main PROXY_IMAGE=ghcr.io/markir13/u-cioci-masali/proxy:main docker compose -f deploy/compose.yaml up -d --no-build` |
+| Preview the notes of a stage release (needs `gh` logged in; steps in README, "Handing in a stage") | `TAG=etap1 SHA=$(git rev-parse origin/main) sh .github/scripts/release-notes.sh` |
 
 Storefront: `https://localhost:8443` (HTTP on 8080 redirects there). Admin: `https://localhost:8443/admin-ciocia`.
 Shop e-mails: `http://localhost:8025` (Mailpit).
@@ -191,6 +192,9 @@ Documentation is in English, except `docs/AI_LOG.md`.
 - Images for the Stage 2 cluster come only from `publish.yml`, built on `amd64` runners. A local build on Apple Silicon
   is `arm64`, which will not run there, so never push a locally built image. `compose.yaml` sets no `platform:`, so
   local builds stay native and fast.
+- An `etap*` tag runs the `publish.yml` of the tagged commit, and `build` fails unless that commit is on `main`. So
+  a change to the release flow can only be tried with a trial tag (`etap0-test`) after its PR is merged. Only a person
+  pushes tags; delete a trial tag with its release (`gh release delete <tag> --cleanup-tag`) and its GHCR versions.
 - GHCR image names must be lowercase, while the repository owner is `MarKir13`.
 - Without `SHOP_IMAGE` and `PROXY_IMAGE`, every Compose project builds into the same tags `ciocia-shop:local` and
   `ciocia-proxy:local`, whatever `-p` says. Set both to your own names for a second local stack.

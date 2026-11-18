@@ -53,7 +53,7 @@ Times are estimates until the first real runs.
 | `ci.yml` | Every PR, push to `main` | `scraper`, `repo-hygiene`, `infra-lint`, `changes`, `smoke` (only when `shop/`, `deploy/` or the smoke test changed), `ci-gate` | D5, W1, W3 | 2 min, about 8 with `smoke` |
 | `pr-policy.yml` | PR opened, updated or relabelled | `ai-log` | D6 | Under 1 min |
 | `secret-scan.yml` | Nightly, manual | `all-branches`: gitleaks and repository limits over every branch | W1 | 1 min |
-| `publish.yml` | Push to `main`, tag `etap*`, manual; PRs changing `shop/` or `deploy/proxy/` (build only) | `build` (shop and proxy images), `verify` (main only); a release on tags comes with CI-7 | Stage 2 | 3 min, about 5 with `verify` |
+| `publish.yml` | Push to `main`, tag `etap*`, manual; PRs changing `shop/` or `deploy/proxy/` (build only) | `build` (shop and proxy images; a tag must point to a commit on `main`), `verify` (main and `etap*` tags), `release` (`etap*` tags: GitHub Release with notes from `release-notes.sh`) | Stage 2, acceptance | 3 min, about 5 with `verify` |
 | `e2e.yml` | Push to `main`, nightly, manual | Stack, seed subset, Playwright, reports | W4 | 15 min |
 | `acceptance.yml` | Manual, before tagging | Clean clone, full data, all lecturer metrics | W3, W4, D1 | 45 min |
 
