@@ -95,6 +95,8 @@ Run from the repository root unless noted.
 | Smoke test of the running shop (ports from `HTTP_PORT`, `HTTPS_PORT`) | `sh .github/scripts/smoke-test.sh` |
 | Review the open PRs that wait for your review (Claude Code; prints review comments to paste, posts nothing) | `/review-prs`, or `/review-prs 67` for chosen PRs |
 | Run the published images instead of building (tags in README) | `SHOP_IMAGE=ghcr.io/markir13/u-cioci-masali/shop:main PROXY_IMAGE=ghcr.io/markir13/u-cioci-masali/proxy:main docker compose -f deploy/compose.yaml up -d --no-build` |
+| Back up the running shop into `deploy/backups/` (gitignored, holds customer data) | `sh deploy/backup.sh` |
+| Restore a backup into the running shop: replaces its database and images, asks first (`--yes` skips the question) | `sh deploy/restore.sh deploy/backups/<archive>.tar.gz` |
 | Preview the notes of a stage release (needs `gh` logged in; steps in README, "Handing in a stage") | `TAG=etap1 SHA=$(git rev-parse origin/main) sh .github/scripts/release-notes.sh` |
 
 Storefront: `https://localhost:8443` (HTTP on 8080 redirects there). Admin: `https://localhost:8443/admin-ciocia`.
@@ -205,6 +207,10 @@ Documentation is in English, except `docs/AI_LOG.md`.
   redirects any other host there. Tests import `test` from `tests/support/fixtures.js`, keep selectors in
   `tests/pages/` and never call `waitForTimeout`; ESLint fails on it. A failed run is repeated with the `E2E_SEED`
   shown in the report.
+- A backup holds the database, `img/` and the banner slides, but not `app/config/parameters.php` or `.htaccess`
+  (ADR 0009). After a restore the back office login is the one from the backup. A new kind of file that lives
+  only in the `shop-data` volume and is not rebuilt from the image must be added to both `deploy/backup.sh` and
+  `deploy/restore.sh`.
   
 ## Requirements: Stage 1
 
