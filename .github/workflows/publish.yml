@@ -2,7 +2,9 @@ name: Publish images
 
 # Builds the shop and proxy images for linux/amd64 and pushes them to GitHub's registry (GHCR),
 # so the Stage 2 cluster can pull them. Only main and etap* tags push; pull requests and manual runs
-# from any other branch only build.
+# from any other branch only build. An etap* tag (the version handed in for grading, such as etap1)
+# must point to a commit on main; it also gets a GitHub Release (job `release`). Steps in the README,
+# "Handing in a stage".
 on:
   push:
     branches: [main]
@@ -46,6 +48,19 @@ jobs:
       PUBLISH: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/etap') }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history of every branch, so the next step can compare the tag with main. The repository
+          # is under 1 MB, so this costs nothing worth saving.
+          fetch-depth: 0
+      # Only reviewed code is handed in: a tag on a commit that never reached main (a feature branch) stops
+      # here, before any image is pushed. --is-ancestor exits 0 when the commit is main itself or in its history.
+      - name: Tag points to a commit on main
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Tag $GITHUB_REF_NAME points to $GITHUB_SHA, which is not on main. Tag a commit of main."
+            exit 1
+          fi
       - uses: docker/setup-buildx-action@v4
       # GITHUB_TOKEN is the token GitHub gives every run; with packages: write it may push to
       # this repository's packages. No secret to create or store.
@@ -84,12 +99,12 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
-  # On main only (a push or a manual run): pull the images just pushed, without logging in, and
-  # smoke-test them. This is how Stage 2 nodes get them, so the packages must be public.
-  # Skipped if either build failed, since `needs: build` waits for both.
+  # On main (a push or a manual run) and on etap* tags: pull the images just pushed, without logging in,
+  # and smoke-test them. This is how Stage 2 nodes get them, so the packages must be public. On a tag it
+  # checks the images that are handed in. Skipped if either build failed, since `needs: build` waits for both.
   verify:
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/etap')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
