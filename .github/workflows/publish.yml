@@ -142,3 +142,30 @@ jobs:
       - name: Remove containers and volumes
         if: always()
         run: docker compose -f deploy/compose.yaml down -v
+
+  # On etap* tags only, after both images are pushed and verified: the GitHub Release the lecturer grades.
+  # Its notes (.github/scripts/release-notes.sh) list the images and the CI, E2E and acceptance runs of
+  # the tagged commit. GitHub attaches the source code of the tag (zip and tar.gz) by itself.
+  release:
+    needs: [build, verify]
+    if: startsWith(github.ref, 'refs/tags/etap')
+    runs-on: ubuntu-24.04
+    permissions:
+      # Create the release
+      contents: write
+      # Read the results of other workflows' runs for the notes
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+      # gh, GitHub's command line tool, is installed on the runner; GH_TOKEN lets it read this repository's runs
+      - name: Release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: sh .github/scripts/release-notes.sh > "$RUNNER_TEMP/release-notes.md"
+      # On a tag push it releases that tag; the release title is the tag name. It would update a release
+      # that already exists for the tag, for example when the job is re-run.
+      - name: Create the GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ github.ref_name }}
+          body_path: ${{ runner.temp }}/release-notes.md
