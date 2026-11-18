@@ -38,6 +38,9 @@ fi
 
 # lighthouse NAME URL: one run, written to $OUT/NAME.report.html and $OUT/NAME.report.json.
 # --ignore-certificate-errors: the shop's certificate is self-signed (ADR 0002).
+# --no-sandbox: Ubuntu 24.04 (GitHub's runner) does not let Playwright's Chromium start its sandbox, so Chromium
+# exits at once ("waiting for dynamic debugging port"). Playwright starts it without the sandbox too, for every E2E
+# test; the browser here opens only the local shop.
 # --blocked-url-patterns: imported descriptions can embed images from the source shop, which tests never touch
 # (AGENTS.md rule 7).
 lighthouse() {
@@ -45,7 +48,7 @@ lighthouse() {
     --preset=desktop \
     --only-categories=performance,accessibility \
     --output=html --output=json --output-path="$OUT/$1" \
-    --chrome-flags="--headless=new --ignore-certificate-errors" \
+    --chrome-flags="--headless=new --ignore-certificate-errors --no-sandbox" \
     --blocked-url-patterns="*magiczne-indie.pl*" \
     --quiet
 }
@@ -70,8 +73,9 @@ score() {
 # ending the script here with no rows at all.
 home=$(curl -fsSk "$BASE_URL/") || home=
 links=$(printf '%s\n' "$home" | grep -o "href=\"$BASE_URL/[^\"]*\"" | sed 's/^href="//; s/"$//')
-category=$(printf '%s\n' "$links" | grep -E "^$BASE_URL/[0-9]+-[^/]+$" | head -1 || true)
-product=$(printf '%s\n' "$links" | grep -E "^$BASE_URL/[^/]+/[0-9]+-[^/]+\.html$" | head -1 || true)
+# -m 1: the first match only. (`| head -1` would close the pipe while grep still writes: "Broken pipe".)
+category=$(printf '%s\n' "$links" | grep -m 1 -E "^$BASE_URL/[0-9]+-[^/]+$" || true)
+product=$(printf '%s\n' "$links" | grep -m 1 -E "^$BASE_URL/[^/]+/[0-9]+-[^/]+\.html$" || true)
 
 # run NAME URL: one run; a failed one leaves no report, which its row shows, and the next runs still go
 run() {
