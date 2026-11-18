@@ -1,8 +1,8 @@
 #!/bin/sh
 # Runs the E2E suite (`npm test` in tests/) several times in a row against a running shop with its data, the way
 # W4 counts stability: 3 passes of 3 runs. Each run gets its own seed, so each one picks other products.
-# CI runs it in .github/workflows/e2e.yml. Locally, from the repository root, after `npm ci` and
-# `npx playwright install chromium` in tests/ (Git Bash, Linux, macOS):
+# CI runs it in the `smoke` job of .github/workflows/ci.yml (1 run) and in .github/workflows/e2e.yml. Locally,
+# from the repository root, after `npm ci` and `npx playwright install chromium` in tests/ (Git Bash, Linux, macOS):
 #   sh .github/scripts/e2e-runs.sh 3
 # BASE_URL, MAILPIT_URL and the other E2E_* variables reach the tests unchanged (see README, E2E tests). With
 # E2E_SEED set, every run uses that seed.
@@ -84,7 +84,7 @@ while [ "$i" -le "$runs" ]; do
 done
 
 passed=$((runs - bad))
-# `e2e-reports` is the artifact name in .github/workflows/e2e.yml: change both together
+# `e2e-reports` is the artifact name in ci.yml and e2e.yml: change all three together
 summary="## E2E: $passed of $runs runs passed
 
 $table
