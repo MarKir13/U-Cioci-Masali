@@ -26,8 +26,9 @@ Results of running the checks on the current code (2026-11-09 unless noted):
   Nothing is deployed anywhere: the shop must not be public, and Stage 2 adds the Swarm step once cluster access is
   known.
 - **Fast checks on every PR, full data elsewhere.** Importing 1000 products with images may take up to 30 minutes, so
-  it cannot run per PR. PRs get lint, unit tests and a boot test; E2E and full acceptance run on `main`, nightly or on
-  demand.
+  it cannot run per PR. PRs get lint, unit tests and a boot test; full acceptance runs on demand. Since the subset init
+  (#71) loads 53 products in about 2 minutes, E2E also runs once at the end of `smoke` on PRs that change the tests, the
+  shop or its containers (so `ci-gate` requires it), and 3 times in a row on `main`, nightly and on demand.
 - **One stable gate.** A `ci-gate` job depends on all other jobs. Branch protection requires only this job, so adding
   jobs later needs no settings change.
 - **gitleaks runs with default rules and no allowlist,** which matches how the lecturer measures it.
@@ -50,11 +51,11 @@ Times are estimates until the first real runs.
 
 | Workflow | Trigger | Jobs | Covers | Time |
 |---|---|---|---|---|
-| `ci.yml` | Every PR, push to `main` | `scraper`, `repo-hygiene`, `infra-lint`, `changes`, `smoke` (only when `shop/`, `deploy/` or the smoke test changed), `ci-gate` | D5, W1, W3 | 2 min, about 8 with `smoke` |
+| `ci.yml` | Every PR, push to `main` | `scraper`, `repo-hygiene`, `infra-lint`, `changes`, `smoke` (only when `shop/`, `deploy/`, `scraper-results/`, `tests/` or the smoke or E2E scripts changed: clean install, subset init twice, one E2E run), `ci-gate` | D5, W1, W3, W4 | 2 min, about 12 with `smoke` |
 | `pr-policy.yml` | PR opened, updated or relabelled | `ai-log` | D6 | Under 1 min |
 | `secret-scan.yml` | Nightly, manual | `all-branches`: gitleaks and repository limits over every branch | W1 | 1 min |
 | `publish.yml` | Push to `main`, tag `etap*`, manual; PRs changing `shop/` or `deploy/proxy/` (build only) | `build` (shop and proxy images; a tag must point to a commit on `main`), `verify` (main and `etap*` tags), `release` (`etap*` tags: GitHub Release with notes from `release-notes.sh`) | Stage 2, acceptance | 3 min, about 5 with `verify` |
-| `e2e.yml` | Push to `main`, nightly, manual | Stack, seed subset, Playwright, reports | W4 | 15 min |
+| `e2e.yml` | Push to `main`, nightly, manual | `e2e`: stack, `init --subset`, `e2e-runs.sh` with 3 runs, reports as an artifact. PRs get 1 run at the end of `smoke` in `ci.yml` | W4 | About 10 min |
 | `acceptance.yml` | Manual, before tagging | Clean clone, full data, all lecturer metrics | W3, W4, D1 | 45 min |
 
 ## Steps

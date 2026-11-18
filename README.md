@@ -349,6 +349,19 @@ about 2 minutes. The 4-minute limit (`globalTimeout` in [`playwright.config.js`]
 the whole command, so all three repeats together; on a slower shop where they do not fit, run `npm test` three
 times instead.
 
+[`.github/scripts/e2e-runs.sh`](.github/scripts/e2e-runs.sh) does exactly that, the way CI does it. From the
+repository root (Git Bash on Windows), after the setup above:
+
+```sh
+sh .github/scripts/e2e-runs.sh 3
+```
+
+Each run gets its own seed and its own 4-minute limit. The script prints a table with every run's seed, result
+and time, and fails if any run failed or took more than 5 minutes. `BASE_URL`, `MAILPIT_URL` and the `E2E_*`
+variables work as above. Playwright replaces its report folders on every run, so the script moves them to
+`tests/e2e-runs/run-<n>/` (ignored by git) after each one. Open a run's report from `tests/` with
+`npx playwright show-report e2e-runs/run-2/playwright-report`.
+
 Rules for new tests: import `test` and `expect` from `tests/support/fixtures.js`, keep selectors in `tests/pages/`,
 and never wait a fixed time. Wait on a condition instead (`expect(...)`, `waitForURL`, `waitForResponse`);
 `npx eslint` fails on `waitForTimeout`. The whole run must stay under 5 minutes, and Playwright stops it after 4.
@@ -356,14 +369,15 @@ and never wait a fixed time. Wait on a condition instead (`expect(...)`, `waitFo
 
 ## Continuous integration
 
-GitHub Actions runs five workflows:
+GitHub Actions runs six workflows:
 
 | Workflow | When | What it checks |
 |---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and JavaScript (theme and E2E tests). `smoke`: a clean install of the shop, then `init --subset` twice (the second run must download nothing and create or delete nothing) and the smoke test again, only when `changes` finds a change in `shop/`, `deploy/`, `scraper-results/` or the smoke test itself. `ci-gate`: passes only if all jobs passed or were skipped |
+| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and JavaScript (theme and E2E tests). `smoke`: a clean install of the shop, then `init --subset` twice (the second run must download nothing and create or delete nothing) and the smoke test again, then one run of the E2E suite on that data (report as the `e2e-reports` artifact), only when `changes` finds a change in `shop/`, `deploy/`, `scraper-results/`, `tests/` or the smoke and E2E scripts. So a PR that breaks the purchase scenario fails `ci-gate`. `ci-gate`: passes only if all jobs passed or were skipped |
 | [`pr-policy.yml`](.github/workflows/pr-policy.yml) | A pull request is opened, updated or relabelled | `ai-log`: a PR labelled `ai-assisted` must add or update a row in `docs/AI_LOG.md` |
 | [`secret-scan.yml`](.github/workflows/secret-scan.yml) | Nightly, or by hand from the Actions tab | Secrets and repository limits over every branch, the way the lecturer measures it |
 | [`publish.yml`](.github/workflows/publish.yml) | Every push to `main`, tags `etap*`, by hand; pull requests that change `shop/` or `deploy/proxy/` | `build`: the shop and proxy images for `linux/amd64`, pushed to GHCR only from `main` or an `etap*` tag; pull requests and manual runs on other branches only build; an `etap*` tag on a commit that is not on `main` fails before anything is pushed. `verify` (on `main` and `etap*` tags): pulls them without logging in, checks they are `amd64` and runs the smoke test on them. `release` (on `etap*` tags): the GitHub Release, see [Handing in a stage](#handing-in-a-stage). Not a required check |
+| [`e2e.yml`](.github/workflows/e2e.yml) | Every push to `main`, nightly, by hand (with a number of runs, default 3) | W4 stability: starts the shop as in the README, runs `init --subset`, then the E2E suite 3 times in a row with [`e2e-runs.sh`](.github/scripts/e2e-runs.sh), each run with its own seed. Pull requests get one run in `smoke` instead. The run's summary page shows each run's seed, result and time. Not a required check |
 | [`init-timing.yml`](.github/workflows/init-timing.yml) | Only by hand from the Actions tab (with a "subset" checkbox) | A timed clean start as in the README: `up -d --build`, then init, then the smoke test. The run's summary page shows the time of each step and the total from a clean clone. Not a required check |
 
 A pull request must have passing `ci-gate` and `ai-log` checks before it is merged.
