@@ -56,7 +56,7 @@ Times are estimates until the first real runs.
 | `secret-scan.yml` | Nightly, manual | `all-branches`: gitleaks and repository limits over every branch | W1 | 1 min |
 | `publish.yml` | Push to `main`, tag `etap*`, manual; PRs changing `shop/` or `deploy/proxy/` (build only) | `build` (shop and proxy images; a tag must point to a commit on `main`), `verify` (main and `etap*` tags), `release` (`etap*` tags: GitHub Release with notes from `release-notes.sh`) | Stage 2, acceptance | 3 min, about 5 with `verify` |
 | `e2e.yml` | Push to `main`, nightly, manual | `e2e`: stack, `init --subset`, `e2e-runs.sh` with 3 runs, reports as an artifact. PRs get 1 run at the end of `smoke` in `ci.yml` | W4 | About 10 min |
-| `acceptance.yml` | Manual, before tagging | Clean clone, full data, all lecturer metrics | W3, W4, D1 | 45 min |
+| `acceptance.yml` | Manual (with a subset option), before tagging | `acceptance`: clean start with full data (timed), second init, catalogue SQL, crawl and console check (`npm run acceptance`), Lighthouse, backup and restore onto a clean environment (timed), 3 E2E runs on the restored shop; a pass/fail table of every metric | W3, W4, D1, D2, D3, D4 | About 60 min |
 
 ## Steps
 
