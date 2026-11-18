@@ -16,6 +16,8 @@ as "Superseded by NNNN".
 - [0008. Product import through the Webservice API](0008-product-import-through-the-webservice-api.md)
 - [0009. Products with variants made from families of source products](0009-variants-as-combinations-of-source-families.md)
 - [0010. One-command data init](0010-one-command-data-init.md)
+- [0011. Omnibus price from our own module with a price history in the database](0011-omnibus-price-history-module.md)
+- [0012. What a backup contains, and what the settings export is](0012-backup-contents-and-settings-export.md)
 
 ## Template
 

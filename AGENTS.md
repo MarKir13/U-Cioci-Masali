@@ -86,6 +86,7 @@ Run from the repository root unless noted.
 | Shell lint (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
 | Compose check, must print nothing. Never drop `--quiet` or use `deploy/.env` | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax (Git Bash: `MSYS_NO_PATHCONV=1` before `xargs`) | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
+| Omnibus rule test (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php` |
 | JavaScript lint (after `npm ci` once) | `npx eslint` |
 | E2E setup, once (from `tests/`) | `npm ci` and `npx playwright install chromium` |
 | E2E tests (from `tests/`; another shop: `BASE_URL=https://host:port npm test`, and `MAILPIT_URL=http://localhost:port` for its Mailpit) | `npm test` |
@@ -207,8 +208,12 @@ Documentation is in English, except `docs/AI_LOG.md`.
   redirects any other host there. Tests import `test` from `tests/support/fixtures.js`, keep selectors in
   `tests/pages/` and never call `waitForTimeout`; ESLint fails on it. A failed run is repeated with the `E2E_SEED`
   shown in the report.
+- The Omnibus line comes from one hook call in the child theme's `catalog/_partials/product-prices.tpl` and
+  `catalog/_partials/miniatures/product.tpl`. Keep it when rewriting those templates. The price history lives in the
+  module's tables: a back-office "Reset" of `ciociaomnibus` deletes it. The importer updates promotions in place
+  (`set_promotion`); keep it that way, since a deleted and re-added promotion gets a new start date (ADR 0011).
 - A backup holds the database, `img/` and the banner slides, but not `app/config/parameters.php` or `.htaccess`
-  (ADR 0009). After a restore the back office login is the one from the backup. A new kind of file that lives
+  (ADR 0012). After a restore the back office login is the one from the backup. A new kind of file that lives
   only in the `shop-data` volume and is not rebuilt from the image must be added to both `deploy/backup.sh` and
   `deploy/restore.sh`.
   

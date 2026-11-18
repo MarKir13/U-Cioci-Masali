@@ -6,7 +6,7 @@
 #   modules/ps_imageslider/images/  home banner slides, which the module keeps outside img/
 #
 # Not included: app/config/parameters.php. It holds the database password and cookie keys of one
-# install, and the environment a backup is restored into has its own (ADR 0009).
+# install, and the environment a backup is restored into has its own (ADR 0012).
 # The archive holds customer data and password hashes: never commit or publish it.
 #
 # Usage, with the shop running:  sh deploy/backup.sh
