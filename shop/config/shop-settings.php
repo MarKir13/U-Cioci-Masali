@@ -106,4 +106,15 @@ return [
             ['image' => 'mi-slide-2.jpg', 'alt' => 'Półki z suplementami w sklepie Magiczne Indie'],
         ],
     ],
+
+    // Product catalogue, filled by the importer (deploy/importer, issue #70)
+    'catalog' => [
+        // Top menu: these top-level categories, in this order. Names exactly as in
+        // scraper-results/categories.json. The module ciociamenu keeps the menu in step with them.
+        'menu_categories' => ['Kosmetyki', 'Żywność', 'Zdrowie', 'Różności', 'NA PREZENT', 'Nowości'],
+        // false: a product with stock 0 cannot be ordered (the brief wants some products unavailable)
+        'order_out_of_stock' => false,
+        // Allow <iframe> in descriptions: product 9536 embeds a YouTube video, as on the source shop
+        'allow_iframes' => true,
+    ],
 ];

@@ -421,6 +421,43 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 
 /*
+ * Cart preview (modules/ps_shoppingcart/ps_shoppingcart.tpl, from 768 px). CSS opens it on hover and
+ * focus; this adds the Escape key (WCAG 1.4.13: dismissible). Escape sets .is-dismissed on .blockcart,
+ * and the panel stays closed until the pointer and the focus have both left the cart.
+ * Listeners sit on the document, not on the cart: after an AJAX refresh ps_shoppingcart replaces the
+ * whole .blockcart element, which would drop listeners attached to it.
+ */
+(function () {
+  var DISMISSED = 'is-dismissed';
+  var wide = window.matchMedia('(min-width: 768px)');
+
+  function cartOf(node) {
+    return node instanceof Element ? node.closest('.blockcart') : null;
+  }
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape' || !wide.matches) return;
+    document.querySelectorAll('.blockcart').forEach(function (cart) {
+      if (cart.classList.contains(DISMISSED) || !(cart.matches(':hover') || cart.matches(':focus-within'))) return;
+      // Focus inside the panel would be lost when it hides; hand it back to the cart link.
+      var link = cart.querySelector('.ciocia-cart-link');
+      if (link && cart.contains(document.activeElement) && document.activeElement !== link) link.focus();
+      cart.classList.add(DISMISSED);
+    });
+  });
+
+  document.addEventListener('mouseout', function (event) {
+    var cart = cartOf(event.target);
+    if (cart && !cart.contains(event.relatedTarget) && !cart.matches(':focus-within')) cart.classList.remove(DISMISSED);
+  });
+
+  document.addEventListener('focusout', function (event) {
+    var cart = cartOf(event.target);
+    if (cart && !cart.contains(event.relatedTarget) && !cart.matches(':hover')) cart.classList.remove(DISMISSED);
+  });
+})();
+
+/*
  * Password fields (templates/_partials/form-fields.tpl): the eye button shows or hides the password.
  * Delegated from the document, because checkout replaces its forms after AJAX updates.
  */
@@ -805,4 +842,304 @@ document.addEventListener('click', function (event) {
         submitButton.disabled = false;
       });
   });
+})();
+
+/*
+ * Category header on phones (issue #75, catalog/_partials/category-header.tpl): the description is cut to
+ * four lines with "Czytaj więcej", and only six subcategories show, with "Pokaż wszystkie (N)". This marks
+ * each block with .is-ready, which lets custom.css fold it, and shows "Czytaj więcej" only when the text is
+ * really longer than four lines. PrestaShop replaces the header after sorting or changing the page without
+ * a reload (Classic's listing script, event updateProductList), so it runs again then; the clicks are
+ * handled on the document, so they also work for a replaced header.
+ */
+(function () {
+  var phone = window.matchMedia('(max-width: 767.98px)');
+
+  function setExpanded(block, button, expanded) {
+    block.classList.toggle('is-expanded', expanded);
+    button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    button.textContent = button.getAttribute(expanded ? 'data-less-label' : 'data-more-label');
+  }
+
+  function measureDescriptions() {
+    document.querySelectorAll('.js-ciocia-category-description').forEach(function (block) {
+      var text = block.querySelector('.ciocia-category-description__text');
+      var button = block.querySelector('.ciocia-category-description__toggle');
+      if (!text || !button) return;
+      block.classList.add('is-ready');
+      if (block.classList.contains('is-expanded')) return;
+      // Folded only on phones; elsewhere the full text shows and the button stays hidden.
+      button.hidden = !phone.matches || text.scrollHeight <= text.clientHeight + 1;
+    });
+  }
+
+  function init() {
+    document.querySelectorAll('.js-ciocia-subcategories').forEach(function (block) {
+      block.classList.add('is-ready');
+    });
+    measureDescriptions();
+  }
+
+  document.addEventListener('click', function (event) {
+    var button = event.target.closest('.ciocia-category-description__toggle, .ciocia-subcategories__toggle');
+    if (!button) return;
+    var block = button.closest('.js-ciocia-category-description, .js-ciocia-subcategories');
+    setExpanded(block, button, !block.classList.contains('is-expanded'));
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  phone.addEventListener('change', measureDescriptions);
+  window.addEventListener('load', measureDescriptions);
+  if (window.prestashop && typeof window.prestashop.on === 'function') {
+    // Classic's handler, registered before this file runs, has already put the new header in place.
+    window.prestashop.on('updateProductList', function () {
+      window.requestAnimationFrame(init);
+    });
+  }
+})();
+
+/*
+ * "Dodaj do koszyka" on product cards (issue #75, catalog/_partials/miniatures/product.tpl). The card's
+ * form is sent without a reload, the same request and the same updateCart event as PrestaShop's own
+ * add-to-cart script (themes/_core/js/cart.js), so ps_shoppingcart updates the cart and opens its window.
+ * The card button is not marked data-button-action="add-to-cart" (see the template), so that script does
+ * not see it. Without JavaScript, or before this runs, the form is posted and the cart page opens.
+ */
+(function () {
+  document.addEventListener('submit', function (event) {
+    var form = event.target.closest('.js-ciocia-add-to-cart');
+    var prestashop = window.prestashop;
+    if (!form || !prestashop || typeof prestashop.emit !== 'function') return;
+    event.preventDefault();
+
+    var button = form.querySelector('button[type="submit"]');
+    if (button.disabled) return;
+    button.disabled = true;
+
+    // Not form.action: the hidden field named "action" hides that property.
+    fetch(form.getAttribute('action'), {
+      method: 'POST',
+      // PrestaShop answers in JSON when the request accepts it (Controller::isAjax).
+      headers: {
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: new URLSearchParams(new FormData(form)),
+      credentials: 'same-origin'
+    })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (resp) {
+        if (resp.hasError) {
+          prestashop.emit('handleError', { eventType: 'addProductToCart', resp: resp });
+          return;
+        }
+        prestashop.emit('updateCart', {
+          reason: {
+            idProduct: resp.id_product,
+            idProductAttribute: resp.id_product_attribute,
+            idCustomization: resp.id_customization,
+            linkAction: 'add-to-cart',
+            cart: resp.cart
+          },
+          resp: resp
+        });
+      })
+      .catch(function (error) {
+        prestashop.emit('handleError', { eventType: 'addProductToCart', resp: { errors: [String(error)] } });
+      })
+      .then(function () {
+        button.disabled = false;
+      });
+  });
+})();
+
+/*
+ * Product page (issue #76): on phones and tablets Classic hides its zoom icon and nothing opens the large
+ * photo, so a tap on the photo opens the same zoom window (#product-modal) that the icon opens on a desktop.
+ * The quantity field gets a label for screen readers when Classic's markup has none.
+ */
+(function () {
+  if (!document.body || document.body.id !== 'product') return;
+  var touchLayout = window.matchMedia('(max-width: 767.98px)');
+
+  document.addEventListener('click', function (event) {
+    if (!touchLayout.matches || !event.target.closest('.images-container .product-cover img')) return;
+    var modal = document.getElementById('product-modal');
+    var jquery = window.jQuery;
+    if (modal && jquery && typeof jquery.fn.modal === 'function') jquery(modal).modal('show');
+  });
+
+  function labelQuantity() {
+    var field = document.getElementById('quantity_wanted');
+    if (field && !field.getAttribute('aria-label') && !field.labels.length) field.setAttribute('aria-label', 'Ilość');
+  }
+  labelQuantity();
+  // The product block is re-rendered after a variant change.
+  if (window.prestashop && typeof window.prestashop.on === 'function') window.prestashop.on('updatedProduct', labelQuantity);
+})();
+
+/*
+ * Product page (issue #76): the source shows the index and the brand under the name and has arrows at
+ * the sides of the photo. Classic prints the index and brand only in the details tab and has no arrows,
+ * so both are built here from what the page already holds; they are built again after a variant change,
+ * when Classic replaces the gallery and the details.
+ */
+(function () {
+  if (!document.body || document.body.id !== 'product') return;
+
+  function buildMeta() {
+    var title = document.querySelector('#main h1');
+    if (!title) return;
+    var old = document.querySelector('.ciocia-product-meta');
+    if (old) old.remove();
+
+    var reference = document.querySelector('#product-details .product-reference span');
+    var brandLink = document.querySelector('#product-details .product-manufacturer a');
+    var brandImage = brandLink && brandLink.querySelector('img');
+    if (!reference && !brandLink) return;
+
+    var meta = document.createElement('div');
+    meta.className = 'ciocia-product-meta';
+    if (brandLink) {
+      var brand = document.createElement('a');
+      brand.className = 'ciocia-product-meta__brand';
+      brand.href = brandLink.href;
+      brand.textContent = brandImage ? brandImage.alt : brandLink.textContent.trim();
+      meta.appendChild(brand);
+    }
+    if (reference && reference.textContent.trim()) {
+      var line = document.createElement('p');
+      line.className = 'ciocia-product-meta__reference';
+      line.style.margin = '0';
+      line.appendChild(document.createTextNode('Indeks: '));
+      var value = document.createElement('strong');
+      value.textContent = reference.textContent.trim();
+      line.appendChild(value);
+      meta.appendChild(line);
+    }
+    title.insertAdjacentElement('afterend', meta);
+  }
+
+  function buildArrows() {
+    var cover = document.querySelector('.images-container .product-cover');
+    var thumbs = document.querySelectorAll('.images-container .product-images img.thumb');
+    if (!cover || thumbs.length < 2 || cover.querySelector('.ciocia-gallery-arrow')) return;
+
+    function step(direction) {
+      var list = Array.from(document.querySelectorAll('.images-container .product-images img.thumb'));
+      var current = list.findIndex(function (thumb) { return thumb.classList.contains('selected'); });
+      var next = list[(Math.max(current, 0) + direction + list.length) % list.length];
+      if (next) next.click();
+    }
+
+    [['prev', -1, 'Poprzednie zdjęcie', 'chevron_left'], ['next', 1, 'Następne zdjęcie', 'chevron_right']].forEach(function (spec) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'ciocia-gallery-arrow ciocia-gallery-arrow--' + spec[0];
+      button.setAttribute('aria-label', spec[2]);
+      var icon = document.createElement('i');
+      icon.className = 'material-icons';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = spec[3];
+      button.appendChild(icon);
+      button.addEventListener('click', function () { step(spec[1]); });
+      cover.appendChild(button);
+    });
+  }
+
+  function build() {
+    buildMeta();
+    buildArrows();
+  }
+  build();
+  if (window.prestashop && typeof window.prestashop.on === 'function') window.prestashop.on('updatedProduct', build);
+})();
+
+/*
+ * Product page (issue #76): the description and the details are an accordion at every width (the source does the
+ * same): every row starts closed. A button with the tab's name goes in front of each of
+ * Classic's tab panes. The panes are found again by id on every click, because Classic replaces the details
+ * pane after a variant change.
+ */
+(function () {
+  if (!document.body || document.body.id !== 'product') return;
+
+  function setOpen(toggle, open) {
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    var pane = document.getElementById(toggle.getAttribute('aria-controls'));
+    if (pane) pane.classList.toggle('ciocia-is-open', open);
+  }
+
+  function build() {
+    var content = document.querySelector('#main .tabs .tab-content');
+    if (!content) return;
+    Array.from(content.children).forEach(function (pane) {
+      if (!pane.classList.contains('tab-pane') || !pane.id) return;
+      var existing = content.querySelector('.ciocia-accordion__toggle[aria-controls="' + pane.id + '"]');
+      if (existing) {
+        setOpen(existing, existing.getAttribute('aria-expanded') === 'true');
+        return;
+      }
+      var link = document.querySelector('#main .tabs .nav-tabs a[href="#' + pane.id + '"]');
+      var toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'ciocia-accordion__toggle';
+      toggle.setAttribute('aria-controls', pane.id);
+      toggle.setAttribute('aria-expanded', 'false');
+      var label = document.createElement('span');
+      label.textContent = link ? link.textContent.trim() : pane.id;
+      var icon = document.createElement('i');
+      icon.className = 'material-icons';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = 'expand_more';
+      toggle.appendChild(label);
+      toggle.appendChild(icon);
+      toggle.addEventListener('click', function () {
+        setOpen(toggle, toggle.getAttribute('aria-expanded') !== 'true');
+      });
+      content.insertBefore(toggle, pane);
+    });
+  }
+
+  build();
+  if (window.prestashop && typeof window.prestashop.on === 'function') window.prestashop.on('updatedProduct', build);
+})();
+
+/*
+ * Product page (issue #76): as on the source, the description accordion is on the left and the trust card
+ * (shipping, returns...) on the right, one under the other on phones. Classic prints the tabs inside the
+ * buying column, so both are moved into one row after the photo and the buying column. The card is the one of
+ * the cart (_partials/summary-trust.tpl), sent by _partials/footer.tpl in <template id="ciocia-product-trust">
+ * so that the free delivery amount comes from the shop configuration; the blockreassurance module's block is
+ * used instead when the shop has it. Classic's own scripts find the parts by class, so moving them does not
+ * break the variant refresh.
+ */
+(function () {
+  if (!document.body || document.body.id !== 'product') return;
+  var tabs = document.querySelector('#main .tabs');
+  if (!tabs || document.querySelector('.ciocia-product-info')) return;
+
+  // The child of #main that holds the tabs (Classic's row with the photo and the buying column).
+  var top = tabs;
+  while (top.parentElement && top.parentElement.id !== 'main') top = top.parentElement;
+  if (!top.parentElement) return;
+
+  var trust = document.querySelector('#main .blockreassurance_product');
+  if (!trust) {
+    var template = document.getElementById('ciocia-product-trust');
+    if (template && template.content) trust = template.content.firstElementChild;
+  }
+
+  var row = document.createElement('div');
+  row.className = 'ciocia-product-info';
+  top.insertAdjacentElement('afterend', row);
+  row.appendChild(tabs);
+  if (trust) row.appendChild(trust);
+  else row.classList.add('ciocia-product-info--solo');
 })();
