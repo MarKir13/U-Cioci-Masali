@@ -54,7 +54,7 @@ Times are estimates until the first real runs.
 | `ci.yml` | Every PR, push to `main` | `scraper`, `repo-hygiene`, `infra-lint`, `changes`, `smoke` (only when `shop/`, `deploy/`, `scraper-results/`, `tests/` or the smoke or E2E scripts changed: clean install, subset init twice, one E2E run), `ci-gate` | D5, W1, W3, W4 | 2 min, about 12 with `smoke` |
 | `pr-policy.yml` | PR opened, updated or relabelled | `ai-log` | D6 | Under 1 min |
 | `secret-scan.yml` | Nightly, manual | `all-branches`: gitleaks and repository limits over every branch | W1 | 1 min |
-| `publish.yml` | Push to `main`, tag `etap*`, manual; PRs changing `shop/` or `deploy/proxy/` (build only) | `build` (shop and proxy images), `verify` (main only); a release on tags comes with CI-7 | Stage 2 | 3 min, about 5 with `verify` |
+| `publish.yml` | Push to `main`, tag `etap*`, manual; PRs changing `shop/` or `deploy/proxy/` (build only) | `build` (shop and proxy images; a tag must point to a commit on `main`), `verify` (main and `etap*` tags), `release` (`etap*` tags: GitHub Release with notes from `release-notes.sh`) | Stage 2, acceptance | 3 min, about 5 with `verify` |
 | `e2e.yml` | Push to `main`, nightly, manual | `e2e`: stack, `init --subset`, `e2e-runs.sh` with 3 runs, reports as an artifact. PRs get 1 run at the end of `smoke` in `ci.yml` | W4 | About 10 min |
 | `acceptance.yml` | Manual, before tagging | Clean clone, full data, all lecturer metrics | W3, W4, D1 | 45 min |
 

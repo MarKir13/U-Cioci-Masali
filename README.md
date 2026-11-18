@@ -376,7 +376,7 @@ GitHub Actions runs six workflows:
 | [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and JavaScript (theme and E2E tests). `smoke`: a clean install of the shop, then `init --subset` twice (the second run must download nothing and create or delete nothing) and the smoke test again, then one run of the E2E suite on that data (report as the `e2e-reports` artifact), only when `changes` finds a change in `shop/`, `deploy/`, `scraper-results/`, `tests/` or the smoke and E2E scripts. So a PR that breaks the purchase scenario fails `ci-gate`. `ci-gate`: passes only if all jobs passed or were skipped |
 | [`pr-policy.yml`](.github/workflows/pr-policy.yml) | A pull request is opened, updated or relabelled | `ai-log`: a PR labelled `ai-assisted` must add or update a row in `docs/AI_LOG.md` |
 | [`secret-scan.yml`](.github/workflows/secret-scan.yml) | Nightly, or by hand from the Actions tab | Secrets and repository limits over every branch, the way the lecturer measures it |
-| [`publish.yml`](.github/workflows/publish.yml) | Every push to `main`, tags `etap*`, by hand; pull requests that change `shop/` or `deploy/proxy/` | `build`: the shop and proxy images for `linux/amd64`, pushed to GHCR only from `main` or an `etap*` tag; pull requests and manual runs on other branches only build. `verify` (on `main` only): pulls them without logging in, checks they are `amd64` and runs the smoke test on them. Not a required check |
+| [`publish.yml`](.github/workflows/publish.yml) | Every push to `main`, tags `etap*`, by hand; pull requests that change `shop/` or `deploy/proxy/` | `build`: the shop and proxy images for `linux/amd64`, pushed to GHCR only from `main` or an `etap*` tag; pull requests and manual runs on other branches only build; an `etap*` tag on a commit that is not on `main` fails before anything is pushed. `verify` (on `main` and `etap*` tags): pulls them without logging in, checks they are `amd64` and runs the smoke test on them. `release` (on `etap*` tags): the GitHub Release, see [Handing in a stage](#handing-in-a-stage). Not a required check |
 | [`e2e.yml`](.github/workflows/e2e.yml) | Every push to `main`, nightly, by hand (with a number of runs, default 3) | W4 stability: starts the shop as in the README, runs `init --subset`, then the E2E suite 3 times in a row with [`e2e-runs.sh`](.github/scripts/e2e-runs.sh), each run with its own seed. Pull requests get one run in `smoke` instead. The run's summary page shows each run's seed, result and time. Not a required check |
 | [`init-timing.yml`](.github/workflows/init-timing.yml) | Only by hand from the Actions tab (with a "subset" checkbox) | A timed clean start as in the README: `up -d --build`, then init, then the smoke test. The run's summary page shows the time of each step and the total from a clean clone. Not a required check |
 
@@ -490,6 +490,34 @@ In Git Bash on Windows, put `MSYS_NO_PATHCONV=1` in front of `docker run`, or in
 uses it, otherwise the `/repo` path is rewritten. `--all` also covers your local branches, so it can report something
 that is not on GitHub. The compose check reads `deploy/.env.example` instead of your own `deploy/.env`, so it gives the
 same result as CI and never shows your passwords.
+
+### Handing in a stage
+
+Only the version with the tag `etap1` is graded, and it must exist, with its release, at least 48 hours before the
+project meeting. Pushing the tag does the rest: `publish.yml` checks that the tag points to a commit on `main`,
+pushes both images under the tag, runs the smoke test on them and creates the GitHub Release. The release notes
+([`.github/scripts/release-notes.sh`](.github/scripts/release-notes.sh)) show how to start that version, its images
+and the newest `ci.yml`, `e2e.yml` and `acceptance.yml` run of the commit. GitHub adds the source code (zip and
+tar.gz) by itself.
+
+1. Agree in the team that nothing is merged until the tag is pushed. The runs in the notes belong to one commit, so
+   a merge in between leaves the tag without them.
+2. Check that the newest `ci.yml` and `e2e.yml` runs on `main` passed, then start the acceptance run on `main`
+   (Actions > Acceptance > Run workflow, added by issue #21) and wait until it passes.
+3. Tag exactly that commit and push the tag:
+   ```sh
+   git fetch origin
+   git tag -a etap1 -m "Stage 1" origin/main
+   git push origin etap1
+   ```
+4. Wait for the "Publish images" run of the tag (Actions tab), then read the notes on the release page: every check
+   must say `success`. To see the notes before tagging, run
+   `TAG=etap1 SHA=$(git rev-parse origin/main) sh .github/scripts/release-notes.sh` (needs `gh` logged in).
+
+A graded tag must not move. If the run fails before the deadline, fix the cause in a pull request, then delete the
+tag and its release (`gh release delete etap1 --cleanup-tag`) and start again from step 2. To try the whole flow,
+use a tag such as `etap0-test`, then delete it the same way, and delete its image versions in GHCR (the repository's
+Packages > `shop` and `proxy` > Package settings > manage versions).
 
 ## Repository structure
 
