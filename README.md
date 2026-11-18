@@ -38,11 +38,16 @@ Requirements: [Docker Desktop](https://www.docker.com/products/docker-desktop/) 
    ```sh
    docker compose -f deploy/compose.yaml up -d --build
    ```
-4. Wait for the first-time installation to finish (about 3–5 minutes). It is done when the log shows
-   `Starting web server`:
+4. Load the data, right away (no need to wait for the shop's install to finish):
    ```sh
-   docker compose -f deploy/compose.yaml logs -f shop
+   docker compose -f deploy/compose.yaml --profile init run --rm --build init
    ```
+   It downloads the product images (585 MB, from the GitHub Release) while the shop installs, waits until the shop
+   is ready, then imports 2159 products in 160 categories. It ends with `init: done` and the shop's address. On a
+   team laptop this took about 35–40 minutes, mostly the download and the image uploads
+   ([ADR 0010](docs/adr/0010-one-command-data-init.md)). For a quick look, `init --subset` imports only 53 products
+   of two categories in about 2 minutes. Running init again downloads nothing and changes nothing. More:
+   [Loading the data into the shop](#loading-the-data-into-the-shop).
 5. Open the shop (HTTPS only; http://localhost:8080 redirects there with 301):
    - Storefront: https://localhost:8443
    - Admin panel: https://localhost:8443/admin-ciocia
@@ -75,6 +80,8 @@ no published port, so the only way in from outside is HTTPS through the proxy.
 
 | Task | Command |
 |---|---|
+| Follow the shop's install (done at `Starting web server`) | `docker compose -f deploy/compose.yaml logs -f shop` |
+| Load the data again after a change to `scraper-results/` or `variants.json` | `docker compose -f deploy/compose.yaml --profile init run --rm --build init` |
 | Stop the shop (data is kept) | `docker compose -f deploy/compose.yaml down` |
 | Apply changes from `shop/` (theme, modules, config) | `docker compose -f deploy/compose.yaml up -d --build` |
 | Reset everything and reinstall from scratch | `docker compose -f deploy/compose.yaml down -v` |
@@ -191,7 +198,8 @@ docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/40-
 
 The data from the source shop is in `scraper-results/`: 2159 products in 160 categories, with 4822 product images.
 How it was made, what was left out and why: [scraper/README.md](scraper/README.md). The product images are not in git. They
-are one archive (585 MB) in the GitHub Release [`images-v1`](https://github.com/MarKir13/U-Cioci-Masali/releases/tag/images-v1):
+are one archive (585 MB) in the GitHub Release [`images-v1`](https://github.com/MarKir13/U-Cioci-Masali/releases/tag/images-v1).
+The data init (below) downloads and unpacks it into `scraper-results/images/` by itself; to do it by hand:
 
 ```sh
 gh release download images-v1 --pattern product-images.tar.gz --dir /tmp
@@ -202,17 +210,51 @@ Check the data with `python -m scraper verify` (from `scraper/`); it needs no ne
 
 ### Loading the data into the shop
 
-The importer ([deploy/importer](deploy/importer/README.md)) puts the categories, brands, products, stock,
-promotions and images into the running shop through the Webservice API, and removes the installer's demo
-catalogue. With the images unpacked as above, from the repository root:
+One command, from the repository root, right after `up -d` (step 4 of [Running the shop](#running-the-shop)):
 
 ```sh
-docker compose -f deploy/compose.yaml --profile init run --rm --build importer
+docker compose -f deploy/compose.yaml --profile init run --rm --build init            # all 2159 products
+docker compose -f deploy/compose.yaml --profile init run --rm --build init --subset   # 53 products, about 2 minutes
 ```
 
+Init does three things in order ([`deploy/importer/importer/init.py`](deploy/importer/importer/init.py)):
+
+1. **Images:** if any image file this run needs is missing from `scraper-results/images/`, it downloads the archive
+   from the Release, checks its sha256 and unpacks it. This needs no shop, so it runs while the shop installs. The
+   files stay there, also after `down -v`, so this happens once per machine.
+2. **Shop:** it waits until the shop answers (up to 15 minutes). If the shop container is not running, it stops
+   after 30 s and says to start it.
+3. **Import:** the importer ([deploy/importer](deploy/importer/README.md)) puts the categories, brands, products,
+   stock, promotions, variants and images into the shop through the Webservice API, and removes the installer's
+   demo catalogue.
+
 It prints created, updated, unchanged, deleted and rejected counts and writes every problem to
-`deploy/logs/importer.log`. Running it again changes nothing. `--limit 20` imports only 20 products, for a quick
-check. The top menu shows the categories listed under `catalog` in
+`deploy/logs/importer.log`. Running it again changes nothing. Importer options can be added at the end, such as
+`--workers 4` on a slow machine. `--subset` imports categories 85 (Przyprawy) and 99 (Pielęgnacja okolic oczu)
+with their subcategories, from a 10 MB archive: enough for the E2E tests, and what CI uses. A subset run deletes
+nothing, so the installer's demo products stay. The exit code is 0 when done, 1 when something was rejected and 2
+when init could not start or get the images.
+
+**If the image archive cannot be downloaded** (for example, the Release is gone), init stops and prints the command
+that downloads the images from the source shop instead, with the scraper in a container (no Python needed):
+
+```sh
+docker compose -f deploy/compose.yaml --profile init run --rm --build scraper images
+```
+
+That takes about 1 h 40 min (at most 2 requests per second, robots.txt respected) and can be stopped with Ctrl+C
+and started again where it stopped. Then run init again. In CI, init never suggests this: tests never contact the
+source shop. To try the fallback, set `IMAGES_URL` in `deploy/.env` to an address that answers 404 (see
+`.env.example`).
+
+The importer can also be run alone, without the image download and the wait, for example with `--limit 20` for a
+quick check or `--dry-run`:
+
+```sh
+docker compose -f deploy/compose.yaml --profile init run --rm --build importer --limit 20
+```
+
+The top menu shows the categories listed under `catalog` in
 [`shop/config/shop-settings.php`](shop/config/shop-settings.php). Design notes:
 [ADR 0008](docs/adr/0008-product-import-through-the-webservice-api.md).
 
@@ -231,7 +273,8 @@ shop. It has its own [`package.json`](tests/package.json), separate from the ESL
 
 Requirements: [Node.js](https://nodejs.org/) 24 and a running shop with the data imported (see
 [Running the shop](#running-the-shop) and [Loading the data into the shop](#loading-the-data-into-the-shop)). Until
-the import, the shop has no categories and the top menu is empty, so the first steps fail.
+the import, the shop has no categories and the top menu is empty, so the first steps fail. `init --subset` is
+enough: its two categories have the products the scenario needs.
 
 1. Install the dependencies and the browser once, from `tests/`:
    ```sh
@@ -313,14 +356,15 @@ and never wait a fixed time. Wait on a condition instead (`expect(...)`, `waitFo
 
 ## Continuous integration
 
-GitHub Actions runs four workflows:
+GitHub Actions runs five workflows:
 
 | Workflow | When | What it checks |
 |---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and JavaScript (theme and E2E tests). `smoke`: a clean install of the shop, only when `changes` finds a change in `shop/`, `deploy/` or the smoke test itself. `ci-gate`: passes only if all jobs passed or were skipped |
+| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and JavaScript (theme and E2E tests). `smoke`: a clean install of the shop, then `init --subset` twice (the second run must download nothing and create or delete nothing) and the smoke test again, only when `changes` finds a change in `shop/`, `deploy/`, `scraper-results/` or the smoke test itself. `ci-gate`: passes only if all jobs passed or were skipped |
 | [`pr-policy.yml`](.github/workflows/pr-policy.yml) | A pull request is opened, updated or relabelled | `ai-log`: a PR labelled `ai-assisted` must add or update a row in `docs/AI_LOG.md` |
 | [`secret-scan.yml`](.github/workflows/secret-scan.yml) | Nightly, or by hand from the Actions tab | Secrets and repository limits over every branch, the way the lecturer measures it |
 | [`publish.yml`](.github/workflows/publish.yml) | Every push to `main`, tags `etap*`, by hand; pull requests that change `shop/` or `deploy/proxy/` | `build`: the shop and proxy images for `linux/amd64`, pushed to GHCR only from `main` or an `etap*` tag; pull requests and manual runs on other branches only build. `verify` (on `main` only): pulls them without logging in, checks they are `amd64` and runs the smoke test on them. Not a required check |
+| [`init-timing.yml`](.github/workflows/init-timing.yml) | Only by hand from the Actions tab (with a "subset" checkbox) | A timed clean start as in the README: `up -d --build`, then init, then the smoke test. The run's summary page shows the time of each step and the total from a clean clone. Not a required check |
 
 A pull request must have passing `ci-gate` and `ai-log` checks before it is merged.
 
@@ -421,7 +465,7 @@ npm ci
 | Secret scan, as on a PR (needs Docker) | `docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"` |
 | Secret scan, every branch | The same command with `--log-opts="--all"` |
 | Repository limits (add `--all` for every branch) | `sh .github/scripts/check-repo-limits.sh` |
-| Dockerfiles | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile` |
+| Dockerfiles | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile scraper/Dockerfile` |
 | Shell scripts | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
 | Compose file (prints nothing when valid) | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
@@ -438,9 +482,9 @@ same result as CI and never shows your passwords.
 | Path | Contents | Status |
 |---|---|---|
 | `shop/` | Dockerfile, PHP config, child theme, own modules, setup scripts for shop content | in progress |
-| `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`), product importer (`importer/`); later: init, backup and restore scripts | in progress |
+| `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`), product importer and data init (`importer/`); later: backup and restore scripts | in progress |
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
-| `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | done: crawl, images, verification |
+| `scraper/` | Scraper source code, tests and its Dockerfile (init's fallback), see [scraper/README.md](scraper/README.md) | done: crawl, images, verification |
 | `scraper-results/` | Scraped data (`categories.json`, `products.jsonl`, `schema.json`, `rejected.json`), `verification-report.md` and 20 sample images | done: 2159 products, 160 categories |
 | `tests/` | Playwright E2E tests | done: W4 scenario, steps 1–10 |
 

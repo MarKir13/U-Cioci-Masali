@@ -13,12 +13,15 @@ Reads ask for JSON (output_format=JSON). Writes are sent as XML, the format the 
 import itertools
 import json
 import threading
+import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+from .report import Timings
 
 # Name of one record in the XML body, for each resource
 SINGULAR = {
@@ -97,6 +100,12 @@ def error_message(response: requests.Response) -> str:
         return body[:300] or response.reason
 
 
+def request_kind(method: str, path: str) -> str:
+    """A request without its record IDs, for the timings: "POST images/products/12" -> "POST images/products"."""
+    parts = [part for part in path.split("/")[:2] if part and not part.isdigit()]
+    return f"{method} {'/'.join(parts)}"
+
+
 class ShopApi:
     def __init__(self, url: str, host: str, key: str, dry_run: bool = False, timeout: int = 300):
         self.url = url.rstrip("/")
@@ -109,6 +118,8 @@ class ShopApi:
         self.lang_ids: list[int] = [1]
         # requests.Session is not safe to share between threads, so each thread gets its own
         self._local = threading.local()
+        # Seconds spent in each kind of request, printed after the summary
+        self.timings = Timings()
 
     def _session(self) -> requests.Session:
         session = getattr(self._local, "session", None)
@@ -129,9 +140,13 @@ class ShopApi:
 
     def _request(self, method: str, path: str, **kwargs) -> requests.Response:
         params = {"output_format": "JSON", **kwargs.pop("params", {})}
-        response = self._session().request(
-            method, f"{self.url}/{path}", params=params, timeout=self.timeout, allow_redirects=False, **kwargs
-        )
+        started = time.monotonic()
+        try:
+            response = self._session().request(
+                method, f"{self.url}/{path}", params=params, timeout=self.timeout, allow_redirects=False, **kwargs
+            )
+        finally:
+            self.timings.add(request_kind(method, path), time.monotonic() - started)
         if response.status_code >= 300:
             raise ApiError(response.status_code, error_message(response))
         return response

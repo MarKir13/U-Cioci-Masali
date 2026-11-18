@@ -1,0 +1,6 @@
+# Only requirements.txt and the scraper/ package go into the image. These are left out of the build context,
+# because the page cache alone can be hundreds of MB and would be sent to Docker on every build.
+cache/
+tests/
+scraper.log
+**/__pycache__/

@@ -2,7 +2,7 @@
 
 import xml.etree.ElementTree as ET
 
-from importer.api import Lang, text, to_xml
+from importer.api import Lang, request_kind, text, to_xml
 
 
 def test_to_xml_writes_plain_multilingual_and_associated_fields():
@@ -30,3 +30,10 @@ def test_text_reads_one_language_or_many():
     assert text("Kosmetyki") == "Kosmetyki"
     assert text([{"id": "1", "value": "Kosmetyki"}, {"id": "2", "value": "Cosmetics"}]) == "Kosmetyki"
     assert text(None) == ""
+
+
+def test_requests_are_timed_by_kind_without_record_ids():
+    assert request_kind("POST", "images/products/12") == "POST images/products"
+    assert request_kind("DELETE", "images/products/12/34") == "DELETE images/products"
+    assert request_kind("PUT", "products/5") == "PUT products"
+    assert request_kind("GET", "stock_availables") == "GET stock_availables"

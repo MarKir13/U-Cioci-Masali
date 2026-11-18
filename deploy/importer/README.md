@@ -9,8 +9,16 @@ reasons: [ADR 0008](../../docs/adr/0008-product-import-through-the-webservice-ap
 
 ## Running it
 
-The shop must be running, and the images unpacked into `scraper-results/images/` (see the scraper README). From the
-repository root:
+Usually through the data init, which gets the images first and waits for the shop (see [Data init](#data-init)):
+
+```sh
+docker compose -f deploy/compose.yaml --profile init run --rm --build init [--subset] [importer options]
+```
+
+Alone, the importer needs a running shop and the images unpacked into `scraper-results/images/` (see the scraper
+README). Only the images of the selected products are needed: with `--categories 85,99`, the files of other
+products may be missing. A product with variants needs the images of all its source products; without one of them
+it is rejected whole. From the repository root:
 
 ```sh
 docker compose -f deploy/compose.yaml --profile init run --rm --build importer
@@ -140,28 +148,63 @@ issue #73 gets them with
 `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/40-webservice.sh` (Git Bash: prefix
 `MSYS_NO_PATHCONV=1`); without them the import stops before writing anything, with HTTP 401 and this hint in the log.
 
+## Data init
+
+`importer/init.py` (issue #71, [ADR 0010](../../docs/adr/0010-one-command-data-init.md)) is the one command after
+`up -d`. It runs in the same image as the importer, as the Compose service `init`, and does three things:
+
+1. **Images.** It lists the image files of the products this run imports (all of them, or with `--subset` only
+   those of categories 85 and 99 and their subcategories). If any is missing from `scraper-results/images/`, it
+   downloads the archive from the GitHub Release `images-v1` (`product-images.tar.gz`, or `subset-images.tar.gz` with
+   `--subset`), checks its sha256 against `FULL` or `SUBSET` in the code, and unpacks it. An archive that holds
+   anything but files directly under `images/` is refused. Each file is written as `<name>.partial` and renamed when
+   complete, so Ctrl+C never leaves a half-written image behind.
+2. **Shop.** It checks that the shop container runs (its name resolves within 30 s), then waits up to 15 minutes
+   until `http://shop/` answers without an error, the same test as the Compose healthcheck. The `init` service has
+   no `depends_on`, so step 1 runs while the shop still installs.
+3. **Import.** It calls the importer's `main()` with the same data folder and log file, plus `--categories 85,99`
+   with `--subset`, and passes on every option it does not know itself, such as `--workers 4`.
+
+| Situation | What init does | Exit code |
+|---|---|---|
+| Every needed image file is there | downloads nothing | importer's |
+| The archive answers 404, the download fails or the hash differs | prints the command for the `scraper` service, which downloads the images from the source shop (about 1 h 40 min); with `CI` set, only "fix the Release" | 2 |
+| The shop container is not running | says to run `up -d` | 2 |
+| The shop does not answer within 15 minutes | points to `logs shop` and `[setup] FAILED` | 2 |
+
+`IMAGES_URL` (in `deploy/.env`, see `.env.example`) replaces the Release address, for example to see the fallback
+message. On Linux, files written by this root container get the owner of `scraper-results/`.
+
+When a new archive is published (`python -m scraper archive`, see the scraper README), its hash changes even for
+the same images, so change `FULL` or `SUBSET` in `init.py` too. To change the subset's categories, build the subset
+archive with the same IDs as `SUBSET.categories`.
+
 ## Code
 
 | File | Contents |
 |---|---|
 | `importer/__main__.py` | options, logging, and `run()`, which calls the steps in order |
 | `importer/steps.py` | one function per step: read the shop, categories, brands, products with stock and promotion, then their images, the products with variants and their combinations, delete what is not in the data |
-| `importer/variants.py` | reads and checks `variants.json`, and makes the product record of a product with variants |
+| `importer/variants.py` | reads and checks `variants.json`, checks the image files of a product with variants, and makes its product record |
 | `importer/mapping.py` | pure conversion rules: net price, weight, stock, barcodes, slugs, visible text, combination price and weight |
 | `importer/api.py` | the only code that talks to the shop: JSON for reading, XML for writing |
 | `importer/data.py` | reads the scraped files and validates them against the schema |
-| `importer/report.py` | the counts and the `REJECTED` log lines |
+| `importer/report.py` | the counts and the `REJECTED` log lines, and the time spent per step and per kind of request |
 | `importer/config.py` | settings from the environment |
+| `importer/init.py` | the data init: images from the Release, waiting for the shop, then `run()` |
 
 ## Tests
 
 They need no shop, only the files in `scraper-results/`. The tests of the variant steps (`tests/test_variants.py`)
 run against `tests/fake_shop.py`, an in-memory stand-in for the API that also copies what PrestaShop does on its own
-(stock rows for new combinations, the product's stock as their sum). From `deploy/importer/`, with Python 3.12 and the
+(stock rows for new combinations, the product's stock as their sum). The init tests (`tests/test_init.py`) use a small
+web server on `127.0.0.1` in place of the GitHub Release and a fake clock for the waits, so they need no internet
+and take no time. From `deploy/importer/`, with Python 3.12 and the
 dependencies (`pip install -r requirements.txt pytest`):
 
 ```sh
 python -m pytest
 ```
 
-CI runs them in the `scraper` job, and `ruff check .` from the repository root covers this code too.
+CI runs them in the `scraper` job, and `ruff check .` from the repository root covers this code too. The `smoke` job
+also runs `init --subset` twice on a fresh shop: the second run must create and delete nothing.

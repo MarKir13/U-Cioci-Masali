@@ -99,6 +99,19 @@ def test_variants_must_have_the_same_vat():
     assert rejected == [("Krem odżywczy Himalaya", "the source products have different VAT rates")]
 
 
+def test_a_product_with_variants_needs_the_images_of_all_its_source_products(tmp_path):
+    (tmp_path / "images").mkdir()
+    for name in ("7392-1.jpg", "7392-2.jpg", "120-1.jpg", "120-2.jpg", "8701-1.jpg"):  # 8701-2.jpg is missing
+        (tmp_path / "images" / name).write_bytes(b"jpeg")
+    # A source product can be in one entry only, so the two entries are resolved one at a time
+    (two_sizes,), _ = variants.resolve([TWO_SIZES], ALL)
+    three = definition(("50 ml", SMALL), ("150 ml", LARGE), ("250 ml", EXTRA), name="Krem w trzech")
+    (three_sizes,), _ = variants.resolve([three], ALL)
+    complete, rejected = variants.with_images([two_sizes, three_sizes], tmp_path)
+    assert complete == [two_sizes]
+    assert rejected == [("Krem w trzech", "source product 8701: image file missing: images/8701-2.jpg")]
+
+
 def test_a_missing_file_means_no_variants(tmp_path):
     assert variants.load(tmp_path / "variants.json") == []
 
