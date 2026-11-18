@@ -15,3 +15,7 @@ for dir in /opt/ciocia/themes/* /opt/ciocia/modules/*; do
   cp -a "$dir" "$target"
 done
 rm -rf /var/www/html/var/cache/prod /var/www/html/var/cache/dev
+# PrestaShop's HTML cleaner (HTMLPurifier) keeps its cache in var/cache/prod/purifier and never creates that
+# folder itself. Without it every product saved through the Webservice API fails with HTTP 500 (a PHP warning),
+# although the product is saved. Created as www-data, so the folders do not belong to root.
+runuser -u www-data -- mkdir -p /var/www/html/var/cache/prod/purifier

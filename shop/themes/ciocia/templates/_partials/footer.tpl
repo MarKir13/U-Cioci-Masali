@@ -41,4 +41,9 @@
   </div>
 </div>
 
+{* Product page (issue #76): the trust card of the cart, which custom.js places next to the description. *}
+{if $page.page_name == 'product'}
+  <template id="ciocia-product-trust">{include file='_partials/summary-trust.tpl'}</template>
+{/if}
+
 {include file='_partials/cookie-notice.tpl'}

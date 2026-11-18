@@ -1,0 +1,85 @@
+name: E2E
+
+# The W4 purchase scenario (Playwright, tests/) against a shop started the way the README does it, with the subset
+# data from init. Several runs in a row, each with its own seed (.github/scripts/e2e-runs.sh), for the W4 stability
+# count (3 of 3). The reports of every run are an artifact of the run. Pull requests get one E2E run at the end of
+# the `smoke` job in ci.yml instead, which `ci-gate` requires.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "43 2 * * *"
+  # Actions > E2E > Run workflow
+  workflow_dispatch:
+    inputs:
+      repeat:
+        description: "Runs in a row (W4 counts 3 passes of 3)"
+        type: number
+        default: 3
+
+permissions:
+  contents: read
+
+# One run at a time per branch; a newer one waits, so every run on main finishes
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    runs-on: ubuntu-24.04
+    # Build and install up to 10 minutes, init about 2, then up to 5 per run
+    timeout-minutes: 30
+    env:
+      # The number from a manual run, otherwise 3. `inputs.repeat` is empty outside a manual run.
+      RUNS: ${{ inputs.repeat || 3 }}
+      # Ports from deploy/.env.example
+      BASE_URL: https://localhost:8443
+      MAILPIT_URL: http://localhost:8025
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure as in the README
+        run: cp deploy/.env.example deploy/.env
+      # As in the README: `up -d` returns once the containers are started, and the shop installs in the background
+      # while the next steps install Node.js and the browser. Init waits for the shop itself.
+      - name: Build and start the shop
+        run: docker compose -f deploy/compose.yaml up -d --build
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          # Keeps npm's download cache between runs, keyed on the lock file
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+      - name: Install the test dependencies (versions from tests/package-lock.json)
+        working-directory: tests
+        run: npm ci
+      # --with-deps: also the system libraries Chromium needs on a Linux machine without a desktop
+      - name: Install Chromium
+        working-directory: tests
+        run: npx playwright install --with-deps chromium
+      # The data init command from the README with the subset: categories 85 and 99, enough for the scenario.
+      # GitHub sets CI=true, so init never points to the source shop (AGENTS.md rule 7).
+      - name: Data init (subset)
+        run: docker compose -f deploy/compose.yaml --profile init run --rm --build init --subset
+      - name: E2E runs
+        run: sh .github/scripts/e2e-runs.sh "$RUNS"
+      # Also after failed runs, since then the report matters most: HTML report, JUnit XML, and a screenshot and a
+      # trace of a failed test, per run. Download it from the run's summary page (Artifacts).
+      - name: Upload the reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          # The summary that e2e-runs.sh writes names this artifact: change both together
+          name: e2e-reports
+          path: tests/e2e-runs/
+          retention-days: 14
+      - name: Container status and logs
+        if: failure()
+        run: |
+          docker compose -f deploy/compose.yaml ps -a
+          docker compose -f deploy/compose.yaml logs --no-color
+          # Every rejection and API error of the import (deploy/logs is gitignored)
+          cat deploy/logs/importer.log || true
+      - name: Remove containers and volumes
+        if: always()
+        run: docker compose -f deploy/compose.yaml down -v

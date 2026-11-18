@@ -38,11 +38,16 @@ Requirements: [Docker Desktop](https://www.docker.com/products/docker-desktop/) 
    ```sh
    docker compose -f deploy/compose.yaml up -d --build
    ```
-4. Wait for the first-time installation to finish (about 3–5 minutes). It is done when the log shows
-   `Starting web server`:
+4. Load the data, right away (no need to wait for the shop's install to finish):
    ```sh
-   docker compose -f deploy/compose.yaml logs -f shop
+   docker compose -f deploy/compose.yaml --profile init run --rm --build init
    ```
+   It downloads the product images (585 MB, from the GitHub Release) while the shop installs, waits until the shop
+   is ready, then imports 2159 products in 160 categories. It ends with `init: done` and the shop's address. On a
+   team laptop this took about 35–40 minutes, mostly the download and the image uploads
+   ([ADR 0010](docs/adr/0010-one-command-data-init.md)). For a quick look, `init --subset` imports only 53 products
+   of two categories in about 2 minutes. Running init again downloads nothing and changes nothing. More:
+   [Loading the data into the shop](#loading-the-data-into-the-shop).
 5. Open the shop (HTTPS only; http://localhost:8080 redirects there with 301):
    - Storefront: https://localhost:8443
    - Admin panel: https://localhost:8443/admin-ciocia
@@ -61,6 +66,10 @@ generated into the `certs` volume, so they stay the same across `down` / `up` an
 only after `down -v`. They are never stored in the repository. Design notes:
 [ADR 0002](docs/adr/0002-https-proxy-with-self-signed-certificate.md).
 
+Inside the Docker network the containers talk plain HTTP (proxy to shop, shop to database, and the importer
+to the shop API, see [Webservice API](#webservice-api)). That traffic never leaves the machine, and the shop has
+no published port, so the only way in from outside is HTTPS through the proxy.
+
 > **Upgrading an existing install** (from before HTTPS): in `deploy/.env` replace `SHOP_PORT`
 > with `HTTP_PORT=8080` and `HTTPS_PORT=8443` (see `deploy/.env.example`), then reinstall once with
 > `docker compose -f deploy/compose.yaml down -v` and `up -d --build`. The shop domain and SSL
@@ -71,9 +80,13 @@ only after `down -v`. They are never stored in the repository. Design notes:
 
 | Task | Command |
 |---|---|
+| Follow the shop's install (done at `Starting web server`) | `docker compose -f deploy/compose.yaml logs -f shop` |
+| Load the data again after a change to `scraper-results/` or `variants.json` | `docker compose -f deploy/compose.yaml --profile init run --rm --build init` |
 | Stop the shop (data is kept) | `docker compose -f deploy/compose.yaml down` |
 | Apply changes from `shop/` (theme, modules, config) | `docker compose -f deploy/compose.yaml up -d --build` |
 | Reset everything and reinstall from scratch | `docker compose -f deploy/compose.yaml down -v` |
+| Back up the shop into `deploy/backups/` | `sh deploy/backup.sh` |
+| Restore a backup (replaces the shop's data, asks first) | `sh deploy/restore.sh deploy/backups/<archive>.tar.gz` |
 
 PrestaShop's cache (`var/cache/prod` and `var/cache/dev`) is cleared automatically on every start,
 so new module template overrides take effect after `up -d --build` with no manual step. The first
@@ -159,13 +172,111 @@ its look is `.omnibus-price` in `custom.css`. Test of the rule (also run in CI):
 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php
 ```
 
-Design notes and limitations: [ADR 0008](docs/adr/0008-omnibus-price-history-module.md).
+Design notes and limitations: [ADR 0011](docs/adr/0011-omnibus-price-history-module.md).
+### Backup and restore
+
+`deploy/backup.sh` saves the running shop into one archive, and `deploy/restore.sh` puts it back, also
+onto a clean install. Both run from the repository root, also in Git Bash on Windows.
+
+```sh
+sh deploy/backup.sh
+```
+
+The archive is written to `deploy/backups/ciocia-backup-<date>-<time>.tar.gz` and holds:
+
+- `db.sql`: the whole database (products, categories, CMS pages, settings, customers, orders),
+- `img/`: product, category and other shop images with their thumbnails,
+- `modules/ps_imageslider/images/`: the home banner slides,
+- `manifest.txt`: date, git commit, PrestaShop version, number of products, shop domain.
+
+The archive contains customer data and password hashes. `deploy/backups/` is gitignored: never
+commit an archive or attach it to a release.
+
+```sh
+sh deploy/restore.sh deploy/backups/ciocia-backup-<date>-<time>.tar.gz
+```
+
+The restore replaces the database and the images of the running shop, so it asks you to type `yes`
+first; `--yes` before the archive skips the question. It then sets the shop domain to the current
+`HTTPS_PORT`, restarts `shop` and `proxy`, waits until the shop answers and prints how long it took.
+The shop must be running and installed. After a restore, log in to the admin panel with the e-mail
+and password of the backed-up shop, because the admin account is part of the database.
+
+`app/config/parameters.php` (database password, cookie keys) and `.htaccess` are not in the backup:
+they belong to one install, and the environment you restore into keeps its own. Customers still log
+in with their old passwords. Design notes:
+[ADR 0009](docs/adr/0009-backup-contents-and-settings-export.md).
+
+**Restore onto a clean environment** (the acceptance demo):
+
+```sh
+sh deploy/backup.sh
+docker compose -f deploy/compose.yaml down -v            # deletes the shop and its database
+docker compose -f deploy/compose.yaml up -d --build --wait
+sh deploy/restore.sh deploy/backups/ciocia-backup-<date>-<time>.tar.gz
+sh .github/scripts/smoke-test.sh
+```
+
+Then check in the browser that the products, images, CMS pages and orders are back and that a
+customer from before the backup can log in. On the demo data the restore takes about 30 seconds;
+the limit is 10 minutes.
+
+**Settings only.** The settings export is
+[`shop/config/shop-settings.php`](shop/config/shop-settings.php) with the setup scripts described
+in [Shop settings and content](#shop-settings-and-content). It holds no customer data and no
+secrets. A clean install applies it by itself, and the two commands in that section apply it to a
+running shop.
+
+### Webservice API
+
+The product importer loads the scraped data through the PrestaShop Webservice API. A third setup script,
+[`webservice.php`](shop/scripts/setup/webservice.php), turns the API on and creates one key,
+`ciocia-importer`, from `PS_WEBSERVICE_KEY` in `deploy/.env` (32 characters, `A-Z` and `0-9`). The key can
+reach only what the import needs: categories, products, images, specific prices, manufacturers, stock and
+combinations (read and write), attribute groups and values (read and create), and taxes and languages (read only). The list is `PERMISSIONS` at the top of the script. Everything else,
+such as customers and orders, is refused.
+
+The API is reachable only inside the Docker network. The proxy answers 404 for `/api/` and `/webservice/`,
+so the placeholder key from `.env.example` cannot be used from outside. A container on the network calls
+the shop directly over plain HTTP, with the key as the Basic auth user and the two headers the proxy
+normally adds:
+
+```sh
+auth="$PS_WEBSERVICE_KEY:"   # the key as the user name, with an empty password after the colon
+curl -u "$auth" -H "Host: localhost:8443" -H "X-Forwarded-Proto: https" http://shop/api/products
+```
+
+The key goes into a variable first because the secret scan (gitleaks rule `curl-auth-user`) reports any
+`curl -u "...:..."` written out in a file, even when the value is only a variable name.
+
+The `Host` header is required: PrestaShop answers a request for any other host, such as `shop`, with a
+302 redirect to its own domain. `X-Forwarded-Proto` is not needed by the API, but keeps the request the same
+as one that came through the proxy. Never pass the key as `?ws_key=` in the URL: URLs are written to the
+access log. To try a request by hand, run it in the shop container, which has the key in its environment,
+so you never type or print it (in Git Bash put `MSYS_NO_PATHCONV=1` in front):
+
+```sh
+docker compose -f deploy/compose.yaml exec shop sh -c \
+  'auth="$PS_WEBSERVICE_KEY:"; curl -s -u "$auth" -H "Host: localhost:8443" -H "X-Forwarded-Proto: https" http://localhost/api/products'
+```
+
+The script runs after the first install, like the other two. After changing the key or the permissions,
+apply them to a running shop (the first command gives the container the new key):
+
+```sh
+docker compose -f deploy/compose.yaml up -d --build
+docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/40-webservice.sh
+```
+
+> **Install made before the API existed:** add `PS_WEBSERVICE_KEY` to your `deploy/.env` (copy the line from
+> `deploy/.env.example`; without it Compose stops with a message), then run the two commands above.
 
 ## Scraped data
 
 The data from the source shop is in `scraper-results/`: 2159 products in 160 categories, with 4822 product images.
 How it was made, what was left out and why: [scraper/README.md](scraper/README.md). The product images are not in git. They
-are one archive (585 MB) in the GitHub Release [`images-v1`](https://github.com/MarKir13/U-Cioci-Masali/releases/tag/images-v1):
+are one archive (585 MB) in the GitHub Release [`images-v1`](https://github.com/MarKir13/U-Cioci-Masali/releases/tag/images-v1).
+The data init (below) downloads and unpacks it into `scraper-results/images/` by itself; to do it by hand:
 
 ```sh
 gh release download images-v1 --pattern product-images.tar.gz --dir /tmp
@@ -174,13 +285,73 @@ tar xzf /tmp/product-images.tar.gz -C scraper-results
 
 Check the data with `python -m scraper verify` (from `scraper/`); it needs no network.
 
+### Loading the data into the shop
+
+One command, from the repository root, right after `up -d` (step 4 of [Running the shop](#running-the-shop)):
+
+```sh
+docker compose -f deploy/compose.yaml --profile init run --rm --build init            # all 2159 products
+docker compose -f deploy/compose.yaml --profile init run --rm --build init --subset   # 53 products, about 2 minutes
+```
+
+Init does three things in order ([`deploy/importer/importer/init.py`](deploy/importer/importer/init.py)):
+
+1. **Images:** if any image file this run needs is missing from `scraper-results/images/`, it downloads the archive
+   from the Release, checks its sha256 and unpacks it. This needs no shop, so it runs while the shop installs. The
+   files stay there, also after `down -v`, so this happens once per machine.
+2. **Shop:** it waits until the shop answers (up to 15 minutes). If the shop container is not running, it stops
+   after 30 s and says to start it.
+3. **Import:** the importer ([deploy/importer](deploy/importer/README.md)) puts the categories, brands, products,
+   stock, promotions, variants and images into the shop through the Webservice API, and removes the installer's
+   demo catalogue.
+
+It prints created, updated, unchanged, deleted and rejected counts and writes every problem to
+`deploy/logs/importer.log`. Running it again changes nothing. Importer options can be added at the end, such as
+`--workers 4` on a slow machine. `--subset` imports categories 85 (Przyprawy) and 99 (Pielęgnacja okolic oczu)
+with their subcategories, from a 10 MB archive: enough for the E2E tests, and what CI uses. A subset run deletes
+nothing, so the installer's demo products stay. The exit code is 0 when done, 1 when something was rejected and 2
+when init could not start or get the images.
+
+**If the image archive cannot be downloaded** (for example, the Release is gone), init stops and prints the command
+that downloads the images from the source shop instead, with the scraper in a container (no Python needed):
+
+```sh
+docker compose -f deploy/compose.yaml --profile init run --rm --build scraper images
+```
+
+That takes about 1 h 40 min (at most 2 requests per second, robots.txt respected) and can be stopped with Ctrl+C
+and started again where it stopped. Then run init again. In CI, init never suggests this: tests never contact the
+source shop. To try the fallback, set `IMAGES_URL` in `deploy/.env` to an address that answers 404 (see
+`.env.example`).
+
+The importer can also be run alone, without the image download and the wait, for example with `--limit 20` for a
+quick check or `--dry-run`:
+
+```sh
+docker compose -f deploy/compose.yaml --profile init run --rm --build importer --limit 20
+```
+
+The top menu shows the categories listed under `catalog` in
+[`shop/config/shop-settings.php`](shop/config/shop-settings.php). Design notes:
+[ADR 0008](docs/adr/0008-product-import-through-the-webservice-api.md).
+
+Seven products have variants (sizes or weights, D3). The source shop sells each size as a separate product; the
+importer joins them into one product with combinations, as listed in
+[`deploy/importer/variants.json`](deploy/importer/variants.json). To add a variant, add a line to that file and run
+the import again: [Adding a variant](deploy/importer/README.md#adding-a-variant). Why:
+[ADR 0009](docs/adr/0009-variants-as-combinations-of-source-families.md). A shop installed before this needs the
+key's new permissions once: `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/40-webservice.sh`.
+
 
 ## E2E tests
 
 The Playwright suite in [`tests/`](tests/) runs the W4 purchase scenario in headless Chromium against a running
 shop. It has its own [`package.json`](tests/package.json), separate from the ESLint tools in the root one.
 
-Requirements: [Node.js](https://nodejs.org/) 24 and a running shop (see [Running the shop](#running-the-shop)).
+Requirements: [Node.js](https://nodejs.org/) 24 and a running shop with the data imported (see
+[Running the shop](#running-the-shop) and [Loading the data into the shop](#loading-the-data-into-the-shop)). Until
+the import, the shop has no categories and the top menu is empty, so the first steps fail. `init --subset` is
+enough: its two categories have the products the scenario needs.
 
 1. Install the dependencies and the browser once, from `tests/`:
    ```sh
@@ -204,7 +375,7 @@ The shop address comes from `BASE_URL` (default `https://localhost:8443`); the s
 The host in `BASE_URL` must be the shop's own domain (`PS_DOMAIN`, set at install time), because PrestaShop
 redirects every other host name there. The smoke test fails if that happens.
 
-Step 4 also checks that the welcome e-mail reaches Mailpit, through its API at `MAILPIT_URL` (default
+Steps 4 and 8 also check that the welcome e-mail and the order confirmation e-mail reach Mailpit, through its API at `MAILPIT_URL` (default
 `http://localhost:8025`). Set it to an empty value (`MAILPIT_URL= npm test`, PowerShell: `$env:MAILPIT_URL = ""`)
 to skip that check on a shop whose Mailpit the tests cannot reach.
 
@@ -220,11 +391,53 @@ a failed run with the same picks, pass that seed: `E2E_SEED=123456789 npm test` 
 `$env:E2E_SEED = "123456789"; npm test`). The new customer's e-mail is unique on every run, with or without a seed,
 so the suite can run many times on the same shop.
 
+Step 1 takes its two categories from the top menu, one product branch each: the category itself or, when it has
+fewer than 5 products that can be added in their planned quantities (for example none of its own, only in its
+subcategories), one of its subcategories. A branch with none of them is skipped before anything is added. To use
+other categories, list their URLs: `E2E_CATEGORIES="https://localhost:8443/6-accessories,https://localhost:8443/9-art" npm test`
+(PowerShell: `$env:E2E_CATEGORIES = "..."; npm test`).
+
+Step 7 orders with one of the two new carriers, "Kurier" or "Paczkomat", picked from the seed. To force one, set
+`E2E_CARRIER` (`E2E_CARRIER=Paczkomat npm test`, PowerShell: `$env:E2E_CARRIER = "Paczkomat"; npm test`). The
+report shows the carrier used (`carrier` annotation). The checkout asks for the carrier before the payment, so
+step 7 runs before step 6.
+
+Steps 9 and 10 open the order history from "Moje konto" and check the new order there: its status must be
+"Oczekiwanie na płatność przy odbiorze" (the shop's status for a new cash on delivery order) and its invoice link
+must return a PDF. The invoice is attached to the HTML report as `invoice-<order reference>.pdf`.
+
 | Path | Contents |
 |---|---|
 | `tests/e2e/` | `smoke.spec.js` (home page over HTTPS, no console errors) and `order.spec.js` (the W4 scenario, one step per point of the brief) |
 | `tests/pages/` | One file per area of the shop (catalog, search, cart, account, checkout, orders) with its selectors and actions |
 | `tests/support/` | Shared code: fixtures (`test`, `rng`, `consoleErrors`), seeded random numbers, test data |
+
+### Running the suite several times
+
+W4 counts 3 passes of 3 runs in a row. Run the suite three times in one command, from `tests/`:
+
+```sh
+npm test -- --repeat-each=3
+```
+
+The three repeats use the same seed, so they pick the same products. For three different picks, run `npm test`
+three times instead. One run of the W4 scenario takes about 40–50 seconds on a local shop, so three repeats take
+about 2 minutes. The 4-minute limit (`globalTimeout` in [`playwright.config.js`](tests/playwright.config.js)) covers
+the whole command, so all three repeats together; on a slower shop where they do not fit, run `npm test` three
+times instead.
+
+[`.github/scripts/e2e-runs.sh`](.github/scripts/e2e-runs.sh) does exactly that, the way CI does it. From the
+repository root (Git Bash on Windows), after the setup above:
+
+```sh
+sh .github/scripts/e2e-runs.sh 3
+```
+
+Each run gets its own seed and its own 4-minute limit. The script prints a table with every run's seed, result
+and time, and fails if any run failed or took more than 5 minutes. `BASE_URL`, `MAILPIT_URL` and the `E2E_*`
+variables work as above. Playwright replaces its report folders on every run, so the script moves them to
+`tests/e2e-runs/run-<n>/` (ignored by git) after each one. Open a run's report from `tests/` with
+`npx playwright show-report e2e-runs/run-2/playwright-report`.
 
 Rules for new tests: import `test` and `expect` from `tests/support/fixtures.js`, keep selectors in `tests/pages/`,
 and never wait a fixed time. Wait on a condition instead (`expect(...)`, `waitForURL`, `waitForResponse`);
@@ -233,14 +446,16 @@ and never wait a fixed time. Wait on a condition instead (`expect(...)`, `waitFo
 
 ## Continuous integration
 
-GitHub Actions runs four workflows:
+GitHub Actions runs six workflows:
 
 | Workflow | When | What it checks |
 |---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and JavaScript (theme and E2E tests). `smoke`: a clean install of the shop, only when `changes` finds a change in `shop/`, `deploy/` or the smoke test itself. `ci-gate`: passes only if all jobs passed or were skipped |
+| [`ci.yml`](.github/workflows/ci.yml) | Every pull request and every push to `main` | `scraper`: ruff and the scraper unit tests. `repo-hygiene`: secrets (gitleaks) and repository limits over the history of `main` plus the PR. `infra-lint`: Dockerfiles, shell scripts, the compose file, PHP syntax and JavaScript (theme and E2E tests). `smoke`: a clean install of the shop, then `init --subset` twice (the second run must download nothing and create or delete nothing) and the smoke test again, then one run of the E2E suite on that data (report as the `e2e-reports` artifact), only when `changes` finds a change in `shop/`, `deploy/`, `scraper-results/`, `tests/` or the smoke and E2E scripts. So a PR that breaks the purchase scenario fails `ci-gate`. `ci-gate`: passes only if all jobs passed or were skipped |
 | [`pr-policy.yml`](.github/workflows/pr-policy.yml) | A pull request is opened, updated or relabelled | `ai-log`: a PR labelled `ai-assisted` must add or update a row in `docs/AI_LOG.md` |
 | [`secret-scan.yml`](.github/workflows/secret-scan.yml) | Nightly, or by hand from the Actions tab | Secrets and repository limits over every branch, the way the lecturer measures it |
-| [`publish.yml`](.github/workflows/publish.yml) | Every push to `main`, tags `etap*`, by hand; pull requests that change `shop/` or `deploy/proxy/` | `build`: the shop and proxy images for `linux/amd64`, pushed to GHCR only from `main` or an `etap*` tag; pull requests and manual runs on other branches only build. `verify` (on `main` only): pulls them without logging in, checks they are `amd64` and runs the smoke test on them. Not a required check |
+| [`publish.yml`](.github/workflows/publish.yml) | Every push to `main`, tags `etap*`, by hand; pull requests that change `shop/` or `deploy/proxy/` | `build`: the shop and proxy images for `linux/amd64`, pushed to GHCR only from `main` or an `etap*` tag; pull requests and manual runs on other branches only build; an `etap*` tag on a commit that is not on `main` fails before anything is pushed. `verify` (on `main` and `etap*` tags): pulls them without logging in, checks they are `amd64` and runs the smoke test on them. `release` (on `etap*` tags): the GitHub Release, see [Handing in a stage](#handing-in-a-stage). Not a required check |
+| [`e2e.yml`](.github/workflows/e2e.yml) | Every push to `main`, nightly, by hand (with a number of runs, default 3) | W4 stability: starts the shop as in the README, runs `init --subset`, then the E2E suite 3 times in a row with [`e2e-runs.sh`](.github/scripts/e2e-runs.sh), each run with its own seed. Pull requests get one run in `smoke` instead. The run's summary page shows each run's seed, result and time. Not a required check |
+| [`init-timing.yml`](.github/workflows/init-timing.yml) | Only by hand from the Actions tab (with a "subset" checkbox) | A timed clean start as in the README: `up -d --build`, then init, then the smoke test. The run's summary page shows the time of each step and the total from a clean clone. Not a required check |
 
 A pull request must have passing `ci-gate` and `ai-log` checks before it is merged.
 
@@ -285,7 +500,12 @@ The script checks, through the HTTPS proxy:
 - HTTP answers 301 to `https://localhost:<HTTPS_PORT>/`;
 - the home page answers 200 as UTF-8 HTML, in Polish (`lang="pl-PL"`), with the `ciocia` theme;
 - the header shows a free delivery threshold above 0, which is only there if `post-install/30-configure-shop.sh` ran.
-  A failed configuration script does not stop the shop: the container restarts and starts without it.
+  A failed configuration script does not stop the shop: the container restarts and starts without it;
+- `/api/` and `/webservice/` answer 404 through the proxy.
+
+Then, from inside the shop container (the way the importer calls the API), with the key from the container's
+environment: products and categories answer 200, customers and orders 401, and a request without a key or with
+a wrong key 401. This shows that `post-install/40-webservice.sh` ran and the key has only its permissions.
 
 It does not need product data, so it says nothing about product pages, the cart or checkout. On a failure, the job
 prints the container status and logs.
@@ -333,10 +553,11 @@ npm ci
 | Lint | `ruff check .` |
 | Formatting (`ruff format .` fixes it) | `ruff format --check .` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
+| Importer unit tests (from `deploy/importer/`) | `python -m pytest` |
 | Secret scan, as on a PR (needs Docker) | `docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1 git /repo --no-banner --redact --ignore-gitleaks-allow --log-opts="HEAD"` |
 | Secret scan, every branch | The same command with `--log-opts="--all"` |
 | Repository limits (add `--all` for every branch) | `sh .github/scripts/check-repo-limits.sh` |
-| Dockerfiles | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile` |
+| Dockerfiles | `docker run --rm -v "$PWD:/repo:ro" -w /repo hadolint/hadolint:v2.15.1 hadolint shop/Dockerfile deploy/proxy/Dockerfile deploy/importer/Dockerfile scraper/Dockerfile` |
 | Shell scripts | `git ls-files -z '*.sh' \| xargs -0 docker run --rm -v "$PWD:/repo:ro" -w /repo koalaman/shellcheck:v0.11.0` |
 | Compose file (prints nothing when valid) | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
@@ -349,16 +570,44 @@ uses it, otherwise the `/repo` path is rewritten. `--all` also covers your local
 that is not on GitHub. The compose check reads `deploy/.env.example` instead of your own `deploy/.env`, so it gives the
 same result as CI and never shows your passwords.
 
+### Handing in a stage
+
+Only the version with the tag `etap1` is graded, and it must exist, with its release, at least 48 hours before the
+project meeting. Pushing the tag does the rest: `publish.yml` checks that the tag points to a commit on `main`,
+pushes both images under the tag, runs the smoke test on them and creates the GitHub Release. The release notes
+([`.github/scripts/release-notes.sh`](.github/scripts/release-notes.sh)) show how to start that version, its images
+and the newest `ci.yml`, `e2e.yml` and `acceptance.yml` run of the commit. GitHub adds the source code (zip and
+tar.gz) by itself.
+
+1. Agree in the team that nothing is merged until the tag is pushed. The runs in the notes belong to one commit, so
+   a merge in between leaves the tag without them.
+2. Check that the newest `ci.yml` and `e2e.yml` runs on `main` passed, then start the acceptance run on `main`
+   (Actions > Acceptance > Run workflow, added by issue #21) and wait until it passes.
+3. Tag exactly that commit and push the tag:
+   ```sh
+   git fetch origin
+   git tag -a etap1 -m "Stage 1" origin/main
+   git push origin etap1
+   ```
+4. Wait for the "Publish images" run of the tag (Actions tab), then read the notes on the release page: every check
+   must say `success`. To see the notes before tagging, run
+   `TAG=etap1 SHA=$(git rev-parse origin/main) sh .github/scripts/release-notes.sh` (needs `gh` logged in).
+
+A graded tag must not move. If the run fails before the deadline, fix the cause in a pull request, then delete the
+tag and its release (`gh release delete etap1 --cleanup-tag`) and start again from step 2. To try the whole flow,
+use a tag such as `etap0-test`, then delete it the same way, and delete its image versions in GHCR (the repository's
+Packages > `shop` and `proxy` > Package settings > manage versions).
+
 ## Repository structure
 
 | Path | Contents | Status |
 |---|---|---|
 | `shop/` | Dockerfile, PHP config, child theme, own modules, setup scripts for shop content | in progress |
-| `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`); later: init, backup and restore scripts | in progress |
+| `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`), `backup.sh` and `restore.sh`, product importer and data init (`importer/`); later: backup and restore scripts | in progress |
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
-| `scraper/` | Scraper source code and tests, see [scraper/README.md](scraper/README.md) | done: crawl, images, verification |
+| `scraper/` | Scraper source code, tests and its Dockerfile (init's fallback), see [scraper/README.md](scraper/README.md) | done: crawl, images, verification |
 | `scraper-results/` | Scraped data (`categories.json`, `products.jsonl`, `schema.json`, `rejected.json`), `verification-report.md` and 20 sample images | done: 2159 products, 160 categories |
-| `tests/` | Playwright E2E tests | in progress |
+| `tests/` | Playwright E2E tests | done: W4 scenario, steps 1–10 |
 
 ## Team
 

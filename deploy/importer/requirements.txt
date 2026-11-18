@@ -1,0 +1,3 @@
+requests==2.34.2
+# Validation of the scraped records against scraper-results/schema.json
+jsonschema==4.23.0
