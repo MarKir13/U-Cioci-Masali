@@ -4,7 +4,7 @@ import globals from "globals";
 
 export default [
   // HTML reports bundle the trace viewer's scripts; never lint them
-  { ignores: ["tests/playwright-report/", "tests/test-results/", "tests/e2e-runs/"] },
+  { ignores: ["tests/playwright-report/", "tests/test-results/", "tests/e2e-runs/", "tests/acceptance-report/"] },
   {
 
     files: ["shop/themes/ciocia/assets/js/**/*.js"],
