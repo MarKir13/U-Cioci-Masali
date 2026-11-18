@@ -59,6 +59,22 @@ $cases = [
         ],
         30.00,
     ],
+    'promotion that ended before the window: its price is not counted' => [
+        [
+            row('2026-08-01 10:00:00', 30.00),
+            row('2026-09-01 00:00:00.000500', 20.00), // promotion A from 1.09
+            row('2026-09-15 23:59:59', 30.00),        // row planned for the end of A
+        ],
+        30.00,
+    ],
+    'promotion that ended inside the window: its price counts' => [
+        [
+            row('2026-08-01 10:00:00', 30.00),
+            row('2026-10-05 00:00:00.000500', 20.00),
+            row('2026-10-15 23:59:59', 30.00),
+        ],
+        20.00,
+    ],
 ];
 
 $failed = 0;

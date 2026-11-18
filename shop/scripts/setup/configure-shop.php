@@ -1,8 +1,8 @@
 <?php
 /**
  * Configures the shop for Poland (issue #47): currency, country, VAT, payments, carriers,
- * free delivery, e-mail and invoices, plus the Omnibus price module (issue #72).
- * Values come from shop/config/shop-settings.php.
+ * free delivery, e-mail and invoices, the promo code (issue #44) and the Omnibus price module
+ * (issue #72). Values come from shop/config/shop-settings.php.
  *
  * Runs once after the automatic install (post-install/30-configure-shop.sh). It is idempotent,
  * so it can also be run again by hand on a running shop:
@@ -386,7 +386,7 @@ function configureOmnibus()
     echo "Omnibus price: module ciociaomnibus enabled, $added starting price rows added.\n";
 }
 
-/** 
+/**
  * The promo code as a cart rule: a percentage off the products, once per customer, valid for ten
  * years from the last run. Found by its code, so a second run updates it instead of adding another.
  * PrestaShop shows the promo code field in the cart and checkout only while a cart rule exists.

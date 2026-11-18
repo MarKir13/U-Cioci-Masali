@@ -1,14 +1,15 @@
-# 0008. Omnibus price from our own module with a price history in the database
+# 0011. Omnibus price from our own module with a price history in the database
 
-- Status: Proposed
-- Date: 2026-11-13
+- Status: Accepted
+- Date: 2026-11-18
 - Authors: Mateusz Radziul
 
 ## Context
 
 D3 requires at least 20 products with a price promotion, and every promotion must show the lowest price from the
-30 days before the discount (EU Omnibus directive). The import ([Data 2/3], #70) adds 171 promotions as specific
-prices, most likely without a "from" date. Prices also change in the back office, and the acceptance criteria of #72
+30 days before the discount (EU Omnibus directive). The importer (ADR 0008, #70) adds the source's promotions as
+specific prices without "from" and "to" dates, and updates them in place on a second run. Prices also change in the
+back office, and the acceptance criteria of #72
 check exactly that: change a price, add a promotion, and the line must show the lowest price from before it.
 
 PrestaShop 8.2.8 does not show this price: nothing in the core or in the bundled modules mentions it. Paid modules
@@ -48,6 +49,11 @@ Module `shop/modules/ciociaomnibus`, installed by `configure-shop.php` (ADR 0005
   visitor group, quantity 1, promotions included), per combination, or with `id_product_attribute` 0 for a product
   without combinations. Install and the setup script add a starting row with the regular price for every product
   that has none.
+- Rows written ahead for the end of a promotion: for every promotion with a "to" date in the future, a row with
+  the regular price dated "to", marked with the promotion's ID (`id_specific_price`; 0 for a row written on a save).
+  Nothing runs when a promotion expires, so without them the last row would stay at the promotion price and a later
+  promotion would count it. They are rewritten on every save of the product, and rows dated in the future are not
+  read as the current price.
 - `ciocia_promo_start`: when a promotion was added, for promotions without a "from" date.
 - The rule (`CiociaOmnibusRule`): the start is the promotion's "from" date, or the saved start. The window is
   the 30 days before it. The answer is the lowest of the price in effect when the window opened and every price set
@@ -56,17 +62,22 @@ Module `shop/modules/ciociaomnibus`, installed by `configure-shop.php` (ADR 0005
 - Dates come from PHP with microseconds (`DATETIME(6)`), in the shop's time zone. MariaDB uses UTC, while promotion
   dates are saved in the shop's time zone, and a row saved in the same second as a promotion must still count as
   after it.
+- History rows are in the default currency (PLN). The line compares in that currency and converts the result once
+  into the visitor's currency for display, so it is right with EUR selected too.
 - Display: the child theme calls `displayProductPriceBlock` with our own type `omnibus_price` under the price in
-  `catalog/_partials/product-prices.tpl` and `catalog/_partials/miniatures/product.tpl` (both extend Classic's
-  templates). Classic's own types are not used: `old_price` is above the old price, and `unit_price` also runs in
-  the cart.
+  `catalog/_partials/product-prices.tpl` (extends Classic's template) and in the product card
+  `catalog/_partials/miniatures/product.tpl` (from #75, inside `.ciocia-card__price-note`). Classic's own types are
+  not used: `old_price` is above the old price, and `unit_price` also runs in the cart.
 
 ## Consequences
 
 - The line shows only for a product in a promotion, on the product page and on every product card (category,
   search, promotions, home page), and follows the selected combination.
-- The importer (#70) must update a promotion in place on a second run. Deleting it and adding it again gives it a
-  new start date, and the window would then hold the promotion price.
+- The importer updates a promotion in place on a second run (`set_promotion` in `deploy/importer/importer/steps.py`),
+  so its start date is kept. Deleting it and adding it again would give it a new start date, and the window would
+  then hold the promotion price.
+- The row for a promotion's end holds the regular price, even if another promotion on the same product is still
+  running then. Overlapping promotions on one product are not handled.
 - A promotion scheduled for the future writes no row when it starts, because nothing saves anything then. Its price
   is missing from the history of a later promotion. Specific prices for all products (`id_product` 0) and for a
   single cart are ignored.

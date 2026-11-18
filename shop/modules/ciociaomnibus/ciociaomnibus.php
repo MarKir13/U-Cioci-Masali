@@ -135,7 +135,10 @@ class CiociaOmnibus extends Module
 
         $idProduct = (int) $product['id_product'];
         $idProductAttribute = (int) $product['id_product_attribute'];
-        $regularPrice = (float) $product['regular_price_amount'];
+        $currency = $this->context->currency;
+        // History rows are in the default currency (CiociaPriceHistory::grossPrice), while the presented product
+        // is in the visitor's currency: compare in the default one, convert once for display
+        $regularPrice = Tools::convertPrice((float) $product['regular_price_amount'], $currency, false);
         $start = CiociaPriceHistory::promoStart($product['specific_prices']);
         $lowest = $start === null
             ? $regularPrice
@@ -147,7 +150,7 @@ class CiociaOmnibus extends Module
 
         $this->context->smarty->assign(
             'omnibus_price',
-            $this->context->getCurrentLocale()->formatPrice($lowest, $this->context->currency->iso_code)
+            $this->context->getCurrentLocale()->formatPrice(Tools::convertPrice($lowest, $currency), $currency->iso_code)
         );
 
         return $this->fetch('module:ciociaomnibus/views/templates/hook/omnibus-price.tpl');
@@ -161,12 +164,14 @@ class CiociaOmnibus extends Module
     {
         return (int) $specificPrice->id_product > 0 && (int) $specificPrice->id_cart === 0;
     }
-    
+
     /**
      * DATETIME(6) keeps microseconds. The rule compares dates with "earlier than the promotion start", and a row
      * written in the same second as the promotion must still be told apart from it.
      * Dates come from PHP, not from the database: PrestaShop sets the time zone for PHP only (PS_TIMEZONE),
      * MariaDB uses UTC, and the "from" date of a promotion is saved in the shop's time zone.
+     * id_specific_price is 0 for a row written on a save, or the ID of a promotion for a row written ahead for the
+     * moment that promotion ends (CiociaPriceHistory::planPromoEnds).
      */
     private function createTables(): bool
     {
@@ -178,6 +183,7 @@ class CiociaOmnibus extends Module
                 `id_product_attribute` INT UNSIGNED NOT NULL DEFAULT 0,
                 `price_gross` DECIMAL(20,6) NOT NULL,
                 `date_add` DATETIME(6) NOT NULL,
+                `id_specific_price` INT UNSIGNED NOT NULL DEFAULT 0,
                 PRIMARY KEY (`id_price_history`),
                 KEY `product_date` (`id_product`, `id_product_attribute`, `date_add`)
             ) ENGINE=' . $engine . ' DEFAULT CHARSET=utf8mb4',

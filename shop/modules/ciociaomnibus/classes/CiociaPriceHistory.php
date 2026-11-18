@@ -22,6 +22,7 @@ class CiociaPriceHistory
         // inside ObjectModel::add/update/delete, before SpecificPrice clears that memory itself, so without this
         // a promotion just added or deleted would not change the price yet.
         SpecificPrice::flushCache();
+        Product::flushPriceCache();
         foreach (self::combinationIds($idProduct) as $idProductAttribute) {
             $price = self::grossPrice($idProduct, $idProductAttribute, true);
             $last = self::lastPrice($idProduct, $idProductAttribute);
@@ -29,8 +30,52 @@ class CiociaPriceHistory
                 self::insert($idProduct, $idProductAttribute, $price);
             }
         }
+        self::planPromoEnds($idProduct);
     }
+        /**
+     * Rows written ahead for the moment each promotion ends (its "to" date), with the regular price. Nothing runs
+     * when a promotion expires, so without them the last row would stay at the promotion price, and a later
+     * promotion would count it. Runs after every save of the product, so a changed or deleted promotion, or a new
+     * regular price, replaces the planned rows. The row holds the regular price even if another promotion is
+     * still running then (ADR 0011).
+     */
+    public static function planPromoEnds(int $idProduct): void
+    {
+        $db = Db::getInstance();
+        $now = self::now();
+        // Planned rows still in the future are replaced; those already in the past are history
+        $db->delete(
+            'ciocia_price_history',
+            'id_product = ' . $idProduct . ' AND id_specific_price > 0 AND date_add > \'' . $now . '\''
+        );
 
+        // "to" is 0000-00-00 00:00:00 for a promotion without an end, so it is left out here
+        $promotions = $db->executeS(
+            'SELECT id_specific_price, id_product_attribute, `to` FROM `' . _DB_PREFIX_ . 'specific_price`
+            WHERE id_product = ' . $idProduct . ' AND id_cart = 0 AND id_customer = 0
+                AND `to` > \'' . $now . '\'',
+            true,
+            false
+        );
+        if ($promotions === []) {
+            return;
+        }
+
+        $regularPrices = [];
+        foreach (self::combinationIds($idProduct) as $idProductAttribute) {
+            $regularPrices[$idProductAttribute] = self::grossPrice($idProduct, $idProductAttribute, false);
+        }
+        foreach ($promotions as $promotion) {
+            $promotionAttribute = (int) $promotion['id_product_attribute'];
+            foreach ($regularPrices as $idProductAttribute => $price) {
+                // A promotion with a combination ID applies to that combination only
+                if ($promotionAttribute !== 0 && $promotionAttribute !== $idProductAttribute) {
+                    continue;
+                }
+                self::insert($idProduct, $idProductAttribute, $price, $promotion['to'], (int) $promotion['id_specific_price']);
+            }
+        }
+    }
     /**
      * Starting rows: the regular price (without promotions) for every product and combination that has no row
      * yet, and a start date for every promotion that has none. Safe to run again. Returns the number of new rows.
@@ -52,6 +97,7 @@ class CiociaPriceHistory
         );
 
         SpecificPrice::flushCache();
+        Product::flushPriceCache();
         foreach ($missing as $row) {
             $idProduct = (int) $row['id_product'];
             $idProductAttribute = (int) $row['id_product_attribute'];
@@ -65,7 +111,16 @@ class CiociaPriceHistory
             FROM `' . _DB_PREFIX_ . 'specific_price`
             WHERE id_cart = 0'
         );
-
+         // Planned rows for promotions that end in the future, also for products that already had rows
+        $withEnd = $db->executeS(
+            'SELECT DISTINCT id_product FROM `' . _DB_PREFIX_ . 'specific_price`
+            WHERE id_product > 0 AND id_cart = 0 AND `to` > \'' . self::now() . '\'',
+            true,
+            false
+        );
+        foreach ($withEnd as $row) {
+            self::planPromoEnds((int) $row['id_product']);
+        }
         return count($missing);
     }
 
@@ -180,6 +235,7 @@ class CiociaPriceHistory
         $price = Db::getInstance()->getValue(
             'SELECT price_gross FROM `' . _DB_PREFIX_ . 'ciocia_price_history`
             WHERE id_product = ' . $idProduct . ' AND id_product_attribute = ' . $idProductAttribute . '
+                AND date_add <= \'' . self::now() . '\'
             ORDER BY date_add DESC, id_price_history DESC',
             false
         );
@@ -187,13 +243,19 @@ class CiociaPriceHistory
         return $price === false ? null : (float) $price;
     }
 
-    private static function insert(int $idProduct, int $idProductAttribute, float $price): void
-    {
+    private static function insert(
+        int $idProduct,
+        int $idProductAttribute,
+        float $price,
+        ?string $date = null,
+        int $idSpecificPrice = 0
+    ): void {
         Db::getInstance()->insert('ciocia_price_history', [
             'id_product' => $idProduct,
             'id_product_attribute' => $idProductAttribute,
             'price_gross' => $price,
-            'date_add' => self::now(),
+            'date_add' => $date ?? self::now(),
+            'id_specific_price' => $idSpecificPrice,
         ]);
     }
 }
