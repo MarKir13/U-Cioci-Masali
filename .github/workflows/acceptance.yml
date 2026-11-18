@@ -1,0 +1,248 @@
+name: Acceptance
+
+# The metrics the lecturer checks at acceptance (W3, W4, D1, D2, D3, D4), measured on a shop started from a clean
+# clone the way the README does it, with all products. Every check adds a row with its value and its limit
+# (.github/scripts/acceptance-results.sh); the last step prints the table on the run's summary page and fails the
+# run if any row failed. Manual only (Actions > Acceptance > Run workflow), before tagging a stage (README,
+# "Handing in a stage"): the full run takes about an hour. The "subset" checkbox runs the same steps on the
+# subset data in about half that time, to try a change of this workflow; then the rows that need all products fail.
+# One job, so the shop started in the first steps is the one every later step measures.
+on:
+  workflow_dispatch:
+    inputs:
+      subset:
+        description: "Only the subset (init --subset) instead of all products: a quick try, data rows fail"
+        type: boolean
+        default: false
+  # TEMPORARY, while this workflow is developed: GitHub runs a workflow_dispatch workflow only once the file is on
+  # main, so pushes to this branch start it, with the subset. Remove before review.
+  push:
+    branches: [feature/ci-acceptance]
+
+permissions:
+  contents: read
+
+# One run at a time per branch; a newer one waits
+concurrency:
+  group: acceptance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-24.04
+    # About an hour; a slow import is measured, not cut off
+    timeout-minutes: 120
+    env:
+      # "true" or "false". A push (development only, see above) has no inputs, so it runs the subset.
+      SUBSET: ${{ inputs.subset || github.event_name == 'push' }}
+      # Ports from deploy/.env.example
+      BASE_URL: https://localhost:8443
+      MAILPIT_URL: http://localhost:8025
+      RESULTS: .github/scripts/acceptance-results.sh
+    steps:
+      - uses: actions/checkout@v7
+
+      # The shop image, the 585 MB image archive and its 1.1 GB of images, the images again inside the shop with
+      # their thumbnails, and a backup of them: more than a runner has free. These preinstalled SDKs are not used.
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          df -h /
+
+      # --- W3: clean clone to a shop with data, at most 15 minutes -----------------------------------------------
+      - name: Configure as in the README
+        run: cp deploy/.env.example deploy/.env
+      - name: Start the shop
+        run: |
+          echo "STARTED=$(date +%s)" >> "$GITHUB_ENV"
+          docker compose -f deploy/compose.yaml up -d --build
+          echo "UP_DONE=$(date +%s)" >> "$GITHUB_ENV"
+      # Right after `up -d`, as in the README: init downloads the images while the shop installs, then waits for it.
+      # GitHub sets CI=true, so init never points to the source shop (AGENTS.md rule 7).
+      # shell: bash runs with pipefail, so a failed init still fails the step behind `| tee`.
+      - name: Data init
+        shell: bash
+        run: |
+          if [ "$SUBSET" = "true" ]; then set -- --subset; fi
+          docker compose -f deploy/compose.yaml --profile init run --rm --build init "$@" 2>&1 | tee "$RUNNER_TEMP/init.txt"
+          echo "INIT_DONE=$(date +%s)" >> "$GITHUB_ENV"
+      # A step that did not finish left its time unset: "did not finish" then fails the row
+      - name: Record the clean start
+        if: ${{ !cancelled() }}
+        run: |
+          seconds() { if [ -n "$1" ] && [ -n "$2" ]; then echo $(($2 - $1)); else echo "did not finish"; fi; }
+          sh "$RESULTS" add "Clean start: up -d --build (s)" "$(seconds "$STARTED" "${UP_DONE:-}")" - -
+          sh "$RESULTS" add "Clean start: init, with download and import (s)" "$(seconds "${UP_DONE:-}" "${INIT_DONE:-}")" - -
+          sh "$RESULTS" add "Clean clone to a shop with data (s)" "$(seconds "$STARTED" "${INIT_DONE:-}")" - 900
+      - name: Smoke test
+        if: ${{ !cancelled() }}
+        run: |
+          if sh .github/scripts/smoke-test.sh; then failed=0; else failed=1; fi
+          sh "$RESULTS" add "Smoke test failed (1 = yes)" "$failed" 0 0
+          exit "$failed"
+
+      # --- D2: a second import duplicates nothing ----------------------------------------------------------------
+      # As in the smoke job of ci.yml: the summary has one row per resource, its name and 5 whole numbers (created,
+      # updated, unchanged, deleted, rejected); created ($2) and deleted ($5) must stay 0.
+      # `|| status=$?` keeps a failed init from ending the step before its rows: they are written, then the step
+      # fails with init's exit code. Without a summary (init crashed) the second row says so and fails.
+      - name: Second data init
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          if [ "$SUBSET" = "true" ]; then set -- --subset; fi
+          status=0
+          docker compose -f deploy/compose.yaml --profile init run --rm init "$@" 2>&1 | tee "$RUNNER_TEMP/second-init.txt" || status=$?
+          if grep -q "nothing to download" "$RUNNER_TEMP/second-init.txt"; then downloaded=0; else downloaded=1; fi
+          changed=$(awk 'NF == 6 && $2 $3 $4 $5 $6 ~ /^[0-9]+$/ { rows++; sum += $2 + $5 } END { print rows ? sum : "no import summary" }' "$RUNNER_TEMP/second-init.txt")
+          sh "$RESULTS" add "Second init: downloaded again (1 = yes)" "$downloaded" 0 0
+          sh "$RESULTS" add "Second init: created or deleted" "$changed" 0 0
+          exit "$status"
+
+      # --- W3, D3: the catalogue ---------------------------------------------------------------------------------
+      # Also kept to compare with the restored shop below. Fails when a row fails (pipefail: through `| tee`).
+      - name: Check the catalogue
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: sh .github/scripts/check-catalog.sh --record | tee "$RUNNER_TEMP/catalog-before.tsv"
+
+      # --- W3: crawl and console errors; D1, W3: Lighthouse ------------------------------------------------------
+      - uses: actions/setup-node@v7
+        if: ${{ !cancelled() }}
+        with:
+          node-version: "24"
+          # Keeps npm's download cache between runs, keyed on the lock file
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+      - name: Install the test dependencies (versions from tests/package-lock.json)
+        if: ${{ !cancelled() }}
+        working-directory: tests
+        run: npm ci
+      # --with-deps: also the system libraries Chromium needs on a Linux machine without a desktop
+      - name: Install Chromium
+        if: ${{ !cancelled() }}
+        working-directory: tests
+        run: npx playwright install --with-deps chromium
+      # The crawler (200 pages, 0 responses 4xx/5xx, 10 products against the source data) and the console check
+      - name: Acceptance specs
+        if: ${{ !cancelled() }}
+        working-directory: tests
+        run: npm run acceptance
+      # The specs write their numbers to metrics.tsv (tests/support/acceptance.js), one row per line: name, value,
+      # min, max. No file means the specs stopped before they measured anything. A line that add rejects (exit 2)
+      # becomes a failed row of its own, and the lines after it are still read.
+      - name: Record the specs' numbers
+        if: ${{ !cancelled() }}
+        run: |
+          metrics=tests/acceptance-report/test-results/metrics.tsv
+          if [ ! -s "$metrics" ]; then
+            sh "$RESULTS" add "Acceptance specs (crawl, console)" "no numbers written" - -
+            exit 1
+          fi
+          tab=$(printf '\t')
+          while IFS=$tab read -r name value min max; do
+            sh "$RESULTS" add "$name" "$value" "$min" "$max" || sh "$RESULTS" add "Unreadable line in metrics.tsv: $name" "rejected" - -
+          done < "$metrics"
+      # On the Chromium installed above for the specs (lighthouse.sh finds it through Playwright)
+      - name: Lighthouse
+        if: ${{ !cancelled() }}
+        run: sh .github/scripts/lighthouse.sh
+      # HTML reports of the specs (with crawl.json: every failed response and blocked request) and of Lighthouse
+      - name: Upload the acceptance reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: acceptance-reports
+          path: tests/acceptance-report/
+          retention-days: 14
+
+      # --- D4: backup, then a restore onto a clean environment, at most 10 minutes -------------------------------
+      # The backup holds customer data and password hashes: it stays on the runner, never in an artifact
+      - name: Back up the shop
+        if: ${{ !cancelled() }}
+        run: sh deploy/backup.sh
+      # down -v deletes the shop and its database; the fresh install takes a few minutes and is timed on its own.
+      # A failed install still writes its row ("did not finish"), then fails the step.
+      - name: Clean environment
+        if: ${{ !cancelled() }}
+        run: |
+          docker compose -f deploy/compose.yaml down -v
+          started=$(date +%s)
+          if docker compose -f deploy/compose.yaml up -d --wait --wait-timeout 600; then
+            sh "$RESULTS" add "Restore: fresh install before restore.sh (s)" "$(($(date +%s) - started))" - -
+          else
+            sh "$RESULTS" add "Restore: fresh install before restore.sh (s)" "did not finish" - -
+            exit 1
+          fi
+      # restore.sh ends with "Restore finished in <N> s: ..."; --yes because there is no terminal to answer in
+      - name: Restore the backup
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          # The shell sorts the names, and their date-time (ciocia-backup-YYYYMMDD-HHMMSS) sorts as time: the last
+          # one is the newest. A fresh runner has only the one made above.
+          archive=$(printf '%s\n' deploy/backups/ciocia-backup-*.tar.gz | tail -1)
+          # `|| status=$?`: a failed restore still writes its row ("did not finish"), then fails the step
+          status=0
+          sh deploy/restore.sh --yes "$archive" | tee "$RUNNER_TEMP/restore.txt" || status=$?
+          seconds=$(sed -n 's/^Restore finished in \([0-9]*\) s.*/\1/p' "$RUNNER_TEMP/restore.txt")
+          sh "$RESULTS" add "Restore: restore.sh (s)" "${seconds:-did not finish}" - 600
+          exit "$status"
+      # Every number of the catalogue check must be the same as before the backup. Without the numbers from before
+      # (that step did not write them), diff would print nothing to count, and the row would pass: so it fails.
+      - name: Check the restored catalogue
+        if: ${{ !cancelled() }}
+        run: |
+          before="$RUNNER_TEMP/catalog-before.tsv"
+          after="$RUNNER_TEMP/catalog-after.tsv"
+          sh .github/scripts/check-catalog.sh | tee "$after"
+          if [ -s "$before" ]; then
+            differ=$(diff "$before" "$after" | grep -c '^>' || true)
+            diff "$before" "$after" || true
+          else
+            differ="no numbers from before the backup"
+          fi
+          sh "$RESULTS" add "Restore: catalogue numbers that changed" "$differ" 0 0
+
+      # --- W4: the E2E suite, 3 passes of 3 runs, each within 5 minutes, on the restored shop --------------------
+      # e2e-runs.sh prints "## E2E: <passed> of <runs> runs passed" and a row "| run | seed | result | <N> s |" per run
+      - name: E2E runs
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          status=0
+          sh .github/scripts/e2e-runs.sh 3 | tee "$RUNNER_TEMP/e2e.txt" || status=$?
+          passed=$(sed -n 's/^## E2E: \([0-9]*\) of .*/\1/p' "$RUNNER_TEMP/e2e.txt")
+          slowest=$(awk -F '|' '$5 ~ / s $/ { s = $5 + 0; if (s > max) max = s } END { print max + 0 }' "$RUNNER_TEMP/e2e.txt")
+          sh "$RESULTS" add "E2E runs passed (of 3)" "${passed:-did not finish}" 3 -
+          sh "$RESULTS" add "Slowest E2E run (s)" "$slowest" - 300
+          exit "$status"
+      # The summary that e2e-runs.sh writes names this artifact: change both together
+      - name: Upload the E2E reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-reports
+          path: tests/e2e-runs/
+          retention-days: 14
+
+      # --- The table -----------------------------------------------------------------------------------------------
+      - name: Results
+        if: ${{ !cancelled() }}
+        run: |
+          if [ "$SUBSET" = "true" ]; then
+            echo "Subset run: the rows that need all products (counts, times) are expected to fail." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          sh "$RESULTS" report
+      - name: Container status and logs
+        if: failure()
+        run: |
+          df -h /
+          docker compose -f deploy/compose.yaml ps -a
+          docker compose -f deploy/compose.yaml logs --no-color
+          # Every rejection and API error of the import (deploy/logs is gitignored)
+          cat deploy/logs/importer.log || true
+      - name: Remove containers and volumes
+        if: always()
+        run: docker compose -f deploy/compose.yaml down -v
