@@ -1,7 +1,8 @@
 <?php
 /**
  * Configures the shop for Poland (issue #47): currency, country, VAT, payments, carriers,
- * free delivery, e-mail and invoices. Values come from shop/config/shop-settings.php.
+ * free delivery, e-mail and invoices, plus the promo code (issue #44). Values come from
+ * shop/config/shop-settings.php.
  *
  * Runs once after the automatic install (post-install/30-configure-shop.sh). It is idempotent,
  * so it can also be run again by hand on a running shop:
@@ -30,12 +31,15 @@ $settings = require $settingsFile;
 
 configureCurrencies($settings);
 configureCountry($settings['country_default']);
+configureAddressFields($settings['address_required_fields']);
 configureTaxes();
 $carrierReferences = configureCarriers($settings);
 configureShipping($settings);
 configurePayments($settings, $carrierReferences);
 configureMail($settings['mail']);
 configureInvoices();
+configurePromoCode($settings['promo_code']);
+configureCatalog($settings['catalog']);
 
 Tools::clearSmartyCache();
 Cache::clear();
@@ -100,6 +104,18 @@ function configureCountry($iso)
 }
 
 /**
+ * Extra required address fields (issue #44), as the back office sets them in Customers > Addresses >
+ * "Set required fields for this section". The list replaces the previous one, so a field removed from
+ * the settings stops being required on the next run.
+ */
+function configureAddressFields(array $fields)
+{
+    (new CustomerAddress())->addFieldsRequiredDatabase($fields);
+    echo 'Required address fields: ' . ($fields ? implode(', ', $fields) : 'none extra') . ".
+";
+}
+
+/**
  * Polish VAT groups (23, 8, 5, 0 %) from PrestaShop's Polish localization pack; prices shown gross.
  */
 function configureTaxes()
@@ -116,8 +132,15 @@ function configureTaxes()
     Configuration::updateValue('PS_TAX_DISPLAY', 1);
     // 0 = prices with tax, for every customer group
     Db::getInstance()->update('group', ['price_display_method' => 0]);
+    // Round each item's gross price, then multiply by the quantity (issue #91). It is the only mode in which
+    // every amount the customer sees adds up: unit price × quantity = line, lines = "Produkty", and
+    // "Produkty" + delivery = "RAZEM". With PrestaShop's default 2 (round each line) the order total is
+    // rounded from the unrounded line amounts (Calculator::getTotal() sums CartRow::getInitialTotalPrice()),
+    // so it can be 1 grosz off "Produkty" + delivery. With 3 (round the total) the lines shown in the cart
+    // no longer add up to "Produkty".
+    Configuration::updateValue('PS_ROUND_TYPE', Order::ROUND_ITEM);
     Configuration::updateValue('PS_WEIGHT_UNIT', 'kg');
-    echo "Taxes: Polish VAT groups active, prices shown gross.\n";
+    echo "Taxes: Polish VAT groups active, prices shown gross, rounded per item.\n";
 }
 
 /**
@@ -248,6 +271,11 @@ function configureShipping(array $settings)
     Configuration::updateValue('PS_SHIPPING_HANDLING', 0);
     Configuration::updateValue('PS_SHIPPING_METHOD', 1);
     echo 'Free delivery from ' . $settings['free_shipping_from'] . " PLN gross.\n";
+
+    // "Wysyłka w ciągu 24h" for products in stock (product page, cart lines); a per-language value
+    $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+    Configuration::updateValue('PS_LABEL_DELIVERY_TIME_AVAILABLE', [$idLang => $settings['delivery_time_available']]);
+    echo 'Delivery time in stock: ' . $settings['delivery_time_available'] . ".\n";
 }
 
 /**
@@ -337,4 +365,58 @@ function configureInvoices()
         'id_order_state = ' . (int) Configuration::get('PS_OS_COD_VALIDATION')
     );
     echo "Invoices: enabled, issued for cash on delivery orders.\n";
+}
+
+/**
+ * The promo code as a cart rule: a percentage off the products, once per customer, valid for ten
+ * years from the last run. Found by its code, so a second run updates it instead of adding another.
+ * PrestaShop shows the promo code field in the cart and checkout only while a cart rule exists.
+ */
+function configurePromoCode(array $promo)
+{
+    $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+    $rule = new CartRule((int) CartRule::getIdByCode($promo['code']) ?: null);
+    $rule->name = [$idLang => $promo['name']];
+    $rule->code = $promo['code'];
+    $rule->reduction_percent = (float) $promo['percent'];
+    $rule->date_from = date('Y-m-d 00:00:00');
+    $rule->date_to = date('Y-m-d 23:59:59', strtotime('+10 years'));
+    $rule->quantity = 1000000;
+    $rule->quantity_per_user = 1;
+    // Not listed under "Take advantage of our exclusive offers": the code is entered by hand.
+    $rule->highlight = false;
+    $rule->active = true;
+    $rule->id ? $rule->update() : $rule->add();
+    echo 'Promo code ' . $promo['code'] . ': ' . $promo['percent'] . "% off the products, once per customer.\n";
+}
+
+/**
+ * Stock rules, HTML in descriptions, and the top menu for the categories the importer creates (issue #70).
+ */
+function configureCatalog(array $catalog)
+{
+    Configuration::updateValue('PS_STOCK_MANAGEMENT', 1);
+    Configuration::updateValue('PS_ORDER_OUT_OF_STOCK', $catalog['order_out_of_stock'] ? 1 : 0);
+    Configuration::updateValue('PS_ALLOW_HTML_IFRAME', $catalog['allow_iframes'] ? 1 : 0);
+
+    // The module rebuilds the menu after every category change, also those made through the API
+    Configuration::updateValue('CIOCIA_MENU_CATEGORIES', json_encode($catalog['menu_categories'], JSON_UNESCAPED_UNICODE));
+    $menu = Module::getInstanceByName('ciociamenu');
+    if (!$menu) {
+        throw new RuntimeException('Module ciociamenu not found in modules/ (shop/modules/ciociamenu)');
+    }
+    if (!Module::isInstalled('ciociamenu')) {
+        if (!$menu->install()) {
+            throw new RuntimeException('Could not install module ciociamenu');
+        }
+    } elseif (!$menu->registerHooks()) {
+        // Already installed: a shop with an earlier version of the module gets the new hooks. Not right
+        // after install(), which registered them: PrestaShop's "already registered" check is cached within a
+        // request, so a second call would insert them twice (duplicate key error).
+        throw new RuntimeException('Could not register the hooks of module ciociamenu');
+    }
+    $items = $menu->rebuildMenu();
+    echo 'Catalog: out-of-stock orders ' . ($catalog['order_out_of_stock'] ? 'allowed' : 'denied')
+        . ', iframes ' . ($catalog['allow_iframes'] ? 'allowed' : 'not allowed')
+        . ', top menu: ' . ($items ?: 'empty until the import creates the categories') . ".\n";
 }

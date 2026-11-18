@@ -1,0 +1,173 @@
+"""The conversion rules of importer/mapping.py, on hand-picked cases and on the real scraped data."""
+
+import json
+from collections import Counter
+from pathlib import Path
+
+import pytest
+
+from importer import mapping
+
+RESULTS = Path(__file__).resolve().parents[3] / "scraper-results"
+
+
+def real_products() -> list[dict]:
+    path = RESULTS / "products.jsonl"
+    if not path.is_file():
+        pytest.skip("scraper-results/products.jsonl not found")
+    return [json.loads(line) for line in path.open(encoding="utf-8") if line.strip()]
+
+
+# --- Prices ---
+
+
+@pytest.mark.parametrize(
+    ("gross", "vat", "net"),
+    [
+        ("14.49", 23.0, "11.780488"),
+        ("23.20", 8.0, "21.481481"),
+        ("10.50", 5.0, "10.000000"),
+        ("1490.00", 23.0, "1211.382114"),
+    ],
+)
+def test_net_price(gross, vat, net):
+    assert mapping.net_price(gross, vat) == net
+
+
+def test_every_real_price_comes_back_to_the_grosz():
+    """The shop shows net x (1 + VAT) rounded to the grosz: it must equal the source price for every product."""
+    for product in real_products():
+        for gross in (product["regular_price"], product["price"]):
+            net = mapping.net_price(gross, product["vat_rate"])
+            assert mapping.gross_price(net, product["vat_rate"]) == f"{float(gross):.2f}", product["id"]
+
+
+def test_promotion_amount():
+    assert mapping.promotion_amount("23.94", "21.07") == "2.87"
+    assert mapping.promotion_amount("10", "10") == "0.00"
+
+
+# --- Weight (the cases from ADR 0008) ---
+
+
+@pytest.mark.parametrize(
+    ("value", "kg"),
+    [
+        ("0.011", 0.011),  # bracelet: below 1, as grams it would weigh less than a paperclip
+        ("0.040000", 0.04),  # 10 ml scented oil in its box
+        ("1.0", 0.001),  # foil gloves: a whole number is grams
+        ("1.187", 1.187),  # Buddha lava lamp: decimals below 5 are kilograms
+        ("1.3", 1.3),  # salt candle holder
+        ("10.0", 0.01),
+        ("74.000000", 0.074),
+        ("1010.0", 1.01),
+    ],
+)
+def test_weight_kg(value, kg):
+    assert mapping.weight_kg({"value": value, "unit": "g"}) == pytest.approx(kg)
+
+
+def test_no_weight_is_zero():
+    assert mapping.weight_kg(None) == 0.0
+
+
+def test_no_real_product_is_heavier_than_a_carrier_allows():
+    weights = [mapping.weight_kg(p["weight"]) for p in real_products()]
+    assert max(weights) < 50
+
+
+# --- Stock ---
+
+
+def test_stock_is_the_same_on_every_call():
+    assert [mapping.stock_quantity(100) for _ in range(3)] == [mapping.stock_quantity(100)] * 3
+
+
+def test_stock_of_product_100():
+    # h = 12490511913535565397: last digit 7 (in stock), the digit before it 9, so 1 + 9
+    assert mapping.stock_quantity(100) == 10
+
+
+def test_real_stock_is_0_to_10_with_5_to_20_percent_at_0():
+    counts = Counter(mapping.stock_quantity(p["id"]) for p in real_products())
+    assert set(counts) <= set(range(0, 11))
+    share_out = counts[0] / sum(counts.values())
+    assert 0.05 <= share_out <= 0.20
+
+
+# --- Barcodes ---
+
+
+@pytest.mark.parametrize(
+    ("ean", "expected"),
+    [
+        ("8901138515010", ("8901138515010", "")),  # EAN-13
+        ("96385074", ("96385074", "")),  # EAN-8
+        ("036000291452", ("", "036000291452")),  # UPC-A
+        ("8901138515011", ("", "")),  # wrong check digit
+        ("12345", ("", "")),
+        (None, ("", "")),
+        ("", ("", "")),
+    ],
+)
+def test_barcodes(ean, expected):
+    assert mapping.barcodes(ean) == expected
+
+
+# --- Link rewrite ---
+
+
+def test_link_rewrite_from_category_and_product_urls():
+    assert mapping.link_rewrite("https://www.magiczne-indie.pl/38-kosmetyki-do-wlosow", "x") == "kosmetyki-do-wlosow"
+    url = "https://www.magiczne-indie.pl/100-kredka-do-oczu-naturalna-kajal-himalaya-27g.html"
+    assert mapping.link_rewrite(url, "x") == "kredka-do-oczu-naturalna-kajal-himalaya-27g"
+
+
+def test_link_rewrite_falls_back_to_the_name_in_ascii():
+    assert mapping.link_rewrite("https://example.com/12-ąę!", "Żywność i Przyprawy") == "zywnosc-i-przyprawy"
+
+
+def test_every_real_slug_is_valid():
+    for product in real_products():
+        assert mapping.LINK_REWRITE.match(mapping.link_rewrite(product["url"], product["name"])), product["id"]
+
+
+# --- Descriptions ---
+
+
+def test_visible_text_ignores_what_prestashop_changes_on_save():
+    source = (
+        '<p><a href="x" rel="pmsil">Himalaya</a> kredka &amp; puder<br>czarna</p>'
+        + '<img src="data:image/png;base64,A">'
+    )
+    saved = '<p><a href="x">Himalaya</a> kredka &amp; puder<br />czarna</p>'
+    assert mapping.visible_text(source) == mapping.visible_text(saved) == "Himalayakredka&puderczarna"
+
+
+def test_visible_text_ignores_a_removed_empty_tag():
+    # Found on 14 real products: the cleaner drops the empty <span> between "W" and "."
+    assert mapping.visible_text("ezoteryki W<span></span>. Reich") == mapping.visible_text("ezoteryki W. Reich")
+
+
+def test_visible_text_sees_a_changed_word():
+    assert mapping.visible_text("<p>stara cena</p>") != mapping.visible_text("<p>nowa cena</p>")
+
+
+# --- Category tree ---
+
+CATEGORIES = [
+    {"id": 3, "parent_id": 2},
+    {"id": 2, "parent_id": 1},
+    {"id": 1, "parent_id": None},
+    {"id": 4, "parent_id": None},
+]
+
+
+def test_parents_come_before_children():
+    order = [c["id"] for c in mapping.parents_first(CATEGORIES)]
+    assert order.index(1) < order.index(2) < order.index(3)
+
+
+def test_with_descendants():
+    assert mapping.with_descendants({1}, CATEGORIES) == {1, 2, 3}
+    assert mapping.with_descendants({4}, CATEGORIES) == {4}

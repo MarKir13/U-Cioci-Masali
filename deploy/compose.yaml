@@ -48,6 +48,9 @@ services:
       PS_FOLDER_INSTALL: install-dev
       ADMIN_MAIL: ${ADMIN_MAIL}
       ADMIN_PASSWD: ${ADMIN_PASSWORD}
+      # Key of the Webservice API, set up by post-install/40-webservice.sh. The importer calls the API
+      # at http://shop/api/ inside this network; the proxy blocks /api/ from outside.
+      PS_WEBSERVICE_KEY: ${PS_WEBSERVICE_KEY:?set PS_WEBSERVICE_KEY in deploy/.env (see .env.example)}
     volumes:
       - shop-data:/var/www/html
     # Healthy once Apache answers. The image starts Apache only after the install and our
@@ -91,6 +94,28 @@ services:
     volumes:
       # Self-signed cert and key, generated on first start, kept until `down -v`
       - certs:/etc/nginx/certs
+
+  # Loads scraper-results/ into the shop through the Webservice API (deploy/importer, issue #70).
+  # The `init` profile keeps it out of `up`; it runs once and exits:
+  #   docker compose -f deploy/compose.yaml --profile init run --rm importer [--limit N] [--dry-run]
+  # It waits until the shop is healthy, then calls http://shop/api/ inside this network.
+  importer:
+    build: ./importer
+    # Same as SHOP_IMAGE above
+    image: ${IMPORTER_IMAGE:-ciocia-importer:local}
+    profiles: [init]
+    depends_on:
+      shop:
+        condition: service_healthy
+    environment:
+      PS_WEBSERVICE_KEY: ${PS_WEBSERVICE_KEY:?set PS_WEBSERVICE_KEY in deploy/.env (see .env.example)}
+      # The Host header must be the shop's domain (PS_DOMAIN above), or PrestaShop answers 302
+      HTTPS_PORT: "${HTTPS_PORT:?set HTTPS_PORT in deploy/.env (see .env.example)}"
+    volumes:
+      # The scraped data and the unpacked images (scraper-results/images/), read only
+      - ../scraper-results:/data:ro
+      # deploy/logs/importer.log: every rejection and API error (gitignored)
+      - ./logs:/logs
 
 volumes:
   db-data:

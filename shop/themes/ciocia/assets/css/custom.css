@@ -184,26 +184,36 @@ body#cart #wrapper .breadcrumb[data-depth="1"] {
   color: var(--ciocia-link-hover);
 }
 
-/* "Continue shopping" is an outline button on the source. */
-body#cart .cart-grid-body > a.label {
+/* "Continue shopping" is an outline button on the source (templates/checkout/_partials/continue-shopping.tpl). */
+body#cart .ciocia-continue-shopping {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  margin-top: 1rem;
   padding: 0.375rem 0.75rem;
   border: 1px solid var(--ciocia-primary);
   border-radius: 0.25rem;
   color: var(--ciocia-primary);
 }
 
-body#cart .cart-grid-body > a.label:hover,
-body#cart .cart-grid-body > a.label:focus {
+body#cart .ciocia-continue-shopping:hover,
+body#cart .ciocia-continue-shopping:focus {
   background: var(--ciocia-primary);
   color: #fff;
   text-decoration: none;
 }
 
-body#cart .cart-grid-body > a.label .material-icons {
+body#cart .ciocia-continue-shopping .material-icons {
   color: inherit;
+}
+
+/* Phones: across the width of the list, as on the source. */
+@media (max-width: 575.98px) {
+  body#cart .ciocia-continue-shopping {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
 }
 
 /* Typography */
@@ -819,6 +829,15 @@ body#checkout section.checkout-step.-unreachable .step-title {
 
 #header .header-top #_desktop_top_menu {
   border-top-color: #67302a;
+}
+
+/*
+ * Search in the checkout header. Classic hides it there (theme.css: "#checkout #search_widget
+ * { display: none; }"); the source shows it at every width. Same specificity as Classic's rule and
+ * loaded later, so this wins. The field is styled by the #header #search_widget rules above.
+ */
+#checkout #search_widget {
+  display: block;
 }
 
 #header #search_widget input[type="text"] {
@@ -2066,6 +2085,14 @@ body#checkout #footer:has(> .ciocia-trust) {
   cursor: pointer;
 }
 
+/* On phones the source keeps the tab in the bottom right corner; from 768 px it stays on the left. */
+@media (max-width: 767.98px) {
+  .ciocia-cookie-reopen {
+    right: 0.75rem;
+    left: auto;
+  }
+}
+
 .ciocia-cookie-reopen:hover,
 .ciocia-cookie-reopen:focus-visible {
   background: #fff;
@@ -2362,6 +2389,191 @@ html:has(.ciocia-search-dialog[open]) {
   outline: 2px solid var(--ciocia-link);
   outline-offset: 2px;
 }
+/*
+ * Cart preview (modules/ps_shoppingcart/ps_shoppingcart.tpl), from 768 px only. It opens with
+ * :hover and :focus-within on .blockcart and is a child of it, so the pointer can move into the
+ * panel without closing it (WCAG 1.4.13). custom.js adds .is-dismissed on Escape. It cannot use
+ * display: none to hide: visibility keeps the closed panel out of hit-testing and the Tab order
+ * and lets it fade.
+ */
+#header .ciocia-cart-panel {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  #header .ciocia-header-cart .blockcart {
+    position: relative;
+  }
+
+  #header .ciocia-cart-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 1030;
+    display: block;
+    width: 24rem;
+    max-width: calc(100vw - 2rem);
+    /* Transparent strip between the cart link and the box, so the gap does not end the hover. */
+    padding-top: 0.5rem;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-0.25rem);
+    transition:
+      opacity 0.15s,
+      transform 0.15s,
+      visibility 0s 0.15s;
+    color: var(--ciocia-text);
+    font-family: var(--ciocia-font);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    text-align: left;
+    white-space: normal;
+  }
+
+  #header .blockcart:hover .ciocia-cart-panel,
+  #header .blockcart:focus-within .ciocia-cart-panel {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition-delay: 0s;
+  }
+
+  /* After Escape: closed until the pointer and the focus have both left the cart. */
+  #header .blockcart.is-dismissed .ciocia-cart-panel {
+    visibility: hidden;
+    opacity: 0;
+    transition: none;
+  }
+
+  #header .ciocia-cart-link:focus-visible,
+  #header .ciocia-cart-panel a:focus-visible {
+    outline: 2px solid var(--ciocia-gold);
+    outline-offset: 2px;
+  }
+
+  #header .ciocia-cart-panel a:focus-visible {
+    outline-color: var(--ciocia-primary);
+  }
+
+  #header .ciocia-cart-panel__box {
+    padding: 1.25rem 1.4rem;
+    border: 1px solid var(--ciocia-border);
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow: 0 0.5rem 1.5rem rgba(44, 0, 1, 0.35);
+  }
+
+  #header .ciocia-cart-panel__items {
+    max-height: 17rem;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+  }
+
+  #header .ciocia-cart-panel__item {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0 0 1rem;
+  }
+
+  #header .ciocia-cart-panel__item + .ciocia-cart-panel__item {
+    padding-top: 1rem;
+    border-top: 1px solid var(--ciocia-border);
+  }
+
+  #header .ciocia-cart-panel__info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  #header .ciocia-cart-panel a.ciocia-cart-panel__name {
+    color: var(--ciocia-text);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-decoration: none;
+  }
+
+  #header .ciocia-cart-panel a.ciocia-cart-panel__name:hover {
+    color: var(--ciocia-primary);
+    text-decoration: underline;
+  }
+
+  #header .ciocia-cart-panel__attr {
+    color: var(--ciocia-text-muted);
+    font-size: 0.8125rem;
+  }
+
+  #header .ciocia-cart-panel a.ciocia-cart-panel__remove {
+    align-self: flex-start;
+    color: var(--ciocia-primary);
+    font-size: 0.9375rem;
+    text-decoration: none;
+  }
+
+  #header .ciocia-cart-panel a.ciocia-cart-panel__remove:hover {
+    color: var(--ciocia-primary-hover);
+    text-decoration: underline;
+  }
+
+  #header .ciocia-cart-panel__line {
+    color: var(--ciocia-text);
+    font-size: 1rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  #header .ciocia-cart-panel__totals {
+    margin: 0;
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--ciocia-border);
+  }
+
+  #header .ciocia-cart-panel__totals > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0;
+    font-size: 1rem;
+  }
+
+  #header .ciocia-cart-panel__totals dt,
+  #header .ciocia-cart-panel__totals dd {
+    margin: 0;
+    color: var(--ciocia-text);
+    font-weight: 300;
+  }
+
+  #header .ciocia-cart-panel__totals .ciocia-cart-panel__total {
+    margin-top: 0.5rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--ciocia-border);
+    font-size: 1.125rem;
+  }
+
+  #header .ciocia-cart-panel__totals .ciocia-cart-panel__total dt,
+  #header .ciocia-cart-panel__totals .ciocia-cart-panel__total dd {
+    font-weight: 700;
+  }
+
+  #header .ciocia-cart-panel__empty {
+    margin: 0;
+    padding: 0.25rem 0;
+    font-size: 1rem;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #header .ciocia-cart-panel {
+    transition: none;
+  }
+}
+
 /*
  * Home page banner (issue #63), as the hero on the source: one rounded card with the slider on the
  * left and the text on the right from 768 px; stacked below. Template: modules/ps_imageslider/.../slider.tpl.
@@ -3029,4 +3241,3091 @@ body#sitemap #wrapper .sitemap > [class*="col-"] {
   #wrapper .sitemap > [class*="col-"]:nth-child(odd) {
     clear: left;
   }
+}
+
+/*
+ * Checkout steps bar (issue #44), templates/checkout/checkout.tpl: a card of its own above the
+ * checkout card, as on the source, with numbered circles joined by lines. custom.js builds it and
+ * then adds .ciocia-has-steps-bar to <body>: only the current step is shown, under its title as a
+ * heading. Without JavaScript Classic's list of steps stays as it was.
+ * Colours on the cream card: current #5f0602, completed #9a5a3f (the source's copper #b06d52 is
+ * 4.1:1 under white digits; this one is 5.4:1), not reached yet #666 (5.2:1).
+ */
+body#checkout .ciocia-steps {
+  margin-bottom: 1.25rem;
+  padding: 1.25rem 0.5rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.5rem;
+  background: var(--ciocia-card-bg);
+}
+
+body#checkout .ciocia-steps__list {
+  display: flex;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+body#checkout .ciocia-steps__item {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}
+
+/* The line from the previous circle to this one, leaving a small gap at both circles. */
+body#checkout .ciocia-steps__item + .ciocia-steps__item::before {
+  content: "";
+  position: absolute;
+  top: calc(0.875rem - 1px);
+  right: calc(50% + 1.25rem);
+  left: calc(-50% + 1.25rem);
+  height: 2px;
+  background: var(--ciocia-border);
+}
+
+body#checkout .ciocia-steps__item.is-complete + .ciocia-steps__item::before {
+  background: var(--ciocia-link);
+}
+
+body#checkout .ciocia-steps__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.25rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+
+body#checkout .ciocia-steps__number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--ciocia-border);
+  color: var(--ciocia-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+body#checkout .ciocia-steps__item.is-current .ciocia-steps__step {
+  color: var(--ciocia-primary);
+  font-weight: 600;
+}
+
+body#checkout .ciocia-steps__item.is-current .ciocia-steps__number {
+  background: var(--ciocia-primary);
+  color: #fff;
+}
+
+body#checkout .ciocia-steps__item.is-complete .ciocia-steps__step {
+  color: var(--ciocia-link);
+}
+
+body#checkout .ciocia-steps__item.is-complete .ciocia-steps__number {
+  background: var(--ciocia-link);
+  color: #fff;
+}
+
+body#checkout a.ciocia-steps__step:hover,
+body#checkout a.ciocia-steps__step:focus {
+  color: var(--ciocia-link-hover);
+  text-decoration: none;
+}
+
+body#checkout a.ciocia-steps__step:hover .ciocia-steps__label {
+  text-decoration: underline;
+}
+
+body#checkout a.ciocia-steps__step:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid var(--ciocia-primary);
+  outline-offset: 2px;
+}
+
+/*
+ * Phones, as on the source: a progress ring "1 / 4", the current step and the next one, on a strip
+ * from edge to edge (the negative margin cancels the container's 15 px). No links back here; the
+ * "Wróć do ..." buttons in the steps do that.
+ */
+body#checkout .ciocia-steps__compact {
+  display: none;
+}
+
+/*
+ * Tablets (576-991 px): the bar's own container uses the whole page width, with Classic's 15 px gutter,
+ * while the checkout under it keeps Classic's narrower 540 / 720 px container, as on the source.
+ */
+@media (min-width: 576px) and (max-width: 991.98px) {
+  body#checkout #wrapper .container:has(> .ciocia-steps) {
+    width: auto;
+  }
+}
+
+@media (max-width: 767.98px) {
+  /* The strip sits right under the header, as on the source (Classic leaves 1.563rem there). */
+  body#checkout #wrapper {
+    padding-top: 0;
+  }
+
+  body#checkout .ciocia-steps {
+    margin: 0 -15px 1.25rem;
+    padding: 1rem 1.25rem;
+    border-width: 0 0 1px;
+  }
+
+  body#checkout .ciocia-steps__list {
+    display: none;
+  }
+
+  body#checkout .ciocia-steps__compact {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+}
+
+/*
+ * The ring: a conic gradient filled to the current share, its middle covered by a card-coloured disc.
+ * Green as on the source (Bootstrap's success colour), 4.2:1 on the card.
+ */
+body#checkout .ciocia-steps__ring {
+  --ciocia-steps-ring: #198754;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, var(--ciocia-card-bg) calc(100% - 5px), transparent calc(100% - 4px)),
+    conic-gradient(var(--ciocia-steps-ring) calc(var(--ciocia-steps-progress, 0) * 1turn), var(--ciocia-border) 0);
+  color: var(--ciocia-text);
+  white-space: pre;
+}
+
+body#checkout .ciocia-steps__summary {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+body#checkout .ciocia-steps__current {
+  color: var(--ciocia-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+body#checkout .ciocia-steps__next {
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Only the current step, its title as the heading of the form, as on the source. */
+body#checkout.ciocia-has-steps-bar section.checkout-step:not(.-current) {
+  display: none;
+}
+
+body#checkout.ciocia-has-steps-bar section.checkout-step.-current {
+  padding: 1.25rem;
+}
+
+body#checkout.ciocia-has-steps-bar section.checkout-step.-current .step-title {
+  margin-bottom: 1rem;
+  padding: 0 0 0.75rem;
+  border-top: 0;
+  border-bottom: 1px solid var(--ciocia-border);
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  line-height: 1.2;
+  cursor: default;
+}
+
+/* Classic's number, tick and "Edytuj" belong to its list of steps, which the bar replaces. */
+body#checkout.ciocia-has-steps-bar section.checkout-step.-current .step-title .step-number,
+body#checkout.ciocia-has-steps-bar section.checkout-step.-current .step-title .done,
+body#checkout.ciocia-has-steps-bar section.checkout-step.-current .step-title .step-edit {
+  display: none;
+}
+
+/* Classic indents the form to line up with the title text after its number; now there is none. */
+body#checkout.ciocia-has-steps-bar section.checkout-step.-current .content {
+  padding: 0;
+}
+
+/*
+ * Step navigation (issue #44): a trailing arrow on "Dalej" and "Złóż zamówienie", and from step 2 on a
+ * "Wróć do ..." outline button with a leading arrow, which custom.js puts left of the main button.
+ * The arrows are Material Icons' arrow_forward / arrow_back drawn as a mask in the text colour, with
+ * empty content, so screen readers read only the button text.
+ */
+body#checkout {
+  --ciocia-icon-arrow-forward: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/%3E%3C/svg%3E");
+  --ciocia-icon-arrow-back: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/%3E%3C/svg%3E");
+}
+
+body#checkout section.checkout-step button.continue::after,
+body#checkout #payment-confirmation button[type="submit"]::after,
+body#checkout .ciocia-step-back::before {
+  content: "";
+  display: inline-block;
+  width: 1.125em;
+  height: 1.125em;
+  vertical-align: -0.2em;
+  background-color: currentColor;
+  mask: var(--ciocia-icon-arrow-forward) center / contain no-repeat;
+}
+
+body#checkout section.checkout-step button.continue::after,
+body#checkout #payment-confirmation button[type="submit"]::after {
+  margin-left: 0.375rem;
+}
+
+body#checkout .ciocia-step-back::before {
+  margin-right: 0.375rem;
+  mask-image: var(--ciocia-icon-arrow-back);
+}
+
+/* Back on the left, the main button on the right; Classic's float and centring do not apply in a flex row. */
+body#checkout .ciocia-step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  clear: both;
+  margin-top: 1rem;
+}
+
+body#checkout .ciocia-step-actions > .btn,
+body#checkout .ciocia-step-actions #payment-confirmation .btn {
+  margin: 0;
+}
+
+/* Phones: full-width buttons, the main one on top, where the thumb reaches it first. */
+@media (max-width: 575.98px) {
+  body#checkout .ciocia-step-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  body#checkout .ciocia-step-actions #payment-confirmation .btn {
+    width: 100%;
+  }
+}
+
+/*
+ * Sticky summary (issue #44): from 992 px the summary column (summary card and trust block) of the cart
+ * and the checkout stays in view while the page scrolls, 1rem below the sticky header from #30, whose
+ * current height custom.js keeps in --ciocia-header-height. A column taller than the space under the
+ * header scrolls on its own, so its end stays reachable.
+ */
+@media (min-width: 992px) {
+  body#cart .cart-grid-right,
+  body#checkout .cart-grid-right {
+    position: sticky;
+    top: calc(var(--ciocia-header-height, 0px) + 1rem);
+    max-height: calc(100vh - var(--ciocia-header-height, 0px) - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+/*
+ * Summary card of the cart and checkout (issue #44), as on the source: a framed card, the product
+ * count in bold, "Pokaż szczegóły" and "Kod promocyjny" as full-width rows with a chevron, muted labels,
+ * shipping in copper and the total larger in burgundy. Classic takes the frame off in the checkout
+ * (body#checkout .cart-grid-right .card), hence the longer selector.
+ */
+#wrapper .cart-grid-right .card,
+body#checkout #wrapper .cart-grid-right .card {
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.75rem;
+  background: var(--ciocia-surface-light);
+  box-shadow: 0 0.25rem 1rem rgb(95 6 2 / 5%);
+}
+
+/*
+ * The card has the padding now; Classic's inner blocks only keep space above and below. Lines: one
+ * under the subtotals, above the total; the rows above and below draw the others.
+ */
+#wrapper .cart-grid-right .card .card-block,
+body#checkout #wrapper .cart-grid-right .card .card-block {
+  padding: 0.75rem 0;
+  border: 0;
+}
+
+#wrapper .cart-grid-right .card .cart-detailed-subtotals,
+#wrapper .cart-grid-right .card .cart-summary-subtotals-container,
+body#checkout #wrapper .cart-grid-right .card .cart-summary-subtotals-container {
+  border-bottom: 1px solid var(--ciocia-border);
+}
+
+/* Above the summary card on the cart page, as on the source; 1rem down, level with "Koszyk". */
+#wrapper .ciocia-summary-title {
+  margin: 1rem 0 0.75rem;
+  font-size: 1.25rem;
+}
+
+#wrapper .ciocia-summary-count {
+  margin: 0.75rem 0;
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+#wrapper .ciocia-summary-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.75rem 0;
+  border: 0;
+  border-top: 1px solid var(--ciocia-border);
+  background: none;
+  color: var(--ciocia-primary);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The products row closes off the count; the promo row closes off the card. */
+#wrapper .cart-summary-products .ciocia-summary-toggle,
+#wrapper .cart-voucher .ciocia-summary-toggle {
+  border-bottom: 1px solid var(--ciocia-border);
+}
+
+#wrapper .ciocia-summary-toggle .material-icons {
+  transition: transform 0.2s;
+}
+
+#wrapper .ciocia-summary-toggle[aria-expanded="true"] .material-icons {
+  transform: rotate(180deg);
+}
+
+/* Bootstrap rings every focused button; keep the ring for the keyboard only (#wrapper button:focus-visible). */
+#wrapper .ciocia-summary-toggle:focus:not(:focus-visible) {
+  outline: 0;
+}
+
+#wrapper .cart-grid-right .cart-summary-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/*
+ * A third item would push the amount to the middle: Classic's clearfix, and on the cart page the
+ * box for shipping details under the shipping line (hook displayCheckoutSubtotalDetails), which goes
+ * to a line of its own.
+ */
+#wrapper .cart-grid-right .cart-summary-line::after {
+  content: none;
+}
+
+#wrapper .cart-grid-right #cart-subtotal-shipping > div {
+  flex-basis: 100%;
+}
+
+#wrapper .cart-grid-right .cart-summary-line .label,
+body#checkout #wrapper .cart-grid-right .card .cart-summary-subtotals-container .cart-summary-line .label {
+  color: var(--ciocia-text-muted);
+  font-size: 0.9375rem;
+  font-weight: 400;
+}
+
+#wrapper .cart-grid-right .cart-summary-line .value {
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+#wrapper .cart-grid-right #cart-subtotal-shipping .value {
+  color: var(--ciocia-link);
+}
+
+/* The total: label in the text colour, amount larger in burgundy. */
+#wrapper .cart-grid-right .cart-summary-line.cart-total {
+  align-items: center;
+  margin-bottom: 0;
+  padding: 0;
+  border-top: 0;
+  background: none;
+}
+
+#wrapper .cart-grid-right .cart-total .label {
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+#wrapper .cart-grid-right .cart-total .value {
+  color: var(--ciocia-primary);
+  font-size: 1.25rem;
+}
+
+/* Promo code form, opened from its row. */
+#wrapper .cart-grid-right .block-promo .promo-code {
+  padding: 0.75rem 0;
+  background: none;
+}
+
+#wrapper .cart-grid-right .block-promo .promo-code form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+#wrapper .cart-grid-right .block-promo .promo-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  height: auto;
+}
+
+#wrapper .cart-grid-right .block-promo .promo-code .alert-danger {
+  margin: 0.75rem 0 0;
+}
+
+/* An added code: Classic's orange (#f49d6e, 2.2:1) in our colours, the bin as a muted icon. */
+#wrapper .cart-grid-right .promo-name .cart-summary-line {
+  margin-bottom: 0;
+}
+
+#wrapper .cart-grid-right .promo-name .cart-summary-line span {
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+#wrapper .cart-grid-right .promo-name .cart-summary-line .label {
+  color: var(--ciocia-text-muted);
+  font-weight: 400;
+}
+
+#wrapper .cart-grid-right .promo-name .float-xs-right {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+#wrapper .cart-grid-right .promo-name a {
+  color: var(--ciocia-text-muted);
+}
+
+#wrapper .cart-grid-right .promo-name a:hover,
+#wrapper .cart-grid-right .product-name a:hover {
+  color: var(--ciocia-link-hover);
+}
+
+#wrapper .cart-grid-right .cart-detailed-actions .btn {
+  width: 100%;
+}
+
+/*
+ * Trust card under the summary (templates/_partials/summary-trust.tpl): icons in warm circles, a bold
+ * title and a muted line, rows split by a line, as on the source.
+ */
+#wrapper .ciocia-summary-trust {
+  margin-top: 1.25rem;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.75rem;
+  background: var(--ciocia-surface-light);
+  box-shadow: 0 0.25rem 1rem rgb(95 6 2 / 5%);
+}
+
+#wrapper .ciocia-summary-trust__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#wrapper .ciocia-summary-trust__list li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 0;
+}
+
+#wrapper .ciocia-summary-trust__list li + li {
+  border-top: 1px solid var(--ciocia-border);
+}
+
+#wrapper .ciocia-summary-trust__icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-primary);
+}
+
+#wrapper .ciocia-summary-trust__title {
+  display: block;
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+#wrapper .ciocia-summary-trust__text {
+  display: block;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+/*
+ * Cart page list (issue #44): no inner card, as on the source; the heading, the products, the
+ * "Kontynuuj zakupy" button and the info box sit right on the page card, products split by lines.
+ * The checkout keeps its cards.
+ */
+body#cart #wrapper .cart-grid-body .cart-container {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+body#cart #wrapper .cart-grid-body .cart-container .card-block,
+body#cart #wrapper .cart-grid-body .cart-overview {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+/* "Koszyk" as large as the other page titles (#main .page-header h1). */
+body#cart #wrapper .cart-container h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  line-height: 1.2;
+}
+
+body#cart .cart-container .separator,
+body#cart .cart-items .cart-item {
+  border-color: var(--ciocia-border);
+}
+
+body#cart .cart-items .cart-item,
+body#cart .cart-items .cart-item:last-child {
+  border-bottom: 1px solid var(--ciocia-border);
+}
+
+/*
+ * Cart info box (checkout/_partials/cart-info.tpl): free delivery with the amount still missing,
+ * payment methods, ordering without an account. A light framed box with burgundy icons, as on the source.
+ */
+body#cart .ciocia-cart-info {
+  margin: 1.25rem 0 0.5rem;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.75rem;
+  background: var(--ciocia-surface-light);
+}
+
+body#cart .ciocia-cart-info__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body#cart .ciocia-cart-info__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+}
+
+body#cart .ciocia-cart-info__list li > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+body#cart .ciocia-cart-info .material-icons {
+  flex: none;
+  color: var(--ciocia-primary);
+}
+
+body#cart .ciocia-cart-info__title {
+  display: block;
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+body#cart .ciocia-cart-info__text {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+/*
+ * Cart product line (issue #44, checkout/_partials/cart-detailed-product-line.tpl), as on the source:
+ * image | name, delivery time, price, attributes, "Usuń" | quantity "− 1 +" with the line total under it.
+ * On phones the quantity and total go under the description.
+ */
+body#cart .ciocia-line {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+  gap: 0.75rem 1.25rem;
+  align-items: start;
+}
+
+body#cart .ciocia-line__image img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+body#cart .ciocia-line__name {
+  display: block;
+  color: var(--ciocia-link);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+body#cart .ciocia-line__name:hover {
+  color: var(--ciocia-link-hover);
+}
+
+body#cart .ciocia-line__delivery {
+  margin: 0.25rem 0 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.8125rem;
+}
+
+body#cart .ciocia-line .product-price {
+  margin: 0.375rem 0 0;
+}
+
+body#cart .ciocia-line .product-discount {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+body#cart .ciocia-line .regular-price {
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Classic's badge is white on #f39d72 (2.1:1); burgundy passes. */
+body#cart .ciocia-line .has-discount .discount {
+  margin: 0;
+  padding: 0 0.375rem;
+  border-radius: 0.25rem;
+  background: var(--ciocia-primary);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+body#cart .ciocia-line .current-price .price,
+body#cart .ciocia-line__total {
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+body#cart .ciocia-line__attribute {
+  font-size: 0.875rem;
+}
+
+body#cart .ciocia-line__remove {
+  display: inline-block;
+  margin-top: 0.625rem;
+  color: var(--ciocia-link);
+  font-size: 0.9375rem;
+}
+
+body#cart .ciocia-line__remove:hover {
+  color: var(--ciocia-link-hover);
+  text-decoration: underline;
+}
+
+body#cart .ciocia-line__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.625rem;
+}
+
+/*
+ * Quantity: Classic's TouchSpin stacks small arrows right of the field. Here its two buttons sit on
+ * both sides ("−" first), 2.5rem square, with Material Icons' remove / add instead of the arrows.
+ */
+body#cart .ciocia-line .bootstrap-touchspin {
+  display: inline-flex;
+  float: none;
+  width: auto;
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .input-group-btn-vertical {
+  display: contents;
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .btn-touchspin {
+  display: flex;
+  order: 1;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ciocia-field-border);
+  border-radius: 0 0.375rem 0.375rem 0;
+  background: var(--ciocia-surface-light);
+  color: var(--ciocia-text);
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .bootstrap-touchspin-down {
+  order: -1;
+  border-radius: 0.375rem 0 0 0.375rem;
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .btn-touchspin:hover {
+  background: var(--ciocia-surface-warm);
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .btn-touchspin:focus:not(:focus-visible) {
+  outline: 0;
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .btn-touchspin i {
+  position: static;
+  font-size: 1.25rem;
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .touchspin-up::after {
+  content: "\E145";
+}
+
+body#cart .ciocia-line .bootstrap-touchspin .touchspin-down::after {
+  content: "\E15B";
+}
+
+body#cart .ciocia-line .bootstrap-touchspin input.form-control {
+  order: 0;
+  width: 3.5rem;
+  height: 2.5rem;
+  padding: 0 0.25rem;
+  border: 1px solid var(--ciocia-field-border);
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  color: var(--ciocia-text);
+  text-align: center;
+  appearance: textfield;
+}
+
+body#cart .ciocia-line .bootstrap-touchspin input::-webkit-inner-spin-button,
+body#cart .ciocia-line .bootstrap-touchspin input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+@media (max-width: 575.98px) {
+  body#cart .ciocia-line {
+    grid-template-columns: 5rem minmax(0, 1fr);
+  }
+
+  body#cart .ciocia-line__actions {
+    flex-direction: row;
+    grid-column: 2;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+/*
+ * Tablets (576-991 px), cart only: Classic's container stays 540 / 720 px wide there, which leaves up
+ * to 136 px empty on each side at 991 px. The cart card uses the whole width instead, with Classic's
+ * 15 px gutter. The checkout keeps Classic's narrower container, as on the source; the header keeps its
+ * own widths.
+ */
+@media (min-width: 576px) and (max-width: 991.98px) {
+  body#cart #wrapper .container {
+    width: auto;
+  }
+}
+
+/*
+ * Delivery and payment options as cards (issue #44), as on the source: a light card with a 2 px frame,
+ * burgundy on the chosen option. The whole card selects its option (delivery: the card is the label,
+ * steps/shipping.tpl; payment: the label covers the card). Keyboard focus on the radio rings the card.
+ */
+body#checkout section.checkout-step .delivery-options .delivery-option {
+  display: block;
+  min-height: 0;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  background: none;
+}
+
+body#checkout section.checkout-step .ciocia-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--ciocia-border);
+  border-radius: 0.75rem;
+  background: var(--ciocia-surface-light);
+  cursor: pointer;
+}
+
+body#checkout section.checkout-step .delivery-option:has(input:checked) .ciocia-option,
+body#checkout section.checkout-step .payment-options .payment-option:has(input:checked) {
+  border-color: var(--ciocia-primary);
+}
+
+body#checkout section.checkout-step .ciocia-option:has(input:focus-visible),
+body#checkout section.checkout-step .payment-options .payment-option:has(input:focus-visible) {
+  outline: 2px solid var(--ciocia-primary);
+  outline-offset: 2px;
+}
+
+body#checkout section.checkout-step .ciocia-option .custom-radio,
+body#checkout section.checkout-step .payment-options .custom-radio {
+  flex: none;
+  margin: 0.125rem 0 0;
+}
+
+/*
+ * The chosen radio in these cards as on the source: a filled circle in Bootstrap's blue (#0d6efd,
+ * 4.4:1 on the card) with a white centre. Other radios in the shop keep the burgundy dot.
+ */
+body#checkout section.checkout-step .ciocia-option .custom-radio:has(input:checked),
+body#checkout section.checkout-step .payment-options .custom-radio:has(input:checked) {
+  border-color: #0d6efd;
+  background: #0d6efd;
+}
+
+body#checkout section.checkout-step .ciocia-option .custom-radio input[type="radio"]:checked + span,
+body#checkout section.checkout-step .payment-options .custom-radio input[type="radio"]:checked + span {
+  top: 4px;
+  left: 4px;
+  width: 8px;
+  height: 8px;
+  background-color: #fff;
+}
+
+/* Name on the left, then fee and delivery time centred, as on the source. */
+body#checkout section.checkout-step .ciocia-option__body {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+}
+
+body#checkout section.checkout-step .ciocia-option__logo {
+  justify-self: start;
+  width: 3.125rem;
+  height: auto;
+  margin-bottom: 0.25rem;
+}
+
+body#checkout section.checkout-step .ciocia-option__name {
+  display: block;
+  color: var(--ciocia-text);
+  font-weight: 600;
+  text-align: left;
+}
+
+body#checkout section.checkout-step .ciocia-option__price {
+  margin-top: 0.25rem;
+  color: var(--ciocia-primary);
+  font-weight: 600;
+}
+
+body#checkout section.checkout-step .ciocia-option__text {
+  display: block;
+  color: var(--ciocia-text-muted);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+body#checkout section.checkout-step .payment-options .payment-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--ciocia-border);
+  border-radius: 0.75rem;
+  background: var(--ciocia-surface-light);
+}
+
+body#checkout section.checkout-step .payment-options .payment-option label {
+  display: block;
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--ciocia-text);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+/*
+ * The label's box covers the whole card, so a click anywhere on it chooses the option. The radio stays
+ * above it, so a click on the radio itself (and an E2E test's check()) still reaches the radio.
+ */
+body#checkout section.checkout-step .payment-options .payment-option label::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+body#checkout section.checkout-step .payment-options .payment-option .custom-radio {
+  position: relative;
+  z-index: 1;
+}
+
+/* The terms link sits inside a sentence: colour alone is not enough to tell it apart (WCAG 1.4.1). */
+body#checkout #conditions-to-approve a {
+  text-decoration: underline;
+}
+
+/* Bank details and the like, shown under the chosen payment option. */
+body#checkout section.checkout-step .payment-options .additional-information {
+  margin: -0.25rem 0 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--ciocia-surface-warm);
+}
+
+/*
+ * Personal information step (issue #44, steps/personal-information.tpl): the "kup jako gość" box and
+ * the two tabs with the open one underlined in burgundy, as on the source.
+ */
+body#checkout .ciocia-guest-info {
+  margin: 0 0 1.25rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.5rem;
+  background: var(--ciocia-surface-light);
+}
+
+body#checkout #wrapper .ciocia-guest-info p {
+  margin: 0;
+}
+
+body#checkout #wrapper .ciocia-guest-info .ciocia-guest-info__title {
+  color: var(--ciocia-primary);
+  font-weight: 600;
+}
+
+body#checkout #wrapper .ciocia-guest-info .ciocia-guest-info__text {
+  margin-top: 0.25rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.9375rem;
+}
+
+body#checkout #wrapper .ciocia-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+}
+
+body#checkout #wrapper .ciocia-tabs .nav-item {
+  margin: 0;
+}
+
+body#checkout #wrapper .ciocia-tabs .nav-link {
+  padding: 0 0 0.375rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  /* The closed tab is a plain blue link on the source; #0b5ed7 is 5.2:1 on the card. */
+  color: #0b5ed7;
+  font-size: 1.0625rem;
+  font-weight: 400;
+}
+
+body#checkout #wrapper .ciocia-tabs .nav-link:focus:not(:focus-visible) {
+  outline: 0;
+}
+
+body#checkout #wrapper .ciocia-tabs .nav-link.active {
+  border-bottom-color: var(--ciocia-primary);
+  color: var(--ciocia-primary);
+  font-weight: 600;
+}
+
+/*
+ * "Stwórz konto" in the checkout customer form (checkout/_partials/customer-form.tpl): the password
+ * opens only while the box is ticked. custom.js disables the field while it is hidden.
+ */
+body#checkout .ciocia-create-account:not(:has(#ciocia-create-account:checked)) .ciocia-account-password {
+  display: none;
+}
+
+/* The password is needed once the box is ticked, so Classic's "Opcjonalne" note would be wrong. */
+body#checkout .ciocia-account-password .form-group > .form-control-comment {
+  display: none;
+}
+
+/*
+ * Forms in the personal information and address steps (guest form, "Zaloguj się", addresses), as on
+ * the source: the label above a full-width field, a burgundy "*" after required labels, a small hint
+ * under the field, larger checkbox text with the description in grey, and the chosen checkbox in
+ * Bootstrap's blue with a white tick. Classic puts the label, field and note in three columns of one row.
+ */
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .form-group.row {
+  display: block;
+  margin: 0 0 1.25rem;
+}
+
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .form-group.row > [class*="col-md-"] {
+  float: none;
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+}
+
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .form-control-label {
+  display: block;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  color: var(--ciocia-text);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+/* The "*" is decoration: the field itself is required, which screen readers announce. */
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .form-control-label.required::after {
+  content: " *" / "";
+  color: var(--ciocia-primary);
+}
+
+/* Classic gives each checkbox an empty label column. */
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .form-group.row:has(.custom-checkbox) > .form-control-label {
+  display: none;
+}
+
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .js-input-column > .form-control-comment {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--ciocia-text);
+  font-size: 0.8125rem;
+}
+
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .form-control {
+  min-height: 2.5rem;
+  font-size: 1rem;
+}
+
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox label {
+  position: relative;
+  display: block;
+  margin: 0;
+  padding-left: 1.875rem;
+  color: var(--ciocia-text);
+  font-size: 1rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox input[type="checkbox"],
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox input[type="checkbox"] + span {
+  position: absolute;
+  top: 0.1875rem;
+  left: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+}
+
+/* Before the label text: the box and the field are taken out of the flow, so this is the first thing on the line. */
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox label:has(input[required])::before {
+  content: "* " / "";
+  color: var(--ciocia-primary);
+}
+
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox input[type="checkbox"]:checked + span {
+  border-color: #0d6efd;
+  background: #0d6efd;
+}
+
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox .checkbox-checked {
+  margin: 0;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .custom-checkbox em {
+  color: var(--ciocia-text-muted);
+  font-size: 0.9375rem;
+  font-style: normal;
+}
+
+/* Classic makes every span in a checkout checkbox absolute (meant for the box); these two are text. */
+body#checkout #checkout-personal-information-step .custom-checkbox .ciocia-create-account__title,
+body#checkout #checkout-personal-information-step .custom-checkbox .ciocia-create-account__optional {
+  position: static;
+  margin: 0;
+}
+
+body#checkout #checkout-personal-information-step .ciocia-create-account__title {
+  font-weight: 700;
+}
+
+body#checkout #checkout-personal-information-step .ciocia-create-account__optional {
+  color: var(--ciocia-text-muted);
+  font-size: 0.9375rem;
+}
+
+body#checkout :is(#checkout-personal-information-step, #checkout-addresses-step) .form-footer .btn-primary {
+  min-width: 12rem;
+  padding: 0.5rem 1.5rem;
+}
+
+/* Classic moves these forms 5px right; here they line up with the tabs, as on the source. */
+body#checkout #checkout-personal-information-step #customer-form,
+body#checkout #checkout-personal-information-step #login-form {
+  margin-left: 0;
+}
+
+/*
+ * Address step (checkout/_partials/address-form.tpl, issue #44), as on the source. For the first address:
+ * "Kupuję na firmę" opens NIP / VAT UE, the "Opcjonalne" note under Firma and "Użyj tego adresu także do
+ * dostawy"; clearing that box opens the delivery address that custom.js adds (.ciocia-delivery-section).
+ */
+body#checkout #checkout-addresses-step .js-address-form form {
+  margin-left: 0;
+}
+
+body#checkout #checkout-addresses-step .ciocia-company-toggle,
+body#checkout #checkout-addresses-step .ciocia-same-address {
+  margin: 0 0 1.25rem;
+}
+
+body#checkout #wrapper #checkout-addresses-step .ciocia-address-heading {
+  margin: 0 0 1rem;
+  color: var(--ciocia-text);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+body#checkout #checkout-addresses-step .ciocia-delivery-section .ciocia-address-heading {
+  margin-top: 0.5rem;
+}
+
+body#checkout #checkout-addresses-step form:has(#ciocia-company:checked) .ciocia-company-toggle + .ciocia-address-heading,
+body#checkout #checkout-addresses-step form:has(#ciocia-company):not(:has(#ciocia-company:checked)) .ciocia-vat-field,
+body#checkout #checkout-addresses-step form:has(#ciocia-company):not(:has(#ciocia-company:checked)) .ciocia-same-address {
+  display: none;
+}
+
+/* Classic's "Opcjonalne" notes are gone, apart from the one under Firma for a company, as on the source. */
+body#checkout #wrapper #checkout-addresses-step .form-group.row > .form-control-comment {
+  display: none;
+}
+
+body#checkout #wrapper #checkout-addresses-step form:has(#ciocia-company:checked) .form-group.row:has(#field-company) > .form-control-comment {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--ciocia-text);
+  font-size: 0.8125rem;
+}
+
+body#checkout #checkout-addresses-step .ciocia-delivery-error {
+  margin: 0 0 1.25rem;
+}
+
+/*
+ * Under the address form: "Dalej" on the right, "Wróć do danych osobowych" under it on the left, as on
+ * the source (with saved addresses both stay in one row). Phones keep the full-width buttons from the
+ * step navigation section.
+ */
+@media (min-width: 576px) {
+  body#checkout #checkout-addresses-step .form-footer .ciocia-step-actions {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 1.5rem;
+  }
+
+  body#checkout #checkout-addresses-step .form-footer .ciocia-step-actions .ciocia-step-back {
+    align-self: flex-start;
+  }
+}
+
+/* Select fields (Kraj) with a thin chevron, as on the source, instead of Classic's filled triangle. */
+body#checkout #wrapper :is(#checkout-personal-information-step, #checkout-addresses-step) .form-control-select {
+  padding-right: 2.5rem;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23333' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 1rem center / 1rem 0.75rem;
+}
+
+/*
+ * Saved addresses (checkout/_partials/address-selector-block.tpl, steps/addresses.tpl), as on the source:
+ * light cards with a blue frame and the blue radio on the chosen one, the alias as a title, "Edytuj" and
+ * "Usuń" as text links, "+ Dodaj nowy adres" as an outline button.
+ */
+body#checkout #checkout-addresses-step .address-selector {
+  gap: 1rem;
+  justify-content: flex-start;
+  margin-top: 0;
+}
+
+/* Two cards in a row, up to 17.5rem each, as on the source; one full-width card per row on phones. */
+body#checkout #wrapper #checkout-addresses-step .address-item {
+  flex: 0 1 calc(50% - 0.5rem);
+  max-width: 17.5rem;
+  margin: 0;
+  border: 1px solid var(--ciocia-field-border);
+  border-radius: 0.5rem;
+  background: #f8f9fa;
+}
+
+@media (max-width: 575.98px) {
+  body#checkout #wrapper #checkout-addresses-step .address-item {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+
+/* Classic's "Zapisz" for browsers without JavaScript sits in a paragraph that would add a gap. */
+body#checkout #checkout-addresses-step .address-selector > p {
+  display: contents;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item:has(input:checked) {
+  border-color: #0d6efd;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item > header {
+  min-height: 0;
+  margin: 0;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item .radio-block {
+  display: block;
+  margin: 0;
+  padding: 1.25rem 1rem 0.75rem;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item .address-alias {
+  margin: 0 0 0 0.5rem;
+  color: var(--ciocia-text);
+  font-size: 1.25rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item .address {
+  margin: 0.75rem 0 0;
+  color: var(--ciocia-text);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item .custom-radio:has(input:checked) {
+  border-color: #0d6efd;
+  background: #0d6efd;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-item .custom-radio input[type="radio"]:checked + span {
+  top: 4px;
+  left: 4px;
+  width: 8px;
+  height: 8px;
+  background-color: #fff;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-footer {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.25rem 1rem 1.25rem;
+  text-align: left;
+}
+
+body#checkout #wrapper #checkout-addresses-step .address-footer .edit-address {
+  color: var(--ciocia-text);
+}
+
+/* The source's pink "Usuń" is too pale on the card; #b02a37 is 6.2:1. */
+body#checkout #wrapper #checkout-addresses-step .address-footer .delete-address {
+  color: #b02a37;
+}
+
+body#checkout #wrapper #checkout-addresses-step .add-address {
+  margin: 1.25rem 0 0;
+}
+
+body#checkout #wrapper #checkout-addresses-step .add-address .ciocia-add-address {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ciocia-primary);
+  font-size: 1rem;
+}
+
+body#checkout #wrapper #checkout-addresses-step .add-address .ciocia-add-address:hover,
+body#checkout #wrapper #checkout-addresses-step .add-address .ciocia-add-address:focus-visible {
+  color: #fff;
+}
+
+body#checkout #wrapper #checkout-addresses-step .add-address .ciocia-add-address i {
+  font-size: 1.25rem;
+}
+
+body#checkout #wrapper #checkout-addresses-step .ciocia-invoice-link {
+  margin: 1.5rem 0 0;
+}
+
+/* "Adres do faktury" under the delivery cards needs room above it. */
+body#checkout #wrapper #checkout-addresses-step form > .ciocia-address-heading:not(:first-child) {
+  margin-top: 1.75rem;
+}
+
+/* "Podany adres jest niekompletny…" under the cards (steps/addresses.tpl). */
+body#checkout #wrapper #checkout-addresses-step .js-address-error {
+  margin: 1rem 0 0;
+}
+
+/*
+ * Product lists (issue #75): category pages, search results and the other listings
+ * (templates/catalog/listing/product-list.tpl), the home page sections and the lists on the product page.
+ * Sizes, breakpoints and colours are the source's (its category page /8-kosmetyki, November 2026), apart
+ * from text colours that fail 4.5:1 there: the subcategory links, the old price and the disabled page link.
+ */
+
+/* Category header: the name in burgundy, the description in grey, the subcategories as rounded links. */
+#wrapper .ciocia-listing__title {
+  margin: 0 0 0.5rem;
+  color: var(--ciocia-primary);
+  font-size: 1.625rem;
+  line-height: 1.2;
+}
+
+#wrapper .ciocia-category-description {
+  margin-bottom: 1rem;
+}
+
+#wrapper .ciocia-category-description__text {
+  color: var(--ciocia-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+#wrapper .ciocia-category-description__text p:last-child {
+  margin-bottom: 0;
+}
+
+#wrapper .ciocia-subcategories {
+  margin-bottom: 1.5rem;
+}
+
+#wrapper .ciocia-subcategories__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#wrapper .ciocia-subcategories__link {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--ciocia-field-border);
+  border-radius: 50rem;
+  color: var(--ciocia-link);
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+#wrapper .ciocia-subcategories__link:hover,
+#wrapper .ciocia-subcategories__link:focus-visible {
+  border-color: var(--ciocia-primary);
+  color: var(--ciocia-primary);
+}
+
+/* "Czytaj więcej" and "Pokaż wszystkie (N)": phones only, underlined burgundy text, 44 px tall to tap. */
+#wrapper .ciocia-more-button {
+  display: none;
+  align-items: center;
+  min-height: 2.75rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0;
+  border: 0;
+  background: none;
+  color: var(--ciocia-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+  cursor: pointer;
+}
+
+/* custom.js adds .is-ready; without it nothing folds, so the page also works without JavaScript. */
+@media (max-width: 767.98px) {
+  #wrapper .ciocia-category-description.is-ready:not(.is-expanded) .ciocia-category-description__text {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+  }
+
+  #wrapper .ciocia-category-description.is-ready .ciocia-more-button:not([hidden]),
+  #wrapper .ciocia-subcategories--collapsible.is-ready .ciocia-more-button {
+    display: inline-flex;
+  }
+
+  #wrapper .ciocia-subcategories--collapsible.is-ready:not(.is-expanded) .ciocia-subcategories__item:nth-child(n + 7) {
+    display: none;
+  }
+}
+
+/*
+ * Count, sorting and page links above the products: "Liczba produktów: N" left, "Sortuj wg: [Polecane]" right,
+ * the page links alone on the next row on the right, and a line under the block. On phones the sorting
+ * comes first, as on the source.
+ */
+#wrapper .ciocia-products-top {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--ciocia-border);
+}
+
+#wrapper .ciocia-products-top__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+#wrapper .ciocia-products-top__count {
+  margin: 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Phones: the sorting first and without its label, as on the source; screen readers still get the label. */
+@media (max-width: 767.98px) {
+  #wrapper .ciocia-sort {
+    order: -1;
+  }
+
+  #wrapper .ciocia-sort__label {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    white-space: nowrap;
+    clip: rect(0, 0, 0, 0);
+  }
+}
+
+#wrapper .ciocia-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#wrapper .ciocia-sort__label {
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+/* Classic: a full-width grey-framed box, a grey menu 270 px wide and blue on hover. */
+#wrapper .products-sort-order.ciocia-sort__dropdown {
+  position: relative;
+}
+
+#wrapper .products-sort-order .ciocia-sort__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: auto;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.5rem 0.35rem 0.9rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.25rem;
+  background: #fff;
+  color: var(--ciocia-text);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+#wrapper .products-sort-order .ciocia-sort__button:hover,
+#wrapper .products-sort-order .ciocia-sort__button:focus-visible,
+#wrapper .products-sort-order.open .ciocia-sort__button {
+  border-color: var(--ciocia-primary);
+  color: var(--ciocia-primary);
+}
+
+#wrapper .products-sort-order .ciocia-sort__button .material-icons {
+  font-size: 1.25rem;
+}
+
+#wrapper .products-sort-order .ciocia-sort__menu {
+  right: 0;
+  left: auto;
+  z-index: 20;
+  width: auto;
+  min-width: 13rem;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.25rem;
+  background: #fff;
+  box-shadow: 0 0.5rem 1rem rgb(0 0 0 / 12%);
+}
+
+@media (max-width: 767.98px) {
+  #wrapper .products-sort-order .ciocia-sort__menu {
+    right: auto;
+    left: 0;
+  }
+}
+
+#wrapper .products-sort-order .ciocia-sort__option {
+  padding: 0.5rem 1rem;
+  color: var(--ciocia-text);
+  font-size: 0.875rem;
+}
+
+#wrapper .products-sort-order .ciocia-sort__option:hover,
+#wrapper .products-sort-order .ciocia-sort__option:focus-visible {
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-primary);
+}
+
+#wrapper .products-sort-order .ciocia-sort__option.current {
+  color: var(--ciocia-primary);
+  font-weight: 600;
+}
+
+/* Page links (templates/_partials/pagination.tpl). */
+#wrapper .ciocia-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-top: 1.25rem;
+}
+
+#wrapper .ciocia-pagination--top {
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+#wrapper .ciocia-pagination__summary {
+  margin: 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+#wrapper .ciocia-pagination__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#wrapper .ciocia-pagination__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.5rem;
+  background: #fff;
+  color: var(--ciocia-text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-decoration: none;
+}
+
+#wrapper a.ciocia-pagination__link:hover,
+#wrapper a.ciocia-pagination__link:focus-visible {
+  border-color: var(--ciocia-primary);
+  color: var(--ciocia-primary);
+}
+
+#wrapper .ciocia-pagination__link.is-current {
+  border-color: var(--ciocia-primary);
+  background: var(--ciocia-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* The source fades these to 50 % (2.6:1); a grey box with the muted text keeps them readable. */
+#wrapper .ciocia-pagination__link.is-disabled {
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-text-muted);
+}
+
+#wrapper .ciocia-pagination__link--spacer {
+  border-color: transparent;
+  background: transparent;
+}
+
+#wrapper .ciocia-pagination__link .material-icons {
+  font-size: 1.25rem;
+}
+
+/* "Poprzedni" and "Następny" only from 1200 px; below, the arrow shows and screen readers get the word. */
+@media (max-width: 1199.98px) {
+  #wrapper .ciocia-pagination__word {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    white-space: nowrap;
+    clip: rect(0, 0, 0, 0);
+  }
+}
+
+/*
+ * The grid of cards (templates/catalog/_partials/productlist.tpl): 2 columns on phones, 3 from 576 px,
+ * 4 from 992 px, 12 px apart, as on the source. Grid rows stretch their cards to one height.
+ * Classic lays these lists out as a wrapping flex row of Bootstrap columns.
+ */
+#wrapper .ciocia-products {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+@media (min-width: 576px) {
+  #wrapper .ciocia-products {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 992px) {
+  #wrapper .ciocia-products {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+#wrapper .ciocia-product {
+  display: flex;
+  min-width: 0;
+}
+
+/*
+ * The card (templates/catalog/_partials/miniatures/product.tpl): white, framed, the photo across the top,
+ * the text centred under it and the button at the bottom.
+ */
+#wrapper .ciocia-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.375rem;
+  background: #fff;
+  box-shadow: 0 0.125rem 0.375rem rgb(0 0 0 / 6%);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+#wrapper .ciocia-card:hover {
+  box-shadow: 0 0.375rem 1rem rgb(0 0 0 / 15%);
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #wrapper .ciocia-card {
+    transition: none;
+  }
+
+  #wrapper .ciocia-card:hover {
+    transform: none;
+  }
+}
+
+/* A square box, whatever the photo's proportions; the photo fits inside it. Classic adds 25 px under it. */
+#wrapper .ciocia-card__media {
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+  background: #fff;
+}
+
+#wrapper .ciocia-card__image-link {
+  display: block;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
+#wrapper .ciocia-card__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  object-fit: contain;
+}
+
+/* One ribbon across the top left corner: the discount in gold on burgundy, or "Nowy" on blue. */
+#wrapper .ciocia-card__ribbon {
+  position: absolute;
+  top: 0.9rem;
+  left: -2.4rem;
+  z-index: 2;
+  width: 7.5rem;
+  margin: 0;
+  padding: 0.3rem 0;
+  background: #0b69f6;
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(-45deg);
+  pointer-events: none;
+}
+
+#wrapper .ciocia-card__ribbon--discount,
+#wrapper .ciocia-card__ribbon--on-sale {
+  background: linear-gradient(135deg, #7a1006 0%, var(--ciocia-primary) 55%, #3a0606 100%);
+  color: var(--ciocia-gold);
+}
+
+/* blockwishlist's heart: a white square at the top right, as on the source (the module draws a round one). */
+#wrapper .ciocia-card .wishlist-button-add {
+  position: absolute;
+  z-index: 3;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 2.375rem;
+  min-width: 2.375rem;
+  height: 2.375rem;
+  padding: 0;
+  border-radius: 0.25rem;
+  box-shadow: none;
+}
+
+#wrapper .ciocia-card .wishlist-button-add i {
+  margin: 0;
+  color: var(--ciocia-link);
+}
+
+#wrapper .ciocia-card__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 0.5rem 0.75rem;
+}
+
+/* Names cut after three lines on every card; the box keeps three lines, so prices line up across a row. */
+#wrapper .ciocia-card__title {
+  min-height: 4.2em;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: center;
+}
+
+#wrapper .ciocia-card__title a {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  color: var(--ciocia-text);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+#wrapper .ciocia-card__title a:hover,
+#wrapper .ciocia-card__title a:focus-visible {
+  color: var(--ciocia-primary);
+}
+
+#wrapper .ciocia-card__reference {
+  margin: -0.25rem 0 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+#wrapper .ciocia-card__price-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.4rem;
+}
+
+#wrapper .ciocia-card__price {
+  color: var(--ciocia-primary);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+/* The source's #888 is 3.5:1 on white. */
+#wrapper .ciocia-card__regular-price {
+  color: var(--ciocia-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* Room for the Omnibus line (D3) and other price notes, in small grey text under the price. */
+#wrapper .ciocia-card__price-note {
+  margin-top: 0.25rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+
+#wrapper .ciocia-card__price-note p,
+#wrapper .ciocia-card__price-note div {
+  margin: 0;
+  font-size: inherit;
+}
+
+#wrapper .ciocia-card__availability {
+  margin: 0;
+  color: #b02a37;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* At the bottom of every card, so the buttons of a row line up. */
+#wrapper .ciocia-card__actions {
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+#wrapper .ciocia-card__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+}
+
+#wrapper .ciocia-card__button .material-icons {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* The add-to-cart button shows only the cart icon, as on the source; the text is for screen readers. */
+#wrapper .ciocia-card__cart .ciocia-card__button {
+  min-height: 2.25rem;
+}
+
+#wrapper .ciocia-card__cart .ciocia-card__button .material-icons {
+  font-size: 1.35rem;
+}
+
+/*
+ * As on the source: a card narrower than 13.5rem shows the icon and the text, a wider one only the icon
+ * (the text stays in the page for screen readers).
+ */
+#wrapper .ciocia-product {
+  container-type: inline-size;
+}
+
+#wrapper .ciocia-card__button-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@container (max-width: 13.49rem) {
+  #wrapper .ciocia-card__button-text {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  #wrapper .ciocia-card__cart .ciocia-card__button .material-icons {
+    font-size: 1.05rem;
+  }
+}
+
+/*
+ * Home page and product page sections (Classic's templates of ps_featuredproducts, ps_newproducts,
+ * ps_specials, ps_bestsellers, ps_categoryproducts...): the title on the left and the link to all products
+ * on the right of it, as on the source, instead of Classic's centred title and the link under the list.
+ */
+#wrapper .featured-products {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 1rem;
+  margin: 0 0 2rem;
+}
+
+#wrapper .featured-products > h2,
+#wrapper .featured-products > .products-section-title {
+  grid-column: 1;
+  margin: 0;
+  color: var(--ciocia-text);
+  font-size: clamp(1.375rem, 1.1rem + 1vw, 2rem);
+  line-height: 1.2;
+  text-align: left;
+}
+
+/* Classic marks these titles .text-uppercase, a utility with !important; the source writes them normally. */
+#wrapper .featured-products > .products-section-title.text-uppercase {
+  text-transform: none !important;
+}
+
+#wrapper .featured-products > .ciocia-products {
+  grid-column: 1 / -1;
+}
+
+#wrapper .featured-products > .all-product-link {
+  display: inline-flex;
+  grid-row: 1;
+  grid-column: 2;
+  align-items: center;
+  margin: 0;
+  float: none;
+  color: var(--ciocia-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+#wrapper .featured-products > .all-product-link .material-icons {
+  font-size: 1.125rem;
+}
+
+#wrapper .featured-products::after,
+#wrapper .featured-products::before {
+  display: none;
+}
+
+/*
+ * Product page (issue #76), as on the source: the gallery on the left (large photo, zoom button, thumbnails
+ * below), on the right the name, brand, index, price block, short description, availability and the row
+ * with quantity, "Dodaj do koszyka" and the heart; the description and details in tabs below, and the
+ * related products after them. Classic's own markup is kept (its scripts refresh the price, the variants
+ * and the stock without a reload), so everything here is CSS, scoped to body#product.
+ *
+ * Room for D3: the Omnibus line prints into .product-prices through displayProductPriceBlock
+ * ("after_price", "omnibus_price", "unit_price"); the variant selector styles are in this section too.
+ * --ciocia-bottom-nav-height belongs to the mobile bottom navigation bar (#32, defined on :root); it is only read here, with a fallback.
+ */
+
+/* No sideways scrolling on phones, whatever is inside the page. */
+body#product #wrapper,
+body#product #content-wrapper {
+  overflow-x: clip;
+}
+
+body#product #main .product-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+body#product #main .product-container::before,
+body#product #main .product-container::after {
+  display: none;
+}
+
+/* Classic's two .col-md-6 become two grid columns from 768 px, the photo column a little narrower, as on the source. */
+body#product #main .product-container > [class*="col-"] {
+  float: none;
+  width: auto;
+  max-width: none;
+  padding: 0;
+}
+
+@media (min-width: 768px) {
+  body#product #main .product-container {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 2rem;
+  }
+}
+
+/* Gallery: the photo in a framed square, the zoom button at its bottom right corner. */
+body#product .images-container {
+  position: relative;
+}
+
+body#product .images-container .product-cover {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: transparent;
+}
+
+body#product .images-container .product-cover img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  box-shadow: none;
+}
+
+/* Classic shows the zoom icon over the whole photo on hover; the source has a round button in the corner. */
+body#product .images-container .layer {
+  top: auto;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(44, 0, 1, 0.25);
+  color: var(--ciocia-text);
+  cursor: zoom-in;
+  opacity: 1;
+}
+
+/* Classic draws the magnifier in white, which vanishes on the white button. */
+body#product .images-container .layer .material-icons,
+body#product .images-container .layer .zoom-in {
+  color: var(--ciocia-text);
+  font-size: 1.5rem;
+}
+
+body#product .images-container .layer:hover,
+body#product .images-container .layer:focus-visible {
+  background: #fff;
+  color: var(--ciocia-primary);
+}
+
+/* The flags list is a direct child of #content (next to .images-container, not inside it); #content is their positioning parent. */
+body#product #content {
+  position: relative;
+}
+
+/* Flags over the photo: the discount is shown by the badge next to the price, as on the source; "Nowy" stays, small. */
+body#product #content > .product-flags {
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body#product #content > .product-flags li.product-flag {
+  position: static;
+  min-height: 0;
+  margin: 0 0 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  background: #0b69f6;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+body#product #content > .product-flags li.product-flag.discount,
+body#product #content > .product-flags li.product-flag.on-sale {
+  display: none;
+}
+
+/* Previous and next photo (custom.js): white squares at the sides of the photo, as on the source. */
+body#product .images-container .ciocia-gallery-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 3rem;
+  margin: -1.5rem 0 0;
+  padding: 0;
+  border: 0;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ciocia-text);
+}
+
+body#product .images-container .ciocia-gallery-arrow--prev {
+  left: 0;
+  border-radius: 0 6px 6px 0;
+}
+
+body#product .images-container .ciocia-gallery-arrow--next {
+  right: 0;
+  border-radius: 6px 0 0 6px;
+}
+
+body#product .images-container .ciocia-gallery-arrow:hover,
+body#product .images-container .ciocia-gallery-arrow:focus-visible {
+  background: #fff;
+  color: var(--ciocia-primary);
+}
+
+/* Phones: Classic hides the zoom icon below 768 px, so the photo itself opens the zoom (custom.js). */
+@media (max-width: 767.98px) {
+  body#product .images-container .layer {
+    display: flex !important;
+  }
+
+  body#product .images-container .product-cover img {
+    cursor: zoom-in;
+  }
+}
+
+/* Thumbnails: a row under the photo, the chosen one framed in burgundy; on a narrow screen the row scrolls. */
+body#product .images-container .js-qv-mask {
+  position: static;
+  width: auto;
+  margin: 0.75rem 0 0;
+  overflow-x: auto;
+  white-space: normal;
+}
+
+body#product .images-container .product-images {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0 0 0.25rem;
+  list-style: none;
+}
+
+body#product .images-container .product-images > li.thumb-container {
+  flex: 0 0 6rem;
+  float: none;
+  width: 6rem;
+  margin: 0;
+}
+
+body#product .images-container .product-images img.thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  border: 3px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+}
+
+body#product .images-container .product-images img.thumb:hover {
+  border-color: var(--ciocia-border);
+}
+
+body#product .images-container .product-images img.thumb.selected {
+  border-color: #0b69f6;
+}
+
+body#product .images-container .scroll-box-arrows {
+  display: none;
+}
+
+/* Zoom window. Classic shifts .modal-body by -30% and fixes its width; reset that and lay it out ourselves. */
+body#product #product-modal .modal-dialog {
+  width: auto;
+  max-width: min(60rem, calc(100vw - 1rem));
+  margin: 0.5rem auto;
+}
+
+body#product #product-modal .modal-content {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #fff;
+}
+
+body#product #product-modal .modal-body {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: center;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+body#product #product-modal figure {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+body#product #product-modal .product-cover-modal {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 80vh;
+  height: auto;
+  margin: 0 auto;
+  background: #fff;
+  object-fit: contain;
+}
+
+body#product #product-modal .image-caption {
+  width: auto;
+  max-width: 100%;
+  padding: 0.5rem 0 0;
+  background: transparent;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Thumbnails: a side column on desktop, scrolling inside its own height. */
+body#product #product-modal aside.thumbnails {
+  flex: 0 0 8.75rem;
+  width: 8.75rem;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+body#product #product-modal .arrows {
+  display: none;
+}
+
+body#product #product-modal .js-modal-mask,
+body#product #product-modal .mask {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+body#product #product-modal .js-modal-product-images {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body#product #product-modal .thumb-container {
+  margin: 0 0 0.5rem;
+}
+
+body#product #product-modal .thumb-container img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Phones: the large photo at its natural size in a box that scrolls and pinch-zooms, thumbnails in one strip below. */
+@media (max-width: 767.98px) {
+  body#product #product-modal .modal-dialog {
+    max-width: none;
+    margin: 0.5rem;
+  }
+
+  body#product #product-modal .modal-content {
+    padding: 0.5rem;
+  }
+
+  body#product #product-modal .modal-body {
+    display: block;
+  }
+
+  body#product #product-modal figure {
+    max-height: calc(100vh - 9rem);
+    max-height: calc(100dvh - 9rem);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+
+  body#product #product-modal .product-cover-modal {
+    max-width: none;
+    max-height: none;
+    margin: 0;
+  }
+
+  body#product #product-modal .image-caption {
+    position: sticky;
+    left: 0;
+    width: 100%;
+  }
+
+  body#product #product-modal aside.thumbnails {
+    width: auto;
+    max-height: none;
+    margin-top: 0.5rem;
+    overflow: visible;
+  }
+
+  body#product #product-modal .js-modal-product-images {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+  }
+
+  body#product #product-modal .thumb-container {
+    flex: 0 0 4.5rem;
+    margin: 0;
+  }
+}
+
+/* Name, brand and index. */
+body#product #main h1 {
+  margin: 0 0 0.25rem;
+  color: var(--ciocia-text);
+  font-size: clamp(1.375rem, 1.1rem + 1vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  text-transform: none;
+}
+
+body#product #main .product-manufacturer,
+body#product #main .product-manufacturer a {
+  margin: 0 0 0.75rem;
+  color: var(--ciocia-link);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+body#product #main .product-manufacturer a:hover,
+body#product #main .product-manufacturer a:focus-visible {
+  color: var(--ciocia-link-hover);
+  text-decoration: underline;
+}
+
+body#product #main .product-manufacturer img {
+  max-height: 2.5rem;
+  width: auto;
+}
+
+body#product #main .product-reference,
+body#product #main .product-information .product-reference {
+  margin: 0 0 1rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+body#product #main .product-reference .label {
+  color: inherit;
+  font-weight: 400;
+}
+
+body#product #main .product-reference span {
+  color: var(--ciocia-text);
+  font-weight: 600;
+}
+
+/* Price block: the price large and burgundy, the old price struck through, the discount as a gold-on-burgundy badge. */
+body#product #main .product-prices {
+  margin: 0 0 1rem;
+}
+
+body#product #main .product-prices > div {
+  margin-bottom: 0.25rem;
+}
+
+body#product #main .product-prices .current-price,
+body#product #main .product-prices .product-price {
+  color: var(--ciocia-primary);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+body#product #main .product-prices .product-discount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  color: var(--ciocia-text-muted);
+}
+
+body#product #main .product-prices .regular-price {
+  color: var(--ciocia-text-muted);
+  font-size: 1rem;
+  font-weight: 400;
+  text-decoration: line-through;
+}
+
+body#product #main .product-prices .discount,
+body#product #main .product-prices .discount-percentage,
+body#product #main .product-prices .discount-amount {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  background: var(--ciocia-primary);
+  color: var(--ciocia-gold);
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+/* "Brutto" / the VAT note, the unit price and the Omnibus line: small grey text under the price. */
+body#product #main .product-prices .tax-shipping-delay-label,
+body#product #main .product-prices .product-unit-price,
+body#product #main .product-prices .ciocia-omnibus,
+body#product #main .product-prices .omnibus-price,
+body#product #main .product-prices .product-without-taxes {
+  display: block;
+  margin: 0.25rem 0 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+body#product #main .product-prices .product-without-taxes {
+  font-size: 0.8125rem;
+}
+
+body#product #main .product-prices .product-unit-price {
+  font-size: 0.875rem;
+}
+
+body#product #main .product-description-short {
+  margin: 0 0 1rem;
+  color: var(--ciocia-text);
+  line-height: 1.5;
+}
+
+body#product #main .product-description-short p:last-child {
+  margin-bottom: 0;
+}
+
+/* Variant selector (D3 variants): text options as pills, colours as swatches, lists as plain selects. */
+body#product #main .product-variants {
+  margin: 0 0 1rem;
+}
+
+body#product #main .product-variants > .product-variants-item {
+  margin: 0 0 0.75rem;
+}
+
+body#product #main .product-variants .control-label {
+  display: block;
+  margin: 0 0 0.375rem;
+  color: var(--ciocia-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+body#product #main .product-variants ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body#product #main .product-variants li.input-container {
+  float: none;
+  margin: 0;
+}
+
+body#product #main .product-variants .radio-label {
+  display: inline-block;
+  min-width: 2.75rem;
+  margin: 0;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ciocia-text);
+  font-size: 0.875rem;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+body#product #main .product-variants .input-container:hover .radio-label {
+  border-color: var(--ciocia-primary);
+}
+
+body#product #main .product-variants input.input-radio:checked + .radio-label {
+  border-color: var(--ciocia-primary);
+  background: var(--ciocia-primary);
+  color: #fff;
+}
+
+body#product #main .product-variants input.input-radio:focus-visible + .radio-label,
+body#product #main .product-variants input.input-color:focus-visible + .color {
+  outline: 2px solid var(--ciocia-field-focus-border);
+  outline-offset: 2px;
+}
+
+body#product #main .product-variants .color,
+body#product #main .product-variants .custom-radio {
+  border: 1px solid var(--ciocia-border);
+}
+
+body#product #main .product-variants input.input-color:checked + .color,
+body#product #main .product-variants input.input-color:checked + .texture {
+  border: 2px solid var(--ciocia-primary);
+}
+
+body#product #main .product-variants select.form-control-select {
+  max-width: 20rem;
+}
+
+/* Add to cart: availability first, then quantity, button and heart in one row. */
+body#product #main .product-add-to-cart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+}
+
+body#product #main .product-add-to-cart > .control-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+body#product #main .product-add-to-cart #product-availability {
+  order: -1;
+  display: none;
+  margin: 0;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 4px;
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+body#product #main .product-add-to-cart #product-availability:has(.product-available, .product-last-items, .product-unavailable) {
+  display: block;
+}
+
+body#product #main .product-add-to-cart #product-availability .material-icons {
+  margin-right: 0.375rem;
+  font-size: 1.25rem;
+  vertical-align: text-bottom;
+}
+
+/* Classic colours: green #4cbb6c, orange #ff9a52, red #ff4c4c (all under 3:1); the same hues, darker. */
+body#product #main #product-availability .product-available {
+  color: #1e6b3a;
+}
+
+body#product #main #product-availability .product-last-items {
+  color: var(--ciocia-text);
+}
+
+body#product #main #product-availability .product-last-items .material-icons {
+  color: #9a5a00;
+}
+
+body#product #main #product-availability .product-unavailable {
+  color: #b02a37;
+}
+
+body#product #main .product-add-to-cart .product-quantity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+body#product #main .product-add-to-cart .product-quantity::before,
+body#product #main .product-add-to-cart .product-quantity::after {
+  display: none;
+}
+
+body#product #main .product-add-to-cart .product-quantity .qty,
+body#product #main .product-add-to-cart .product-quantity .add {
+  float: none;
+  margin: 0;
+}
+
+body#product #main .product-add-to-cart .product-quantity .qty {
+  flex: 0 0 auto;
+}
+
+body#product #main .product-add-to-cart .product-quantity .add {
+  flex: 1 1 12rem;
+}
+
+body#product #main .product-add-to-cart .product-quantity .add .btn,
+body#product #main .product-add-to-cart .product-quantity .add .add-to-cart {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+}
+
+body#product #main .product-add-to-cart .product-quantity .add .btn .material-icons {
+  position: static;
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+body#product #main .product-add-to-cart .product-quantity .bootstrap-touchspin {
+  display: inline-flex;
+  float: none;
+  width: auto;
+  height: 2.75rem;
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .input-group-btn-vertical {
+  display: contents;
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .btn-touchspin {
+  display: flex;
+  order: 1;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ciocia-field-border);
+  border-radius: 0 0.375rem 0.375rem 0;
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-text);
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .bootstrap-touchspin-down {
+  order: -1;
+  border-radius: 0.375rem 0 0 0.375rem;
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .btn-touchspin:hover {
+  background: var(--ciocia-border);
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .btn-touchspin i {
+  position: static;
+  font-size: 1.25rem;
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .touchspin-up::after {
+  content: "\E145";
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin .touchspin-down::after {
+  content: "\E15B";
+}
+
+body#product #main .product-add-to-cart .bootstrap-touchspin input.form-control {
+  order: 0;
+  width: 3.5rem;
+  height: 2.75rem;
+  border-radius: 0;
+  text-align: center;
+}
+
+/* The heart of blockwishlist: a 44 px square next to the button, as on the source. */
+body#product #main .product-add-to-cart .wishlist-button-add {
+  flex: 0 0 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: none;
+  color: var(--ciocia-primary);
+}
+
+body#product #main .product-add-to-cart .wishlist-button-add:hover,
+body#product #main .product-add-to-cart .wishlist-button-add:focus-visible {
+  border-color: var(--ciocia-primary);
+  background: var(--ciocia-surface-light);
+}
+
+body#product #main .product-minimal-quantity {
+  margin: 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* The button stays in reach on phones: the bottom navigation bar (#32) brings its own spacer, so only a scroll margin here. */
+body#product #main .product-add-to-cart {
+  scroll-margin-bottom: calc(var(--ciocia-bottom-nav-height, 0px) + 6rem);
+}
+
+/* Share links: small and quiet under the form. */
+body#product #main .social-sharing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+body#product #main .social-sharing ul {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body#product #main .social-sharing li {
+  float: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: 0;
+  background-color: transparent;
+}
+
+/* Description and details: tabs on the page card, the active tab underlined in burgundy. */
+body#product #main .tabs {
+  margin: 2rem 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body#product #main .tabs .nav-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--ciocia-border);
+}
+
+body#product #main .tabs .nav-tabs .nav-item {
+  float: none;
+  margin: 0 0 -1px;
+}
+
+body#product #main .tabs .nav-tabs .nav-link {
+  padding: 0.75rem 1.25rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--ciocia-text-muted);
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: none;
+}
+
+body#product #main .tabs .nav-tabs .nav-link:hover,
+body#product #main .tabs .nav-tabs .nav-link:focus-visible {
+  color: var(--ciocia-primary);
+}
+
+body#product #main .tabs .nav-tabs .nav-link.active {
+  border-bottom-color: var(--ciocia-primary);
+  color: var(--ciocia-primary);
+}
+
+body#product #main .tabs .tab-content {
+  padding: 1.25rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+body#product #main .tabs .tab-content img,
+body#product #main .tabs .tab-content table {
+  max-width: 100%;
+  height: auto;
+}
+
+body#product #main .tabs .tab-content table {
+  display: block;
+  overflow-x: auto;
+}
+
+body#product #main .product-description {
+  color: var(--ciocia-text);
+  line-height: 1.6;
+}
+
+/* Details: brand, index, weight, EAN... in a two-column list with thin lines between the rows. */
+body#product #main .product-features > dl.data-sheet {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 2fr;
+  margin: 0;
+  border-top: 1px solid var(--ciocia-border);
+}
+
+body#product #main .product-features > dl.data-sheet dt.name,
+body#product #main .product-features > dl.data-sheet dd.value {
+  float: none;
+  width: auto;
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--ciocia-border);
+  background: transparent;
+  color: var(--ciocia-text);
+  font-size: 0.9375rem;
+}
+
+body#product #main .product-features > dl.data-sheet dt.name {
+  font-weight: 600;
+}
+
+body#product #main .product-reference,
+body#product #main .product-quantities,
+body#product #main .product-manufacturer-details,
+body#product #main .product-condition {
+  color: var(--ciocia-text);
+}
+
+body#product #main .product-quantities label {
+  font-weight: 600;
+}
+
+/* Related and same-category products: spacing from the tabs; the grid itself is the product card list (#75). */
+body#product #main .featured-products.product-accessories,
+body#product #main .featured-products.js-product-accessories,
+body#product #main section.featured-products {
+  margin-top: 2.5rem;
+}
+
+@media (max-width: 575.98px) {
+  body#product #main .tabs .nav-tabs .nav-link {
+    padding: 0.625rem 0.875rem;
+  }
+
+  body#product #main .product-features > dl.data-sheet {
+    grid-template-columns: minmax(6rem, 1fr) 1.5fr;
+  }
+
+  body#product #main .product-prices .current-price,
+  body#product #main .product-prices .product-price {
+    font-size: 1.5rem;
+  }
+}
+
+/* Breadcrumb: the home icon before "Strona główna", as on the source. */
+body#product #wrapper .breadcrumb li:first-child a::before {
+  content: "\E88A";
+  display: inline-block;
+  margin-right: 0.375rem;
+  color: #f0a030;
+  font-family: "Material Icons";
+  font-size: 1.25rem;
+  line-height: 1;
+  vertical-align: text-bottom;
+  -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+}
+
+/* Index and brand under the name (custom.js copies them from the details tab). */
+body#product #main .ciocia-product-meta {
+  margin: 0 0 1rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+}
+
+body#product #main .ciocia-product-meta__brand {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--ciocia-link);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+body#product #main a.ciocia-product-meta__brand:hover,
+body#product #main a.ciocia-product-meta__brand:focus-visible {
+  color: var(--ciocia-link-hover);
+  text-decoration: underline;
+}
+
+body#product #main .ciocia-product-meta__reference strong {
+  color: var(--ciocia-text);
+}
+
+/* Comments (productcomments): a heading in burgundy and a light card, without the white box and the icon. */
+body#product #product-comments-list-header {
+  margin: 2rem 0 0;
+  padding: 1.25rem 1.25rem 0;
+  border: 1px solid var(--ciocia-border);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: var(--ciocia-surface-light);
+}
+
+body#product #product-comments-list-header .comments-nb {
+  color: var(--ciocia-primary);
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+body#product #product-comments-list-header .comments-nb .material-icons {
+  display: none;
+}
+
+/* An empty list would draw a second, empty card under the first. */
+body#product #product-comments-list:not(:has(*)) {
+  display: none;
+}
+
+body#product #empty-product-comment,
+body#product #product-comments-list {
+  margin: 0;
+  padding: 1rem 1.25rem 1.25rem;
+  border: 1px solid var(--ciocia-border);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  background: var(--ciocia-surface-light);
+  color: var(--ciocia-text);
+  text-align: left;
+}
+
+body#product #empty-product-comment .alert,
+body#product #empty-product-comment p {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+/*
+ * Description and details: an accordion at every width, in one rounded card, as on the source: both rows closed
+ * at first, a chevron on each; the open row is cream with burgundy text.
+ * custom.js adds the buttons (.ciocia-accordion__toggle) in front of Classic's tab panes; the tabs are hidden.
+ */
+body#product #main .tabs .nav-tabs {
+  display: none;
+}
+
+body#product #main .tabs .tab-content {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(95, 6, 2, 0.06);
+}
+
+body#product #main .tabs .tab-content > .tab-pane {
+  display: none !important;
+  padding: 1.25rem 1rem;
+  opacity: 1;
+}
+
+body#product #main .tabs .tab-content > .tab-pane.ciocia-is-open {
+  display: block !important;
+}
+
+body#product #main .ciocia-accordion__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 0;
+  padding: 1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ciocia-text);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: left;
+}
+
+body#product #main .ciocia-accordion__toggle[aria-expanded="true"] {
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-primary);
+}
+
+body#product #main .tabs .tab-content > .tab-pane + .ciocia-accordion__toggle,
+body#product #main .tabs .tab-content > .ciocia-accordion__toggle:not(:first-child) {
+  border-top: 1px solid var(--ciocia-border);
+}
+
+body#product #main .ciocia-accordion__toggle:focus-visible {
+  outline: 2px solid var(--ciocia-field-focus-border);
+  outline-offset: -2px;
+}
+
+body#product #main .ciocia-accordion__toggle .material-icons {
+  font-size: 1.5rem;
+  transition: transform 0.15s;
+}
+
+body#product #main .ciocia-accordion__toggle[aria-expanded="true"] .material-icons {
+  transform: rotate(180deg);
+}
+
+/* The accordion on the left and the trust block on the right from 768 px, as on the source; stacked below. */
+body#product #main .ciocia-product-info {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+  margin-top: 2rem;
+}
+
+@media (min-width: 768px) {
+  body#product #main .ciocia-product-info {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  }
+
+  body#product #main .ciocia-product-info--solo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+body#product #main .ciocia-product-info > .tabs,
+body#product #main .ciocia-product-info > .ciocia-summary-trust,
+body#product #main .ciocia-product-info > .blockreassurance_product {
+  margin: 0;
 }

@@ -39,8 +39,15 @@ return [
     // Country used by default in address forms
     'country_default' => 'PL',
 
+    // Address fields the customer must fill in, besides PrestaShop's own (name, street, postcode, city,
+    // country). The carriers need a phone number, as on the source shop.
+    'address_required_fields' => ['phone'],
+
     // Free delivery when the cart (products, gross, after discounts) reaches this amount
     'free_shipping_from' => 2000,
+
+    // Delivery time shown for products in stock: on the product page and under each product in the cart
+    'delivery_time_available' => 'Wysyłka w ciągu 24h',
 
     // VAT rate on delivery fees, in %. Fees below are gross; the script stores them net.
     'shipping_vat' => 23,
@@ -56,6 +63,14 @@ return [
             'delay' => 'Odbiór w automacie paczkowym w 1-2 dni robocze',
             'ranges' => [5 => 12.99, 10 => 14.99, 20 => 18.99, 30 => 22.99, 50 => 29.99],
         ],
+    ],
+
+    // Promo code for the "Kod promocyjny" row of the cart and checkout summary: a percentage off the
+    // products, once per customer. PrestaShop shows that row only while at least one code exists.
+    'promo_code' => [
+        'code' => 'WITAJ10',
+        'name' => 'Rabat powitalny 10%',
+        'percent' => 10,
     ],
 
     // Bank transfer details shown to the customer (also on the "Formy płatności" page).
@@ -90,5 +105,16 @@ return [
             ['image' => 'mi-slide-1.jpg', 'alt' => 'Wnętrze sklepu stacjonarnego Magiczne Indie'],
             ['image' => 'mi-slide-2.jpg', 'alt' => 'Półki z suplementami w sklepie Magiczne Indie'],
         ],
+    ],
+
+    // Product catalogue, filled by the importer (deploy/importer, issue #70)
+    'catalog' => [
+        // Top menu: these top-level categories, in this order. Names exactly as in
+        // scraper-results/categories.json. The module ciociamenu keeps the menu in step with them.
+        'menu_categories' => ['Kosmetyki', 'Żywność', 'Zdrowie', 'Różności', 'NA PREZENT', 'Nowości'],
+        // false: a product with stock 0 cannot be ordered (the brief wants some products unavailable)
+        'order_out_of_stock' => false,
+        // Allow <iframe> in descriptions: product 9536 embeds a YouTube video, as on the source shop
+        'allow_iframes' => true,
     ],
 ];
