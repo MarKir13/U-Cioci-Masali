@@ -482,6 +482,79 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 
 /*
+ * Header search suggestions (issue #105). ps_searchbar appends the list to <body> and places it once,
+ * when it opens, so on desktop it scrolled away from the sticky header. Appending it to the search
+ * form keeps it under the field while the page scrolls and the header turns compact.
+ * jQuery runs ready handlers in the order they were added; this file loads after ps_searchbar.js, so
+ * the widget already exists here.
+ * Targets jQuery UI 1.10.3 as bundled with PrestaShop 8.2: _resizeMenu(), menu.focus and liveRegion
+ * below are private internals of that version. After an upgrade, check them first.
+ */
+(function () {
+  var jquery = window.jQuery;
+  if (!jquery) return;
+  var phone = window.matchMedia('(max-width: 767px)');
+
+  jquery(function () {
+    var input = jquery('#search_widget input[name="s"]');
+    if (!input.length || typeof input.psBlockSearchAutocomplete !== 'function') return;
+    var form = input.closest('form');
+    // jQuery UI 1.10 (bundled with PrestaShop) has no 'instance' method; the widget is in jQuery data.
+    var autocomplete = input.data('prestashop-psBlockSearchAutocomplete');
+
+    // Under the field, as on the source. Phones: the field is narrow, so the list spans the whole
+    // row of logo, field and icons, below it.
+    function place() {
+      input.psBlockSearchAutocomplete('option', 'position', phone.matches
+        ? { my: 'center top', at: 'center bottom', of: '#header .header-nav .mobile', collision: 'none' }
+        : { my: 'right top+6', at: 'right bottom', of: form, collision: 'none' });
+
+      // jQuery UI sizes and places the list only when it opens. If it is open while the window
+      // changes size, do the same two steps it does on opening (_suggest in jquery-ui.js).
+      var list = input.psBlockSearchAutocomplete('widget');
+      if (!list.is(':visible')) return;
+      autocomplete._resizeMenu();
+      list.position(autocomplete.options.position);
+    }
+
+    // jQuery UI scrolls the list to every row it highlights, also on hover. A row only partly visible
+    // at the top or bottom edge then scrolled in, the next row slid under the still pointer, and the
+    // list ran on by itself. On hover keep the list where it is; the arrow keys still scroll it.
+    var menu = autocomplete.menu;
+    var highlight = menu.focus;
+    menu.focus = function (event) {
+      if (!event || event.type !== 'mouseenter') return highlight.apply(this, arguments);
+      var scrollTop = this.element.scrollTop();
+      highlight.apply(this, arguments);
+      this.element.scrollTop(scrollTop);
+    };
+    // jQuery UI swaps the rows for every new query but keeps the list's scroll: start at the top.
+    input.psBlockSearchAutocomplete('option', 'open', function () {
+      menu.element.scrollTop(0);
+    });
+    // A row chosen with the arrow keys would put its "value" into the field. Products from
+    // ps_searchbar have none, so the typed text vanished. As on the source, keep the typed text.
+    // Returning false also makes jQuery UI announce item.value, which is empty, so give the screen
+    // reader the row's visible text instead (the product name, already decoded from the HTML).
+    // jQuery UI calls liveRegion.text(item.value) after this handler, but with value undefined that
+    // only reads the text, so ours stays.
+    input.psBlockSearchAutocomplete('option', 'focus', function () {
+      autocomplete.liveRegion.text(menu.active.text().trim());
+      return false;
+    });
+
+    input.psBlockSearchAutocomplete('option', 'appendTo', form);
+    place();
+    // ps_searchbar sets its own position on every resize, so set ours again afterwards. Wait for the
+    // next frame: breakpoint changes (matchMedia 'change', e.g. moving the header icons) come after the
+    // resize event and can still change the field's size.
+    jquery(window).on('resize', function () {
+      window.requestAnimationFrame(place);
+    });
+  });
+})();
+
+/*
  * Bottom bar cart count. ps_shoppingcart re-renders the header cart after every cart change
  * (Classic's updateCart event), so copy the count from there instead of asking the server again.
  * The whole header is watched because Classic moves the cart between #_desktop_cart and

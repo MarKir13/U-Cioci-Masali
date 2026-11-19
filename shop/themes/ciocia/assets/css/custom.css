@@ -1040,6 +1040,85 @@ body#checkout section.checkout-step.-unreachable .step-title {
   left: auto;
 }
 
+/*
+ * Search suggestions (issue #105). custom.js appends the list to the search form, inside #header,
+ * so it must not take the header's light link colours.
+ */
+#header .searchbar-autocomplete a,
+#header .searchbar-autocomplete a:hover {
+  color: var(--ciocia-text);
+}
+
+/*
+ * Width. From 768 px ps_searchbar sets 400 px, wider than the field at tablet widths, so the list
+ * stuck out to the left; it now matches the field, as on the source. On phones ps_searchbar's 100%
+ * would now mean the narrow form, not the page.
+ */
+#header .searchbar-autocomplete {
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  #header .searchbar-autocomplete {
+    width: calc(100vw - 16px);
+  }
+}
+
+/*
+ * As on the source, about 4 results show and the rest scroll inside the list. overscroll-behavior
+ * keeps the page still when the list reaches its end. jQuery UI scrolls the result chosen with the
+ * arrow keys into view by itself once the list has its own scroll.
+ */
+#header .searchbar-autocomplete {
+  max-height: 21rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/*
+ * Look of the source: a white card with rounded corners and a shadow; each row has a square
+ * thumbnail and the full name beside it. Replaces the jQuery UI theme (Verdana, grey borders) and
+ * ps_searchbar.css (floated 50 px thumbnail, text wrapping under it).
+ */
+#header .searchbar-autocomplete {
+  padding: 6px 0;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(44, 0, 1, 0.22);
+  font-family: var(--ciocia-font);
+  font-size: 0.9375rem;
+  scrollbar-width: thin;
+  scrollbar-color: #c9b79a transparent;
+}
+
+#header .searchbar-autocomplete li a,
+#header .searchbar-autocomplete li a.ui-state-focus {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 0;
+  line-height: 1.45;
+}
+
+/* Hover and the row chosen with the arrow keys: only a grey background, as on the source. */
+#header .searchbar-autocomplete li a:hover,
+#header .searchbar-autocomplete li a.ui-state-focus {
+  background: #f1f1f1;
+}
+
+#header .searchbar-autocomplete li a .autocomplete-thumbnail {
+  flex: 0 0 60px;
+  width: 60px;
+  height: 60px;
+  margin: 0;
+  float: none;
+  object-fit: contain;
+}
+
 @media (min-width: 768px) and (max-width: 991px) {
   #header .ciocia-header-phone {
     display: none;
@@ -1477,11 +1556,6 @@ body#checkout section.checkout-step.-unreachable .step-title {
   main > :not(#header),
   main > :not(#header) * {
     scroll-margin-top: var(--ciocia-header-height, 0px);
-  }
-
-  /* Search suggestions are appended to <body>; Classic's 999 would put them under the header. */
-  .ui-autocomplete.ui-front.searchbar-autocomplete {
-    z-index: 1021;
   }
 
   #header {
