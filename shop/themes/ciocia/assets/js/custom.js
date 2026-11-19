@@ -497,6 +497,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var input = jquery('#search_widget input[name="s"]');
     if (!input.length || typeof input.psBlockSearchAutocomplete !== 'function') return;
     var form = input.closest('form');
+    // jQuery UI 1.10 (bundled with PrestaShop) has no 'instance' method; the widget is in jQuery data.
+    var autocomplete = input.data('prestashop-psBlockSearchAutocomplete');
 
     // Under the field, as on the source. Phones: the field is narrow, so the list spans the whole
     // row of logo, field and icons, below it.
@@ -509,11 +511,25 @@ document.addEventListener('DOMContentLoaded', function () {
       // changes size, do the same two steps it does on opening (_suggest in jquery-ui.js).
       var list = input.psBlockSearchAutocomplete('widget');
       if (!list.is(':visible')) return;
-      // jQuery UI 1.10 (bundled with PrestaShop) has no 'instance' method; the widget is in jQuery data.
-      var autocomplete = input.data('prestashop-psBlockSearchAutocomplete');
       autocomplete._resizeMenu();
       list.position(autocomplete.options.position);
     }
+
+    // jQuery UI scrolls the list to every row it highlights, also on hover. A row only partly visible
+    // at the top or bottom edge then scrolled in, the next row slid under the still pointer, and the
+    // list ran on by itself. On hover keep the list where it is; the arrow keys still scroll it.
+    var menu = autocomplete.menu;
+    var highlight = menu.focus;
+    menu.focus = function (event) {
+      if (!event || event.type !== 'mouseenter') return highlight.apply(this, arguments);
+      var scrollTop = this.element.scrollTop();
+      highlight.apply(this, arguments);
+      this.element.scrollTop(scrollTop);
+    };
+    // jQuery UI swaps the rows for every new query but keeps the list's scroll: start at the top.
+    input.psBlockSearchAutocomplete('option', 'open', function () {
+      menu.element.scrollTop(0);
+    });
 
     input.psBlockSearchAutocomplete('option', 'appendTo', form);
     place();
