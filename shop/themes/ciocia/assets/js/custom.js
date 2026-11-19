@@ -487,6 +487,8 @@ document.addEventListener('DOMContentLoaded', function () {
  * form keeps it under the field while the page scrolls and the header turns compact.
  * jQuery runs ready handlers in the order they were added; this file loads after ps_searchbar.js, so
  * the widget already exists here.
+ * Targets jQuery UI 1.10.3 as bundled with PrestaShop 8.2: _resizeMenu(), menu.focus and liveRegion
+ * below are private internals of that version. After an upgrade, check them first.
  */
 (function () {
   var jquery = window.jQuery;
@@ -532,7 +534,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     // A row chosen with the arrow keys would put its "value" into the field. Products from
     // ps_searchbar have none, so the typed text vanished. As on the source, keep the typed text.
+    // Returning false also makes jQuery UI announce item.value, which is empty, so give the screen
+    // reader the row's visible text instead (the product name, already decoded from the HTML).
+    // jQuery UI calls liveRegion.text(item.value) after this handler, but with value undefined that
+    // only reads the text, so ours stays.
     input.psBlockSearchAutocomplete('option', 'focus', function () {
+      autocomplete.liveRegion.text(menu.active.text().trim());
       return false;
     });
 
