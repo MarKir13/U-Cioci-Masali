@@ -1064,6 +1064,17 @@ body#checkout section.checkout-step.-unreachable .step-title {
   }
 }
 
+/*
+ * As on the source, about 4 results show and the rest scroll inside the list. overscroll-behavior
+ * keeps the page still when the list reaches its end. jQuery UI scrolls the result chosen with the
+ * arrow keys into view by itself once the list has its own scroll.
+ */
+#header .searchbar-autocomplete {
+  max-height: 21rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 @media (min-width: 768px) and (max-width: 991px) {
   #header .ciocia-header-phone {
     display: none;
