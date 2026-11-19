@@ -1040,6 +1040,22 @@ body#checkout section.checkout-step.-unreachable .step-title {
   left: auto;
 }
 
+/*
+ * Search suggestions (issue #105). custom.js appends the list to the search form, inside #header,
+ * so it must not take the header's light link colours.
+ */
+#header .searchbar-autocomplete a,
+#header .searchbar-autocomplete a:hover {
+  color: var(--ciocia-text);
+}
+
+/* ps_searchbar's 100% would now mean the narrow form, not the page. */
+@media (max-width: 767px) {
+  #header .searchbar-autocomplete {
+    width: calc(100vw - 16px);
+  }
+}
+
 @media (min-width: 768px) and (max-width: 991px) {
   #header .ciocia-header-phone {
     display: none;
@@ -1477,11 +1493,6 @@ body#checkout section.checkout-step.-unreachable .step-title {
   main > :not(#header),
   main > :not(#header) * {
     scroll-margin-top: var(--ciocia-header-height, 0px);
-  }
-
-  /* Search suggestions are appended to <body>; Classic's 999 would put them under the header. */
-  .ui-autocomplete.ui-front.searchbar-autocomplete {
-    z-index: 1021;
   }
 
   #header {

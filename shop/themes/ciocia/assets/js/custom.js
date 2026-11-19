@@ -482,6 +482,38 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 
 /*
+ * Header search suggestions (issue #105). ps_searchbar appends the list to <body> and places it once,
+ * when it opens, so on desktop it scrolled away from the sticky header. Appending it to the search
+ * form keeps it under the field while the page scrolls and the header turns compact.
+ * jQuery runs ready handlers in the order they were added; this file loads after ps_searchbar.js, so
+ * the widget already exists here.
+ */
+(function () {
+  var jquery = window.jQuery;
+  if (!jquery) return;
+  var phone = window.matchMedia('(max-width: 767px)');
+
+  jquery(function () {
+    var input = jquery('#search_widget input[name="s"]');
+    if (!input.length || typeof input.psBlockSearchAutocomplete !== 'function') return;
+    var form = input.closest('form');
+
+    // Under the field, as on the source. Phones: the field is narrow, so the list spans the whole
+    // row of logo, field and icons, below it.
+    function place() {
+      input.psBlockSearchAutocomplete('option', 'position', phone.matches
+        ? { my: 'center top', at: 'center bottom', of: '#header .header-nav .mobile', collision: 'none' }
+        : { my: 'right top+6', at: 'right bottom', of: form, collision: 'none' });
+    }
+
+    input.psBlockSearchAutocomplete('option', 'appendTo', form);
+    place();
+    // ps_searchbar sets its own position on every resize; this handler was added later, so it runs after.
+    jquery(window).on('resize', place);
+  });
+})();
+
+/*
  * Bottom bar cart count. ps_shoppingcart re-renders the header cart after every cart change
  * (Classic's updateCart event), so copy the count from there instead of asking the server again.
  * The whole header is watched because Classic moves the cart between #_desktop_cart and
