@@ -530,6 +530,11 @@ document.addEventListener('DOMContentLoaded', function () {
     input.psBlockSearchAutocomplete('option', 'open', function () {
       menu.element.scrollTop(0);
     });
+    // A row chosen with the arrow keys would put its "value" into the field. Products from
+    // ps_searchbar have none, so the typed text vanished. As on the source, keep the typed text.
+    input.psBlockSearchAutocomplete('option', 'focus', function () {
+      return false;
+    });
 
     input.psBlockSearchAutocomplete('option', 'appendTo', form);
     place();
