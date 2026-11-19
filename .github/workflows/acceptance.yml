@@ -14,10 +14,6 @@ on:
         description: "Only the subset (init --subset) instead of all products: a quick try, data rows fail"
         type: boolean
         default: false
-  # TEMPORARY, while this workflow is developed: GitHub runs a workflow_dispatch workflow only once the file is on
-  # main, so pushes to this branch start it, with the subset. Remove before review.
-  push:
-    branches: [feature/ci-acceptance]
 
 permissions:
   contents: read
