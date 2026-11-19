@@ -1,4 +1,4 @@
-# 0009. What a backup contains, and what the settings export is
+# 0012. What a backup contains, and what the settings export is
 
 - Status: Accepted
 - Date: 2026-11-14

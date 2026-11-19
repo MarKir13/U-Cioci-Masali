@@ -8,7 +8,7 @@
 # In Git Bash give the archive as a relative path or as D:/..., not as /d/... (MSYS_NO_PATHCONV).
 #
 # The shop keeps this environment's own app/config/parameters.php (database password, cookie
-# keys) and .htaccess; neither is in the backup (ADR 0009). Everything in the database comes from
+# keys) and .htaccess; neither is in the backup (ADR 0012). Everything in the database comes from
 # the backup, including the admin account: log in to the back office with the e-mail and password
 # of the backed-up shop, not with ADMIN_MAIL and ADMIN_PASSWORD of this environment.
 set -eu

@@ -41,6 +41,10 @@
   </div>
 </div>
 
+{* The source shop has no bottom bar on checkout. checkout/_partials/footer.tpl includes this file too. *}
+{if $page.page_name != 'checkout'}
+  {include file='_partials/bottom-nav.tpl'}
+{/if}
 {* Product page (issue #76): the trust card of the cart, which custom.js places next to the description. *}
 {if $page.page_name == 'product'}
   <template id="ciocia-product-trust">{include file='_partials/summary-trust.tpl'}</template>
