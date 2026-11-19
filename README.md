@@ -443,6 +443,25 @@ Rules for new tests: import `test` and `expect` from `tests/support/fixtures.js`
 and never wait a fixed time. Wait on a condition instead (`expect(...)`, `waitForURL`, `waitForResponse`);
 `npx eslint` fails on `waitForTimeout`. The whole run must stay under 5 minutes, and Playwright stops it after 4.
 
+### Acceptance checks
+
+[`acceptance.yml`](.github/workflows/acceptance.yml) measures what the lecturer checks at acceptance. Its parts also
+run on a local shop with all products, from the repository root (Git Bash on Windows), after the E2E setup above:
+
+| Check | Command | Limits |
+|---|---|---|
+| Catalogue, with SQL in the `db` container | `sh .github/scripts/check-catalog.sh` | At least 1000 products; 4 top-level categories with 2 non-empty subcategories each; no empty category; 5–20% out of stock; stock 0–10; images; 20 promotions; 5 products with variants |
+| Crawl and console errors (from `tests/`) | `npm run acceptance` | At least 200 pages without a 4xx/5xx response; 10 random products of the crawl match `scraper-results/products.jsonl` (name, price, number of images); no console errors on home, category, product, cart and checkout |
+| Lighthouse on desktop (on the Chromium of the E2E setup) | `sh .github/scripts/lighthouse.sh` | Performance of the home page at least 60 (middle of 3 runs), Accessibility at least 85 on home, category and product |
+
+The crawl of 250 pages took 11 minutes on Docker Desktop. For a quick try, `ACCEPTANCE_PAGES=30 npm run acceptance`
+crawls 30 pages, half of them products, and still compares 10 products; only its page count then fails. Its report opens with `npx playwright show-report acceptance-report/html`, and
+Lighthouse's reports are in `tests/acceptance-report/lighthouse/`. The browser of these checks never loads anything
+from another host than the shop: imported descriptions can embed images from the source shop (rule 7 in AGENTS.md),
+so such requests are blocked and counted. Each check also writes a row with its value and limit through
+[`.github/scripts/acceptance-results.sh`](.github/scripts/acceptance-results.sh); `sh
+.github/scripts/acceptance-results.sh report` prints the table of a local run.
+
 
 ## Continuous integration
 
@@ -455,7 +474,7 @@ GitHub Actions runs six workflows:
 | [`secret-scan.yml`](.github/workflows/secret-scan.yml) | Nightly, or by hand from the Actions tab | Secrets and repository limits over every branch, the way the lecturer measures it |
 | [`publish.yml`](.github/workflows/publish.yml) | Every push to `main`, tags `etap*`, by hand; pull requests that change `shop/` or `deploy/proxy/` | `build`: the shop and proxy images for `linux/amd64`, pushed to GHCR only from `main` or an `etap*` tag; pull requests and manual runs on other branches only build; an `etap*` tag on a commit that is not on `main` fails before anything is pushed. `verify` (on `main` and `etap*` tags): pulls them without logging in, checks they are `amd64` and runs the smoke test on them. `release` (on `etap*` tags): the GitHub Release, see [Handing in a stage](#handing-in-a-stage). Not a required check |
 | [`e2e.yml`](.github/workflows/e2e.yml) | Every push to `main`, nightly, by hand (with a number of runs, default 3) | W4 stability: starts the shop as in the README, runs `init --subset`, then the E2E suite 3 times in a row with [`e2e-runs.sh`](.github/scripts/e2e-runs.sh), each run with its own seed. Pull requests get one run in `smoke` instead. The run's summary page shows each run's seed, result and time. Not a required check |
-| [`init-timing.yml`](.github/workflows/init-timing.yml) | Only by hand from the Actions tab (with a "subset" checkbox) | A timed clean start as in the README: `up -d --build`, then init, then the smoke test. The run's summary page shows the time of each step and the total from a clean clone. Not a required check |
+| [`acceptance.yml`](.github/workflows/acceptance.yml) | Only by hand from the Actions tab (with a "subset" checkbox for a quick try), before tagging a stage | The lecturer's metrics on a clean start with all products, about an hour: the time from a clean clone to a shop with data, a second init that changes nothing, the catalogue numbers, 250 crawled pages without 4xx/5xx, 10 products against the source data, console errors, Lighthouse, a backup restored onto a clean environment, and 3 E2E runs on the restored shop. The run's summary page has a table with every check's value, limit and result, and the run fails if any check failed. See [Acceptance checks](#acceptance-checks). Not a required check |
 
 A pull request must have passing `ci-gate` and `ai-log` checks before it is merged.
 
@@ -582,7 +601,7 @@ tar.gz) by itself.
 1. Agree in the team that nothing is merged until the tag is pushed. The runs in the notes belong to one commit, so
    a merge in between leaves the tag without them.
 2. Check that the newest `ci.yml` and `e2e.yml` runs on `main` passed, then start the acceptance run on `main`
-   (Actions > Acceptance > Run workflow, added by issue #21) and wait until it passes.
+   (Actions > Acceptance > Run workflow, about an hour) and wait until it passes.
 3. Tag exactly that commit and push the tag:
    ```sh
    git fetch origin

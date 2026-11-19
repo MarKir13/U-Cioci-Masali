@@ -48,6 +48,8 @@ tests/test-results/
 tests/playwright-report/
 # Reports of every run of .github/scripts/e2e-runs.sh
 tests/e2e-runs/
+# Reports of npm run acceptance and Lighthouse (.github/workflows/acceptance.yml)
+tests/acceptance-report/
 # --- Claude Code: PR checkouts made by the review-prs skill ---
 .claude/worktrees/
 
