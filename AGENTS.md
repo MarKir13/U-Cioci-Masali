@@ -95,7 +95,7 @@ Run from the repository root unless noted.
 | Smoke test of the running shop (ports from `HTTP_PORT`, `HTTPS_PORT`) | `sh .github/scripts/smoke-test.sh` |
 | Catalogue metrics of the running shop, with SQL (W3, D3; `--record` adds them to the acceptance table) | `sh .github/scripts/check-catalog.sh` |
 | Acceptance crawl (200+ pages, 10 products against the source data) and console errors (from `tests/`, full data; `ACCEPTANCE_PAGES=30` for a quick try) | `npm run acceptance` |
-| Lighthouse on desktop, reports in `tests/acceptance-report/lighthouse/` (needs Google Chrome) | `sh .github/scripts/lighthouse.sh` |
+| Lighthouse on desktop, reports in `tests/acceptance-report/lighthouse/` (after the E2E setup: uses its Chromium) | `sh .github/scripts/lighthouse.sh` |
 | Print the acceptance table of the checks above (rows kept in `$ACCEPTANCE_RESULTS`, default in `/tmp`) | `sh .github/scripts/acceptance-results.sh report` |
 | Review the open PRs that wait for your review (Claude Code; prints review comments to paste, posts nothing) | `/review-prs`, or `/review-prs 67` for chosen PRs |
 | Run the published images instead of building (tags in README) | `SHOP_IMAGE=ghcr.io/markir13/u-cioci-masali/shop:main PROXY_IMAGE=ghcr.io/markir13/u-cioci-masali/proxy:main docker compose -f deploy/compose.yaml up -d --no-build` |
