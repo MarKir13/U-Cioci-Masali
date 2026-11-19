@@ -504,12 +504,25 @@ document.addEventListener('DOMContentLoaded', function () {
       input.psBlockSearchAutocomplete('option', 'position', phone.matches
         ? { my: 'center top', at: 'center bottom', of: '#header .header-nav .mobile', collision: 'none' }
         : { my: 'right top+6', at: 'right bottom', of: form, collision: 'none' });
+
+      // jQuery UI sizes and places the list only when it opens. If it is open while the window
+      // changes size, do the same two steps it does on opening (_suggest in jquery-ui.js).
+      var list = input.psBlockSearchAutocomplete('widget');
+      if (!list.is(':visible')) return;
+      // jQuery UI 1.10 (bundled with PrestaShop) has no 'instance' method; the widget is in jQuery data.
+      var autocomplete = input.data('prestashop-psBlockSearchAutocomplete');
+      autocomplete._resizeMenu();
+      list.position(autocomplete.options.position);
     }
 
     input.psBlockSearchAutocomplete('option', 'appendTo', form);
     place();
-    // ps_searchbar sets its own position on every resize; this handler was added later, so it runs after.
-    jquery(window).on('resize', place);
+    // ps_searchbar sets its own position on every resize, so set ours again afterwards. Wait for the
+    // next frame: breakpoint changes (matchMedia 'change', e.g. moving the header icons) come after the
+    // resize event and can still change the field's size.
+    jquery(window).on('resize', function () {
+      window.requestAnimationFrame(place);
+    });
   });
 })();
 

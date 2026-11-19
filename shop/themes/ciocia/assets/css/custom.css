@@ -1049,7 +1049,15 @@ body#checkout section.checkout-step.-unreachable .step-title {
   color: var(--ciocia-text);
 }
 
-/* ps_searchbar's 100% would now mean the narrow form, not the page. */
+/*
+ * Width. From 768 px ps_searchbar sets 400 px, wider than the field at tablet widths, so the list
+ * stuck out to the left; it now matches the field, as on the source. On phones ps_searchbar's 100%
+ * would now mean the narrow form, not the page.
+ */
+#header .searchbar-autocomplete {
+  width: 100%;
+}
+
 @media (max-width: 767px) {
   #header .searchbar-autocomplete {
     width: calc(100vw - 16px);
