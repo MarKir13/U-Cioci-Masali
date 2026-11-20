@@ -3,7 +3,7 @@
 Every step compares what the data says with what the shop already has (read once by read_shop), and
 creates, updates or leaves each record alone. That is what makes a second run safe: it finds everything
 and changes nothing. The keys used to find existing records are explained in ADR 0008:
-- category: its name and its parent in the shop;
+- category: its name and its parent in the shop (its description is updated too);
 - manufacturer: its name;
 - product: `reference` = the product ID in the source shop (for a product with variants: of its default variant);
 - attribute group and value: the name (a value within its group);
@@ -57,7 +57,7 @@ class Shop:
 
 def read_shop(api: ShopApi) -> Shop:
     roots = api.list("categories", display="[id]", filters={"is_root_category": 1})
-    categories = api.list("categories", display="[id,id_parent,name,link_rewrite,active,level_depth]")
+    categories = api.list("categories", display="[id,id_parent,name,link_rewrite,active,level_depth,description]")
     products = api.list("products", display="full")
     # The rows of products (combination 0) and of their combinations
     stock_rows = api.list("stock_availables", display="full")
@@ -133,6 +133,8 @@ def import_categories(api: ShopApi, shop: Shop, categories: list[dict], report: 
             "active": 1,
             "name": Lang(category["name"]),
             "link_rewrite": Lang(mapping.link_rewrite(category["url"], category["name"])),
+            # The text under the category name, as on the source (the theme shows it on the first page)
+            "description": Lang(category.get("description") or ""),
         }
         existing = shop.categories.get((parent, category["name"]))
         try:

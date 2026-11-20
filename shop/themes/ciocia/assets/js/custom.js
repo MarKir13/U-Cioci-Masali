@@ -275,13 +275,90 @@ document.addEventListener('DOMContentLoaded', function () {
     };
   }
 
+  function isDesktop() {
+    return window.matchMedia('(min-width: 768px)').matches;
+  }
+
+  // An entry of the left-hand list in the desktop panel (its children are shown on the right, not below).
+  function isPanelEntry(item) {
+    var list = item.parentElement;
+    return Boolean(list && list.parentElement && list.parentElement.classList.contains('ciocia-mega__body'));
+  }
+
+  // In the desktop panel exactly one entry of the left list is active, so its children fill the right side.
+  function activateEntry(item) {
+    Array.from(item.parentElement.children).forEach(function (sibling) {
+      if (sibling !== item) sibling.classList.remove('is-active');
+      if (sibling !== item && sibling.classList.contains('ciocia-has-submenu')) setOpen(sibling, false);
+    });
+    item.classList.add('is-active'); // an entry without children shows "Przejdź do kategorii" on the right
+    if (item.classList.contains('ciocia-has-submenu')) setOpen(item, true);
+    fitBody(item);
+  }
+
+  // The panel grows with the active entry's children, as on the source (they are positioned beside the list, so
+  // they do not size the panel themselves): the body is at least as high as its list and its right side.
+  function fitBody(item) {
+    var body = item.closest('.ciocia-mega__body');
+    if (!body) return;
+    var list = Array.from(body.children).find(function (el) { return el.tagName === 'UL'; });
+    if (list) {
+      list.classList.remove('is-scrolling');
+      if (list.scrollHeight > list.clientHeight + 1) list.classList.add('is-scrolling');
+    }
+    body.style.minHeight = '';
+    var pane = Array.from(item.children).find(function (el) {
+      return el.classList.contains('ciocia-submenu') || el.classList.contains('ciocia-mega__goto');
+    });
+    if (!pane || pane.hidden) return;
+    var wanted = pane.scrollHeight;
+    if (wanted > body.offsetHeight) body.style.minHeight = wanted + 'px';
+  }
+
+  // As on the source, the children in the right side of the desktop panel are in alphabetical (Polish) order,
+  // in one column up to six of them and in two columns above that.
+  Array.from(categoryMenu.querySelectorAll('.ciocia-mega__body > ul > li > .ciocia-submenu > ul')).forEach(function (list) {
+    var entries = Array.from(list.children);
+    function label(li) {
+      var link = Array.from(li.children).find(function (el) { return el.tagName === 'A'; });
+      return (link ? link.textContent : li.textContent).trim();
+    }
+    // The source shop lists "Dla mężczyzn" last in its group, the rest alphabetically.
+    function isLast(li) { return /^dla mężczyzn$/i.test(label(li)); }
+    entries.sort(function (a, b) {
+      if (isLast(a) !== isLast(b)) { return isLast(a) ? 1 : -1; }
+      return label(a).localeCompare(label(b), 'pl');
+    });
+    entries.forEach(function (li) { list.appendChild(li); });
+    // 1 column up to 6 entries, 2 columns up to 14, 3 columns beyond that.
+    list.classList.toggle('ciocia-mega__cols', entries.length > 6);
+    list.classList.toggle('ciocia-mega__cols-3', entries.length > 14);
+  });
+
+  // The page is darkened (custom.css, body::after) while any top-level panel is open.
+  function updateOverlay() {
+    var anyOpen = Array.from(categoryMenu.children).some(function (entry) {
+      var panel = controls(entry).panel;
+      return panel && !panel.hidden;
+    });
+    document.body.classList.toggle('ciocia-menu-open', anyOpen);
+  }
+
   function setOpen(item, open) {
     var parts = controls(item);
     if (!parts.button || !parts.panel) return;
+    var wasOpen = !parts.panel.hidden;
     parts.button.setAttribute('aria-expanded', String(open));
     parts.panel.hidden = !open;
+    if (item.parentElement === categoryMenu) updateOverlay();
     if (!open) {
       item.querySelectorAll('.ciocia-has-submenu').forEach(function (child) { setOpen(child, false); });
+    } else if (!wasOpen && isDesktop() && item.parentElement === categoryMenu) {
+      // A freshly opened panel always starts with its first entry (with or without children), as on the
+      // source. The entry that was active when the panel was closed keeps .is-active, but its children were
+      // hidden on closing: activating the first entry again clears that and opens the children.
+      var first = parts.panel.querySelector('.ciocia-mega__body > ul > li');
+      if (first) activateEntry(first);
     }
   }
 
@@ -289,18 +366,47 @@ document.addEventListener('DOMContentLoaded', function () {
     var parts = controls(item);
     if (!parts.button || !parts.panel) return;
     parts.button.addEventListener('click', function () {
+      // Desktop panel: the left list always has one active entry, a click on its chevron does not close it.
+      if (isDesktop() && isPanelEntry(item)) {
+        activateEntry(item);
+        return;
+      }
       setOpen(item, parts.button.getAttribute('aria-expanded') !== 'true');
     });
+    // Opens a moment after the pointer arrives (as on the source), closes at once when it leaves.
+    var openTimer = null;
     item.addEventListener('mouseenter', function () {
-      if (window.matchMedia('(min-width: 768px)').matches) setOpen(item, true);
+      if (!isDesktop() || isPanelEntry(item)) return;
+      clearTimeout(openTimer);
+      openTimer = setTimeout(function () { setOpen(item, true); }, 150);
     });
     item.addEventListener('mouseleave', function () {
-      if (!item.contains(document.activeElement) && window.matchMedia('(min-width: 768px)').matches) setOpen(item, false);
+      clearTimeout(openTimer);
+      if (isPanelEntry(item)) return;
+      if (!item.contains(document.activeElement) && isDesktop()) setOpen(item, false);
     });
     // Desktop only: in the drawer, closing on press shifts the layout and the tap misses its target.
     item.addEventListener('focusout', function (event) {
-      if (!item.contains(event.relatedTarget) && window.matchMedia('(min-width: 768px)').matches) setOpen(item, false);
+      if (isPanelEntry(item)) return;
+      if (!item.contains(event.relatedTarget) && isDesktop()) setOpen(item, false);
     });
+  });
+
+  // Left list of the desktop panel: the entry under the pointer or the keyboard becomes the active one at once,
+  // also an entry without children (then the right side is empty).
+  Array.from(categoryMenu.querySelectorAll('.ciocia-mega__body > ul > li')).forEach(function (entry) {
+    entry.addEventListener('mouseenter', function () { if (isDesktop()) activateEntry(entry); });
+    entry.addEventListener('focusin', function () { if (isDesktop()) activateEntry(entry); });
+  });
+
+  // The round close button in the header of the desktop panel.
+  categoryMenu.addEventListener('click', function (event) {
+    var close = event.target.closest('.ciocia-mega__close');
+    if (!close) return;
+    var top = close.closest('#top-menu > li');
+    if (!top) return;
+    setOpen(top, false);
+    controls(top).button.focus();
   });
 
   categoryMenu.addEventListener('keydown', function (event) {
@@ -310,6 +416,8 @@ document.addEventListener('DOMContentLoaded', function () {
       while (item && controls(item).panel.hidden) {
         item = item.parentElement.closest('.ciocia-has-submenu');
       }
+      // In the desktop panel one Escape closes the whole panel, not just the active entry.
+      if (item && isDesktop() && isPanelEntry(item)) item = item.closest('#top-menu > li');
       if (item) {
         event.preventDefault();
         setOpen(item, false);
@@ -381,14 +489,14 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch { /* keep working for this page view */ }
   }
 
-  // Leave room under the page for the fixed panel or tab, so they never hide its last content.
-  // Exception, as on the source shop: on phones without the bottom bar (checkout) the tab sits
-  // above the bar's height, so room under the page would only lift the copyright up under the tab.
+  // Leave room under the page for the fixed panel, so it never hides the last content. The small
+  // "Cookies" tab needs none: as on the source shop it just overlaps the dark footer, and room for
+  // it would show up as a lighter block under the copyright line.
   function reserveSpace() {
-    var visible = notice.hidden ? reopen : notice;
-    var tabAboveBar = notice.hidden && !document.querySelector('.ciocia-bottom-nav') &&
-      window.matchMedia('(max-width: 767px)').matches;
-    document.body.style.paddingBottom = tabAboveBar ? '' : visible.offsetHeight + 'px';
+    // The room goes under the footer (it has the footer colour); on body it would show the lighter page gradient as a strip.
+    var room = document.getElementById('footer') || document.body;
+    document.body.style.paddingBottom = '';
+    room.style.paddingBottom = notice.hidden ? '' : notice.offsetHeight + 'px';
   }
 
   function setDetails(open) {
@@ -1280,7 +1388,9 @@ document.addEventListener('click', function (event) {
  */
 (function () {
   if (!document.body || document.body.id !== 'product') return;
-  var tabs = document.querySelector('#main .tabs');
+  // Only the .tabs with the tab panes: the module ps_emailalerts wraps its block in a div.tabs too.
+  var tabsContent = document.querySelector('#main .tabs .tab-content');
+  var tabs = tabsContent && tabsContent.closest('.tabs');
   if (!tabs || document.querySelector('.ciocia-product-info')) return;
 
   // The child of #main that holds the tabs (Classic's row with the photo and the buying column).
@@ -1300,4 +1410,140 @@ document.addEventListener('click', function (event) {
   row.appendChild(tabs);
   if (trust) row.appendChild(trust);
   else row.classList.add('ciocia-product-info--solo');
+})();
+
+// Currency select in the top bar: go to the chosen currency's URL.
+document.addEventListener('change', function (event) {
+  var select = event.target;
+  if (select && select.matches && select.matches('.currency-selector select.link') && select.value) {
+    window.location.href = select.value;
+  }
+});
+
+// Home banner: bars under the photo (blue = current slide), one per slide, as on the source shop.
+(function () {
+  var carousel = document.querySelector('.ciocia-hero .carousel');
+  if (!carousel) return;
+  var items = carousel.querySelectorAll('.carousel-item');
+  if (items.length < 2 || carousel.querySelector('.ciocia-hero__indicators')) return;
+
+  var box = document.createElement('div');
+  box.className = 'ciocia-hero__indicators';
+  var bars = [];
+  Array.prototype.forEach.call(items, function (item, index) {
+    var bar = document.createElement('button');
+    bar.type = 'button';
+    bar.className = 'ciocia-hero__indicator';
+    bar.setAttribute('aria-label', 'Slajd ' + (index + 1) + ' z ' + items.length);
+    bar.addEventListener('click', function () {
+      if (window.jQuery && window.jQuery.fn.carousel) {
+        window.jQuery(carousel).carousel(index);
+      }
+    });
+    box.appendChild(bar);
+    bars.push(bar);
+  });
+  carousel.appendChild(box);
+
+  function sync() {
+    Array.prototype.forEach.call(items, function (item, index) {
+      var current = item.classList.contains('active');
+      bars[index].classList.toggle('active', current);
+      if (current) bars[index].setAttribute('aria-current', 'true');
+      else bars[index].removeAttribute('aria-current');
+    });
+  }
+  sync();
+  new MutationObserver(sync).observe(carousel, { attributes: true, subtree: true, attributeFilter: ['class'] });
+})();
+
+/*
+ * Registration form, as on the source: the fields show their state only after the person has pressed
+ * "Utwórz konto" (Enter in a field counts: the browser then clicks that button). The click marks the form, and
+ * custom.css colours the invalid fields red and the valid ones (also the optional newsletter) green. Not
+ * triggered by "invalid" events: other scripts validate the form on load, which would mark it at once.
+ */
+(function () {
+  document.addEventListener('click', function (event) {
+    var button = event.target && event.target.closest && event.target.closest('#customer-form [data-link-action="save-customer"]');
+    if (button && document.body.id === 'registration') {
+      button.form.classList.add('was-validated');
+    }
+  });
+})();
+
+/*
+ * Cart page: after a product leaves the cart (the "Usuń" link, or the quantity going down to 0) the source shows
+ * a green notice under the heading: "<product> został usunięty z koszyka." with a close button. Classic replaces
+ * .cart-overview after every change, so the page keeps a list of the lines it has seen and compares it after each
+ * replacement; a line that is gone is a removed product. The notice sits in .card-block, which is not replaced.
+ */
+(function () {
+  if (document.body.id !== 'cart') return;
+  var container = document.querySelector('.cart-container');
+  if (!container) return;
+
+  function readLines() {
+    var lines = {};
+    container.querySelectorAll('.cart-item .ciocia-line__name').forEach(function (link) {
+      lines[link.href] = link.textContent.trim();
+    });
+    return lines;
+  }
+
+  function showNotice(url, name) {
+    var host = container.querySelector('.card-block');
+    if (!host) return;
+    var old = host.querySelector('.ciocia-cart-notice');
+    if (old) old.remove();
+
+    var notice = document.createElement('div');
+    notice.className = 'ciocia-cart-notice';
+    notice.setAttribute('role', 'status');
+
+    var tick = document.createElement('i');
+    tick.className = 'material-icons';
+    tick.setAttribute('aria-hidden', 'true');
+    tick.textContent = 'check';
+
+    var text = document.createElement('p');
+    var link = document.createElement('a');
+    link.href = url;
+    link.textContent = name;
+    text.appendChild(link);
+    text.appendChild(document.createTextNode(' został usunięty z koszyka.'));
+
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'ciocia-cart-notice__close';
+    close.setAttribute('aria-label', 'Zamknij');
+    var cross = document.createElement('i');
+    cross.className = 'material-icons';
+    cross.setAttribute('aria-hidden', 'true');
+    cross.textContent = 'close';
+    close.appendChild(cross);
+    close.addEventListener('click', function () { notice.remove(); });
+
+    notice.appendChild(tick);
+    notice.appendChild(text);
+    notice.appendChild(close);
+    host.appendChild(notice);
+  }
+
+  // url -> name of every line seen so far; the name of a removed line is read from here, after it is gone.
+  var known = readLines();
+  var queued = false;
+  new MutationObserver(function () {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(function () {
+      queued = false;
+      var now = readLines();
+      var removed = Object.keys(known).filter(function (url) { return !(url in now); });
+      var last = removed[removed.length - 1];
+      var name = last && known[last];
+      known = now;
+      if (last) showNotice(last, name);
+    });
+  }).observe(container, { childList: true, subtree: true });
 })();

@@ -25,6 +25,10 @@ const CMS_PAGES = [
     'dostawa' => ['Dostawa', 'Formy i koszty dostawy, czas wysyłki i darmowa dostawa.'],
     'formy-platnosci' => ['Formy płatności', 'Przelew bankowy i płatność przy odbiorze.'],
     'zwrot-towaru' => ['Zwrot towaru - odstąpienie od umowy', 'Jak w ciągu 14 dni odstąpić od umowy i odesłać towar.'],
+    // The three guides linked from the home page ("Zacznij od sprawdzonych wyborów"); not in the footer.
+    'jak-dobrac-pielegnacje-wlosow' => ['Jak dobrać pielęgnację włosów - przewodnik', 'Jak zacząć ajurwedyjską pielęgnację włosów: olejki, szampony, maski i henny.'],
+    'suplementy-ajurwedyjskie-przewodnik' => ['Suplementy ajurwedyjskie - od czego zacząć', 'Jak wybrać pierwszy suplement ajurwedyjski: Himalaya, Organic India - przewodnik zakupowy.'],
+    'misy-tybetanskie-przewodnik' => ['Misy tybetańskie - jak wybrać pierwszą misę i zacząć na niej grać?', 'Jak wybrać pierwszą misę tybetańską: brzmienie, rozmiar, pałka i pierwsze ćwiczenie.'],
 ];
 
 // The page linked as the terms and conditions in checkout and registration.
@@ -53,7 +57,8 @@ const FOOTER_BLOCKS = [
     ],
     [
         'name' => 'Nasza firma',
-        'cms' => ['o-sklepie', 'regulamin', 'polityka-prywatnosci', 'dostawa', 'formy-platnosci', 'zwrot-towaru'],
+        // Order of the source's footer: shipping, privacy, terms, payment, then our own "O sklepie" and the returns.
+        'cms' => ['dostawa', 'polityka-prywatnosci', 'regulamin', 'formy-platnosci', 'o-sklepie', 'zwrot-towaru'],
         'product' => [],
         'static' => ['contact', 'sitemap'],
     ],
