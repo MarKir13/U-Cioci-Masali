@@ -193,7 +193,7 @@ python -m scraper archive
 | Categories | 160, in 5 top-level categories that have at least 2 non-empty subcategories (Kosmetyki, Zdrowie, Żywność, Różności, Aromaterapia i Masaż) |
 | Images | 4841 JPEGs, 800-1600 px on the longer side, at most 300 000 bytes each. 1313 products have two or more |
 | Archive | `product-images.tar.gz`, 586 241 692 bytes, sha256 `14de759842c2bafb2564fe54c42925060e7405a5a7168024aeed8eb00c3db1b3` |
-| Subset archive | `subset-images.tar.gz` (`archive --categories 85,99`: Przyprawy and Pielęgnacja okolic oczu, 53 products, 121 images), 9 772 701 bytes, sha256 `ee7bab8b91855d2c75c1140384815c4643c5d993819617f1ac897925a06b63b6` |
+| Subset archive | `subset-images.tar.gz` (`archive --categories 85,99`: Przyprawy and Pielęgnacja okolic oczu, 54 products, 122 images), 9 799 127 bytes, sha256 `91e65d55c55e553eebe5a4955d78bfb5cc699d5ba940af257d6428a3a66d5093` |
 
 ### Verification
 
