@@ -153,6 +153,49 @@ def test_visible_text_sees_a_changed_word():
     assert mapping.visible_text("<p>stara cena</p>") != mapping.visible_text("<p>nowa cena</p>")
 
 
+# The two ways the source writes a video player (products 7219 and 7229)
+VIDEO_LF = (
+    '<video controls="controls" height="400" width="400">\n<source src="/img/cms/a.mp4" type="video/mp4"/>\n</video>'
+)
+VIDEO_CRLF = (
+    '<video width="400" height="400" controls="controls">\r\n'
+    '<source src="/img/cms/b.mp4" type="video/mp4" />\r\n</video>'
+)
+
+
+@pytest.mark.parametrize("video", [VIDEO_LF, VIDEO_CRLF])
+def test_without_videos_removes_the_player_and_keeps_the_text(video):
+    html = f"<p>Rozmiar 12 cm</p>\n<p>{video}</p>\n<p>*podstawka nie stanowi</p>"
+    assert mapping.without_videos(html) == "<p>Rozmiar 12 cm</p>\n<p></p>\n<p>*podstawka nie stanowi</p>"
+
+
+def test_without_videos_removes_two_players_and_what_is_between_them_stays():
+    # Product 8082 has two players in a row
+    html = f"<strong>Waga 1750 g.</strong>{VIDEO_CRLF}<br />{VIDEO_LF}<p>koniec</p>"
+    assert mapping.without_videos(html) == "<strong>Waga 1750 g.</strong><br /><p>koniec</p>"
+
+
+def test_without_videos_ignores_letter_case():
+    assert mapping.without_videos('<p>a<VIDEO controls><SOURCE src="/x.mp4"></Video>b</p>') == "<p>ab</p>"
+
+
+def test_without_videos_leaves_a_description_without_a_player_as_it_was():
+    html = '<p><a href="https://www.magiczne-indie.pl/x.html">Himalaya</a> <img src="https://www.magiczne-indie.pl/img/cms/1.jpg"></p>'
+    assert mapping.without_videos(html) == html
+
+
+def test_no_real_description_keeps_a_video_or_loses_text():
+    with_video = 0
+    for product in real_products():
+        description = product["description"]
+        cleaned = mapping.without_videos(description)
+        with_video += cleaned != description
+        assert "<video" not in cleaned.lower() and "</video" not in cleaned.lower(), product["id"]
+        assert mapping.visible_text(cleaned) == mapping.visible_text(description), product["id"]
+    # The 7 singing bowls of the issue; a new scrape with more videos shows up here
+    assert with_video == 7
+
+
 # --- Category tree ---
 
 CATEGORIES = [

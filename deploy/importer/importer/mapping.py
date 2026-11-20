@@ -25,6 +25,9 @@ MAX_STOCK = 10
 LINK_REWRITE = re.compile(r"^[_a-zA-Z0-9-]+$")
 POLISH_TO_ASCII = str.maketrans("ąćęłńóśźżĄĆĘŁŃÓŚŹŻ", "acelnoszzACELNOSZZ")
 
+# A video player in a description, from <video to </video>, across lines and in any letter case (see without_videos)
+VIDEO = re.compile(r"<video\b.*?</video\s*>", re.IGNORECASE | re.DOTALL)
+
 
 def net_price(gross: str, vat_rate: float) -> str:
     """The net price PrestaShop stores for a gross price, with 6 decimals.
@@ -167,6 +170,17 @@ def visible_text(html: str) -> str:
     """
     without_tags = re.sub(r"<[^>]*>", " ", html)
     return "".join(unescape(without_tags).split())
+
+
+def without_videos(html: str) -> str:
+    """A description without its video players, so it sends no request for a file the shop does not have.
+
+    Seven source descriptions (Tibetan singing bowls) play videos from the source shop's /img/cms/ through a
+    relative address, such as <source src="/img/cms/20220719_150939.mp4">. In our shop that address answers 404,
+    because the files were never scraped. The players hold no text, so what a customer reads stays the same.
+    Images from the source shop are kept: they load from there.
+    """
+    return VIDEO.sub("", html)
 
 
 def parents_first(categories: list[dict]) -> list[dict]:

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { test, expect } from "../support/fixtures.js";
-import { blockedByUrl, keepToShop, recordMetric } from "../support/acceptance.js";
+import { blockedByUrl, isDescriptionMedia, keepToShop, recordMetric } from "../support/acceptance.js";
 import { StorefrontPage } from "../pages/storefront.js";
 
 // W3 metrics: 0 responses 4xx/5xx over at least 200 pages, and 10 of 10 random products match the source shop.
@@ -121,6 +121,9 @@ test("crawl: no 4xx/5xx over 200 pages, and 10 random products match the source"
   let visited = 0;
   let picked = [];
   let mismatches = [];
+  // The blocked requests in two groups, set in the finally block below
+  let media;
+  let unexpected;
   // Stays so if anything below throws (for example a product page without its data): its row then fails
   let matched = "did not finish";
   try {
@@ -153,22 +156,30 @@ test("crawl: no 4xx/5xx over 200 pages, and 10 random products match the source"
       .filter((product) => product.differences.length > 0);
     matched = picked.length - mismatches.length;
   } finally {
+    // Blocked either way; only the ones that are not description media are a mistake (DESCRIPTION_MEDIA)
+    media = blocked.filter((request) => isDescriptionMedia(request.url));
+    unexpected = blocked.filter((request) => !isDescriptionMedia(request.url));
     // Also when the crawl threw: the table then shows what was measured, instead of missing these rows.
     // The details go into the HTML report; the numbers into the acceptance table.
     await testInfo.attach("crawl.json", {
-      body: JSON.stringify({ visited, errors, blocked: blockedByUrl(blocked), picked, mismatches }, null, 2),
+      body: JSON.stringify(
+        { visited, errors, otherHosts: blockedByUrl(unexpected), media: blockedByUrl(media), picked, mismatches },
+        null,
+        2,
+      ),
       contentType: "application/json",
     });
     recordMetric(testInfo, "Pages crawled", visited, MIN_PAGES);
     recordMetric(testInfo, "Responses 4xx/5xx while crawling", errors.length, 0, 0);
-    recordMetric(testInfo, "Requests to other hosts while crawling (blocked)", blocked.length, 0, 0);
+    recordMetric(testInfo, "Requests to other hosts while crawling (blocked)", unexpected.length, 0, 0);
+    recordMetric(testInfo, "Description media from the source shop and YouTube (blocked)", media.length);
     recordMetric(testInfo, `Random crawled products matching the source (of ${MATCHED_PRODUCTS})`, matched, MATCHED_PRODUCTS);
   }
 
   // Soft: every number is checked and shown, not only the first one that fails
   expect.soft(visited, `pages crawled (${queue.found.size} found)`).toBeGreaterThanOrEqual(MIN_PAGES);
   expect.soft(errors, "responses with status 400 or more").toEqual([]);
-  expect.soft(blockedByUrl(blocked), "requests to other hosts than the shop, with the pages that made them").toEqual({});
+  expect.soft(blockedByUrl(unexpected), "requests to other hosts than the shop, with the pages that made them").toEqual({});
   expect.soft(picked.length, "product pages to compare").toBe(MATCHED_PRODUCTS);
   expect.soft(mismatches, "products that differ from the source").toEqual([]);
 });
