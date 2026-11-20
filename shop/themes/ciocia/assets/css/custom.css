@@ -7036,3 +7036,547 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
     box-shadow: inset 0 1px rgba(249, 210, 143, 0.12), inset 0 -1px rgba(249, 210, 143, 0.24);
   }
 }
+
+/*
+ * Home page sections below the banner (templates/index.tpl, widgets of the module ciociahome), with the
+ * sizes, spacing and breakpoints of the source's ndx-home-* rules. Sections are 1.5rem apart, as there.
+ */
+#wrapper .ciocia-home {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+#wrapper .ciocia-home > .ciocia-hero {
+  margin-bottom: 0;
+}
+
+#wrapper .ciocia-home .featured-products {
+  margin: 0;
+  padding: 0 0.9375rem;
+}
+
+#wrapper .ciocia-home-section {
+  width: 100%;
+  max-width: 75rem;
+  margin-inline: auto;
+  padding: 0 0.9375rem;
+}
+
+#wrapper .ciocia-home-section__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+#wrapper .ciocia-home-section__eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--ciocia-link);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+#wrapper .ciocia-home-section__title {
+  margin: 0;
+  color: var(--ciocia-text);
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  font-weight: 600;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+#wrapper .ciocia-home-scroll {
+  display: grid;
+  gap: 0.875rem;
+}
+
+/* Category tiles */
+#wrapper .ciocia-home-categories__track {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+#wrapper .ciocia-home-category {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 10.5rem;
+  padding: 1.25rem 0.75rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.875rem;
+  background: #fff;
+  color: var(--ciocia-text);
+  text-align: center;
+  text-decoration: none;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+#wrapper .ciocia-home-category:hover,
+#wrapper .ciocia-home-category:focus-visible {
+  border-color: #c87f60;
+  box-shadow: 0 0.5rem 1.5rem rgba(97, 6, 3, 0.1);
+  color: var(--ciocia-primary);
+  transform: translateY(-0.15rem);
+}
+
+#wrapper .ciocia-home-category__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: 0.85rem;
+  border-radius: 50%;
+  background: var(--ciocia-surface-warm);
+  color: var(--ciocia-primary);
+  font-size: 2rem;
+}
+
+#wrapper .ciocia-home-category__icon svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+
+#wrapper .ciocia-home-category__title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+#wrapper .ciocia-home-category__meta {
+  margin-top: 0.25rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+/* "Czego dziś potrzebujesz?" */
+#wrapper .ciocia-home-needs {
+  padding: 1.25rem 0.9375rem;
+  border-radius: 1rem;
+  background: #fffaf1;
+}
+
+#wrapper .ciocia-home-needs__track {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+#wrapper .ciocia-home-need {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3.25rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ciocia-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+#wrapper .ciocia-home-need:hover,
+#wrapper .ciocia-home-need:focus-visible {
+  border-color: #c87f60;
+  color: var(--ciocia-primary);
+}
+
+#wrapper .ciocia-home-need__icon {
+  font-size: 1.15rem;
+}
+
+/* Brands */
+#wrapper .ciocia-home-brands__track {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+#wrapper .ciocia-home-brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 7.5rem;
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  background: var(--ciocia-primary-dark);
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+#wrapper .ciocia-home-brand strong {
+  color: #f9d28f;
+  font-size: 1.1rem;
+}
+
+#wrapper .ciocia-home-brand span {
+  margin-top: 0.35rem;
+  color: #f0d5bc;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+#wrapper .ciocia-home-brand:hover,
+#wrapper .ciocia-home-brand:focus-visible {
+  color: #fff;
+  transform: translateY(-0.15rem);
+}
+
+/* Guides */
+#wrapper .ciocia-home-guides__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+#wrapper .ciocia-home-guide {
+  padding: 1.5rem;
+  border: 1px solid var(--ciocia-border);
+  border-radius: 0.875rem;
+  background: #fff;
+}
+
+#wrapper .ciocia-home-guide__icon {
+  color: var(--ciocia-primary);
+  font-size: 2rem;
+}
+
+#wrapper .ciocia-home-guide__title {
+  margin: 0.75rem 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+#wrapper .ciocia-home-guide p {
+  margin-bottom: 1rem;
+  color: var(--ciocia-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+#wrapper .ciocia-home-guide a,
+#wrapper .ciocia-home-seo a,
+#wrapper .ciocia-home-about a {
+  color: var(--ciocia-primary);
+  font-weight: 600;
+}
+
+#wrapper .ciocia-home-guide a {
+  font-size: 0.875rem;
+}
+
+/* SEO text */
+#wrapper .ciocia-home-seo {
+  padding: 1.25rem 0;
+  background: var(--ciocia-surface-warm);
+  text-align: center;
+}
+
+#wrapper .ciocia-home-seo__container {
+  max-width: 75rem;
+  margin: 0 auto;
+  padding: 0 0.9375rem;
+}
+
+#wrapper .ciocia-home-seo__title {
+  margin-bottom: 1.25rem;
+  font-size: 1.75rem;
+  line-height: 1.3;
+  text-transform: none;
+}
+
+#wrapper .ciocia-home-seo__lead {
+  max-width: 56.25rem;
+  margin: 0 auto;
+  color: var(--ciocia-text-muted);
+  font-size: 1rem;
+  line-height: 1.8;
+}
+
+/* Our story */
+#wrapper .ciocia-home-about {
+  max-width: 75rem;
+  margin: 0 auto;
+  padding: 1.5rem 0;
+}
+
+#wrapper .ciocia-home-about__intro {
+  margin-bottom: 1.5rem;
+  padding: 0 0.9375rem;
+  text-align: center;
+}
+
+#wrapper .ciocia-home-about__title {
+  margin-bottom: 1.25rem;
+  font-size: 1.5rem;
+  text-transform: none;
+}
+
+#wrapper .ciocia-home-about__text {
+  max-width: 56.25rem;
+  margin: 0 auto;
+  color: var(--ciocia-text-muted);
+  font-size: 1rem;
+  line-height: 1.8;
+}
+
+#wrapper .ciocia-home-about__text + .ciocia-home-about__text {
+  margin-top: 1.25rem;
+}
+
+#wrapper .ciocia-home-about__gallery {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem;
+  margin: 1.5rem 0;
+  padding: 0 0.9375rem;
+}
+
+#wrapper .ciocia-home-about__photo {
+  flex: 1 1 16rem;
+  width: min(100%, 27.5rem);
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+  object-fit: cover;
+}
+
+#wrapper .ciocia-home-about__contact {
+  margin: 1.5rem 0.9375rem 0;
+  padding: 1.875rem;
+  border-radius: 0.5rem;
+  background: #f5f5f5;
+  text-align: center;
+}
+
+#wrapper .ciocia-home-about__contact-title {
+  margin-bottom: 1.25rem;
+  font-size: 1.125rem;
+}
+
+#wrapper .ciocia-home-about__contact-list {
+  margin: 0;
+  padding: 0;
+  color: var(--ciocia-text-muted);
+  font-size: 1rem;
+  line-height: 2;
+  list-style: none;
+}
+
+#wrapper .ciocia-home-about__contact-note {
+  margin: 1.25rem 0 0;
+  color: #888;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 991px) {
+  #wrapper .ciocia-home-categories__track,
+  #wrapper .ciocia-home-needs__track,
+  #wrapper .ciocia-home-brands__track {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Phones: the tiles scroll sideways, as on the source */
+@media (max-width: 767px) {
+  #wrapper .ciocia-home-section {
+    padding-inline: 0;
+  }
+
+  #wrapper .ciocia-home-needs {
+    padding-inline: 0;
+  }
+
+  #wrapper .ciocia-home-scroll {
+    display: flex;
+    gap: 0.75rem;
+    margin-inline: -0.75rem;
+    padding: 0.25rem 0.75rem 1rem;
+    overflow-x: auto;
+    scroll-padding-inline: 0.75rem;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  #wrapper .ciocia-home-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  #wrapper .ciocia-home-category,
+  #wrapper .ciocia-home-need,
+  #wrapper .ciocia-home-brand {
+    flex: 0 0 74%;
+    scroll-snap-align: start;
+  }
+
+  #wrapper .ciocia-home-category {
+    max-width: 12rem;
+  }
+
+  #wrapper .ciocia-home-need {
+    flex-basis: auto;
+    min-width: 11.5rem;
+  }
+
+  #wrapper .ciocia-home-brand {
+    max-width: 14rem;
+  }
+
+  #wrapper .ciocia-home-guides__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #wrapper .ciocia-home-category,
+  #wrapper .ciocia-home-brand {
+    transition: none;
+  }
+}
+
+/* Home banner: one bar per slide at the bottom centre of the photo; the current one is blue. */
+#wrapper .ciocia-hero .carousel {
+  position: relative;
+}
+
+#wrapper .ciocia-hero__indicators {
+  position: absolute;
+  right: 0;
+  bottom: 0.75rem;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+#wrapper .ciocia-hero__indicator {
+  width: 1.875rem;
+  height: 0.1875rem;
+  padding: 0;
+  border: 0;
+  background: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0.6;
+  /* A bigger click target than the thin bar */
+  box-shadow: 0 0 0 0.375rem transparent;
+}
+
+#wrapper .ciocia-hero__indicator.active {
+  background: #0d6efd;
+  opacity: 1;
+}
+
+#wrapper .ciocia-hero__indicator:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+/* "Zobacz wszystkie" next to a home section's title: underlined, in the link colour, as on the source. */
+#wrapper .ciocia-home-section__link {
+  color: var(--ciocia-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+  white-space: nowrap;
+}
+
+/*
+ * Product card button as on the source: the icon and the text "Dodaj do koszyka" at every card width
+ * (13 px, 4 px corners, 34.5 px tall), not the icon alone on wider cards.
+ */
+#wrapper .ciocia-card__button-text {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+#wrapper .ciocia-card__cart .ciocia-card__button {
+  min-height: 2.159rem;
+  padding: 0.45rem 0.5rem;
+  gap: 0.35rem;
+  border-radius: 0.25rem;
+}
+
+#wrapper .ciocia-card__cart .ciocia-card__button .material-icons {
+  font-size: 1.05rem;
+}
+
+/* The source's home page has no wishlist hearts on its product cards (the lists elsewhere keep them). */
+#wrapper .ciocia-home .ciocia-card .wishlist-button-add,
+#wrapper .ciocia-home .ciocia-card .wishlist-button,
+#wrapper .ciocia-home .ciocia-card [class*='wishlist-button'] {
+  display: none !important;
+}
+
+/* Contact box on the home page, as on the source: the phone and the e-mail in a light terracotta, regular weight, no underline. */
+#wrapper .ciocia-home-about__contact a {
+  color: #c87f60;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+/* Newsletter row in the footer, measured on the source: 4 px corners, Open Sans, a softer placeholder. */
+#footer .ciocia-newsletter input[type=email] {
+  border-radius: 4px;
+  color: #212529;
+  font-family: "Open Sans", system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+}
+
+#footer .ciocia-newsletter input[type=email]::placeholder {
+  color: rgba(33, 37, 41, 0.75);
+  opacity: 1;
+}
+
+#footer .ciocia-newsletter .btn-primary {
+  border-radius: 4px;
+  font-family: "Open Sans", system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+}
+
+/*
+ * Footer details measured on the source (1440 px): the company name and "U Cioci Masali" in the copyright line
+ * are bold (700) and the copyright is not dimmed; the address is 8 px above the e-mail line; the title of
+ * "Twoje konto" is a link in the footer colour, the other titles are white.
+ */
+#footer .ciocia-contact-company,
+#footer .ciocia-contact-company strong,
+#footer .ciocia-copyright strong {
+  font-weight: 700;
+}
+
+/* Measured on the source: the whole copyright line, bold part included, is #cfb7a3 (not the footer text colour). */
+#footer .ciocia-copyright {
+  color: #cfb7a3;
+  opacity: 1;
+}
+
+#footer .ciocia-footer-contact address {
+  margin-bottom: 8px;
+}
+
+#footer .ciocia-footer-main .ciocia-footer-title a {
+  color: var(--ciocia-footer-text);
+}
+
+/* The page background must not show as a strip under the copyright line: the footer is one dark block. */
+#footer:has(> .ciocia-trust) {
+  background: var(--ciocia-footer-bg);
+}
+
+body#checkout #footer:has(> .ciocia-trust) {
+  background: none;
+}

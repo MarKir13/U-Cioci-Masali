@@ -42,6 +42,7 @@ configurePromoCode($settings['promo_code']);
 configureCatalog($settings['catalog']);
 
 configureOmnibus();
+configureHomeSections();
 
 Tools::clearSmartyCache();
 Cache::clear();
@@ -384,6 +385,23 @@ function configureOmnibus()
     Module::getInstanceByName('ciociaomnibus')->enable();
     $added = CiociaPriceHistory::seed();
     echo "Omnibus price: module ciociaomnibus enabled, $added starting price rows added.\n";
+}
+
+/**
+ * Home page sections (module ciociahome, shop/modules/ciociahome): category tiles, needs, brands, guides, SEO
+ * text and the story. The theme's index.tpl calls them as widgets, so the module only has to be installed.
+ */
+function configureHomeSections()
+{
+    $home = Module::getInstanceByName('ciociahome');
+    if (!$home) {
+        throw new RuntimeException('Module ciociahome not found in modules/ (shop/modules/ciociahome)');
+    }
+    if (!Module::isInstalled('ciociahome') && !$home->install()) {
+        throw new RuntimeException('Could not install module ciociahome');
+    }
+    $home->enable();
+    echo "Home page: module ciociahome enabled.\n";
 }
 
 /**

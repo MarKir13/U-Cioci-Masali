@@ -386,14 +386,14 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch { /* keep working for this page view */ }
   }
 
-  // Leave room under the page for the fixed panel or tab, so they never hide its last content.
-  // Exception, as on the source shop: on phones without the bottom bar (checkout) the tab sits
-  // above the bar's height, so room under the page would only lift the copyright up under the tab.
+  // Leave room under the page for the fixed panel, so it never hides the last content. The small
+  // "Cookies" tab needs none: as on the source shop it just overlaps the dark footer, and room for
+  // it would show up as a lighter block under the copyright line.
   function reserveSpace() {
-    var visible = notice.hidden ? reopen : notice;
-    var tabAboveBar = notice.hidden && !document.querySelector('.ciocia-bottom-nav') &&
-      window.matchMedia('(max-width: 767px)').matches;
-    document.body.style.paddingBottom = tabAboveBar ? '' : visible.offsetHeight + 'px';
+    // The room goes under the footer (it has the footer colour); on body it would show the lighter page gradient as a strip.
+    var room = document.getElementById('footer') || document.body;
+    document.body.style.paddingBottom = '';
+    room.style.paddingBottom = notice.hidden ? '' : notice.offsetHeight + 'px';
   }
 
   function setDetails(open) {
@@ -1314,3 +1314,40 @@ document.addEventListener('change', function (event) {
     window.location.href = select.value;
   }
 });
+
+// Home banner: bars under the photo (blue = current slide), one per slide, as on the source shop.
+(function () {
+  var carousel = document.querySelector('.ciocia-hero .carousel');
+  if (!carousel) return;
+  var items = carousel.querySelectorAll('.carousel-item');
+  if (items.length < 2 || carousel.querySelector('.ciocia-hero__indicators')) return;
+
+  var box = document.createElement('div');
+  box.className = 'ciocia-hero__indicators';
+  var bars = [];
+  Array.prototype.forEach.call(items, function (item, index) {
+    var bar = document.createElement('button');
+    bar.type = 'button';
+    bar.className = 'ciocia-hero__indicator';
+    bar.setAttribute('aria-label', 'Slajd ' + (index + 1) + ' z ' + items.length);
+    bar.addEventListener('click', function () {
+      if (window.jQuery && window.jQuery.fn.carousel) {
+        window.jQuery(carousel).carousel(index);
+      }
+    });
+    box.appendChild(bar);
+    bars.push(bar);
+  });
+  carousel.appendChild(box);
+
+  function sync() {
+    Array.prototype.forEach.call(items, function (item, index) {
+      var current = item.classList.contains('active');
+      bars[index].classList.toggle('active', current);
+      if (current) bars[index].setAttribute('aria-current', 'true');
+      else bars[index].removeAttribute('aria-current');
+    });
+  }
+  sync();
+  new MutationObserver(sync).observe(carousel, { attributes: true, subtree: true, attributeFilter: ['class'] });
+})();
