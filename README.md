@@ -43,7 +43,7 @@ Requirements: [Docker Desktop](https://www.docker.com/products/docker-desktop/) 
    docker compose -f deploy/compose.yaml --profile init run --rm --build init
    ```
    It downloads the product images (585 MB, from the GitHub Release) while the shop installs, waits until the shop
-   is ready, then imports 2159 products in 160 categories. It ends with `init: done` and the shop's address. On a
+   is ready, then imports 2165 products in 160 categories. It ends with `init: done` and the shop's address. On a
    team laptop this took about 35–40 minutes, mostly the download and the image uploads
    ([ADR 0010](docs/adr/0010-one-command-data-init.md)). For a quick look, `init --subset` imports only 53 products
    of two categories in about 2 minutes. Running init again downloads nothing and changes nothing. More:
@@ -273,7 +273,7 @@ docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/40-
 
 ## Scraped data
 
-The data from the source shop is in `scraper-results/`: 2159 products in 160 categories, with 4822 product images.
+The data from the source shop is in `scraper-results/`: 2165 products in 160 categories, with 4841 product images.
 How it was made, what was left out and why: [scraper/README.md](scraper/README.md). The product images are not in git. They
 are one archive (585 MB) in the GitHub Release [`images-v1`](https://github.com/MarKir13/U-Cioci-Masali/releases/tag/images-v1).
 The data init (below) downloads and unpacks it into `scraper-results/images/` by itself; to do it by hand:
@@ -290,7 +290,7 @@ Check the data with `python -m scraper verify` (from `scraper/`); it needs no ne
 One command, from the repository root, right after `up -d` (step 4 of [Running the shop](#running-the-shop)):
 
 ```sh
-docker compose -f deploy/compose.yaml --profile init run --rm --build init            # all 2159 products
+docker compose -f deploy/compose.yaml --profile init run --rm --build init            # all 2165 products
 docker compose -f deploy/compose.yaml --profile init run --rm --build init --subset   # 53 products, about 2 minutes
 ```
 
@@ -625,7 +625,7 @@ Packages > `shop` and `proxy` > Package settings > manage versions).
 | `deploy/` | `compose.yaml`, `.env.example`, HTTPS proxy (`proxy/`), `backup.sh` and `restore.sh`, product importer and data init (`importer/`); later: backup and restore scripts | in progress |
 | `docs/` | AI log, architecture decisions (ADR) | in progress |
 | `scraper/` | Scraper source code, tests and its Dockerfile (init's fallback), see [scraper/README.md](scraper/README.md) | done: crawl, images, verification |
-| `scraper-results/` | Scraped data (`categories.json`, `products.jsonl`, `schema.json`, `rejected.json`), `verification-report.md` and 20 sample images | done: 2159 products, 160 categories |
+| `scraper-results/` | Scraped data (`categories.json`, `products.jsonl`, `schema.json`, `rejected.json`), `verification-report.md` and 20 sample images | done: 2165 products, 160 categories |
 | `tests/` | Playwright E2E tests | done: W4 scenario, steps 1–10 |
 
 ## Team
