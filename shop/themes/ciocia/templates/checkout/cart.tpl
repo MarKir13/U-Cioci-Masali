@@ -18,3 +18,14 @@
   {include file='_partials/summary-trust.tpl'}
   {$smarty.block.parent}
 {/block}
+
+{* Empty cart, as on the source: "Polecane produkty" (8 products, the widget of the home page) under both columns, so
+   after the whole #main section, not in the footer hook of the left column. *}
+{block name='content'}
+  {$smarty.block.parent}
+  {if empty($cart.products)}
+    <div class="ciocia-home ciocia-cart-featured">
+      {widget name='ciociahome' section='featured'}
+    </div>
+  {/if}
+{/block}
