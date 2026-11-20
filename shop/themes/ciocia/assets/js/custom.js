@@ -275,13 +275,89 @@ document.addEventListener('DOMContentLoaded', function () {
     };
   }
 
+  function isDesktop() {
+    return window.matchMedia('(min-width: 768px)').matches;
+  }
+
+  // An entry of the left-hand list in the desktop panel (its children are shown on the right, not below).
+  function isPanelEntry(item) {
+    var list = item.parentElement;
+    return Boolean(list && list.parentElement && list.parentElement.classList.contains('ciocia-mega__body'));
+  }
+
+  // In the desktop panel exactly one entry of the left list is active, so its children fill the right side.
+  function activateEntry(item) {
+    Array.from(item.parentElement.children).forEach(function (sibling) {
+      if (sibling !== item) sibling.classList.remove('is-active');
+      if (sibling !== item && sibling.classList.contains('ciocia-has-submenu')) setOpen(sibling, false);
+    });
+    item.classList.add('is-active'); // an entry without children shows "Przejdź do kategorii" on the right
+    if (item.classList.contains('ciocia-has-submenu')) setOpen(item, true);
+    fitBody(item);
+  }
+
+  // The panel grows with the active entry's children, as on the source (they are positioned beside the list, so
+  // they do not size the panel themselves): the body is at least as high as its list and its right side.
+  function fitBody(item) {
+    var body = item.closest('.ciocia-mega__body');
+    if (!body) return;
+    var list = Array.from(body.children).find(function (el) { return el.tagName === 'UL'; });
+    if (list) {
+      list.classList.remove('is-scrolling');
+      if (list.scrollHeight > list.clientHeight + 1) list.classList.add('is-scrolling');
+    }
+    body.style.minHeight = '';
+    var pane = Array.from(item.children).find(function (el) {
+      return el.classList.contains('ciocia-submenu') || el.classList.contains('ciocia-mega__goto');
+    });
+    if (!pane || pane.hidden) return;
+    var wanted = pane.scrollHeight;
+    if (wanted > body.offsetHeight) body.style.minHeight = wanted + 'px';
+  }
+
+  // As on the source, the children in the right side of the desktop panel are in alphabetical (Polish) order,
+  // in one column up to six of them and in two columns above that.
+  Array.from(categoryMenu.querySelectorAll('.ciocia-mega__body > ul > li > .ciocia-submenu > ul')).forEach(function (list) {
+    var entries = Array.from(list.children);
+    function label(li) {
+      var link = Array.from(li.children).find(function (el) { return el.tagName === 'A'; });
+      return (link ? link.textContent : li.textContent).trim();
+    }
+    // The source shop lists "Dla mężczyzn" last in its group, the rest alphabetically.
+    function isLast(li) { return /^dla mężczyzn$/i.test(label(li)); }
+    entries.sort(function (a, b) {
+      if (isLast(a) !== isLast(b)) { return isLast(a) ? 1 : -1; }
+      return label(a).localeCompare(label(b), 'pl');
+    });
+    entries.forEach(function (li) { list.appendChild(li); });
+    // 1 column up to 6 entries, 2 columns up to 14, 3 columns beyond that.
+    list.classList.toggle('ciocia-mega__cols', entries.length > 6);
+    list.classList.toggle('ciocia-mega__cols-3', entries.length > 14);
+  });
+
+  // The page is darkened (custom.css, body::after) while any top-level panel is open.
+  function updateOverlay() {
+    var anyOpen = Array.from(categoryMenu.children).some(function (entry) {
+      var panel = controls(entry).panel;
+      return panel && !panel.hidden;
+    });
+    document.body.classList.toggle('ciocia-menu-open', anyOpen);
+  }
+
   function setOpen(item, open) {
     var parts = controls(item);
     if (!parts.button || !parts.panel) return;
     parts.button.setAttribute('aria-expanded', String(open));
     parts.panel.hidden = !open;
+    if (item.parentElement === categoryMenu) updateOverlay();
     if (!open) {
       item.querySelectorAll('.ciocia-has-submenu').forEach(function (child) { setOpen(child, false); });
+    } else if (isDesktop() && item.parentElement === categoryMenu) {
+      // A freshly opened panel starts with its first entry (with or without children), as on the source.
+      var first = parts.panel.querySelector('.ciocia-mega__body > ul > li');
+      if (first && !parts.panel.querySelector('.ciocia-mega__body > ul > li.is-active')) {
+        activateEntry(first);
+      }
     }
   }
 
@@ -289,23 +365,47 @@ document.addEventListener('DOMContentLoaded', function () {
     var parts = controls(item);
     if (!parts.button || !parts.panel) return;
     parts.button.addEventListener('click', function () {
+      // Desktop panel: the left list always has one active entry, a click on its chevron does not close it.
+      if (isDesktop() && isPanelEntry(item)) {
+        activateEntry(item);
+        return;
+      }
       setOpen(item, parts.button.getAttribute('aria-expanded') !== 'true');
     });
     // Opens a moment after the pointer arrives (as on the source), closes at once when it leaves.
     var openTimer = null;
     item.addEventListener('mouseenter', function () {
-      if (!window.matchMedia('(min-width: 768px)').matches) return;
+      if (!isDesktop() || isPanelEntry(item)) return;
       clearTimeout(openTimer);
       openTimer = setTimeout(function () { setOpen(item, true); }, 150);
     });
     item.addEventListener('mouseleave', function () {
       clearTimeout(openTimer);
-      if (!item.contains(document.activeElement) && window.matchMedia('(min-width: 768px)').matches) setOpen(item, false);
+      if (isPanelEntry(item)) return;
+      if (!item.contains(document.activeElement) && isDesktop()) setOpen(item, false);
     });
     // Desktop only: in the drawer, closing on press shifts the layout and the tap misses its target.
     item.addEventListener('focusout', function (event) {
-      if (!item.contains(event.relatedTarget) && window.matchMedia('(min-width: 768px)').matches) setOpen(item, false);
+      if (isPanelEntry(item)) return;
+      if (!item.contains(event.relatedTarget) && isDesktop()) setOpen(item, false);
     });
+  });
+
+  // Left list of the desktop panel: the entry under the pointer or the keyboard becomes the active one at once,
+  // also an entry without children (then the right side is empty).
+  Array.from(categoryMenu.querySelectorAll('.ciocia-mega__body > ul > li')).forEach(function (entry) {
+    entry.addEventListener('mouseenter', function () { if (isDesktop()) activateEntry(entry); });
+    entry.addEventListener('focusin', function () { if (isDesktop()) activateEntry(entry); });
+  });
+
+  // The round close button in the header of the desktop panel.
+  categoryMenu.addEventListener('click', function (event) {
+    var close = event.target.closest('.ciocia-mega__close');
+    if (!close) return;
+    var top = close.closest('#top-menu > li');
+    if (!top) return;
+    setOpen(top, false);
+    controls(top).button.focus();
   });
 
   categoryMenu.addEventListener('keydown', function (event) {
@@ -315,6 +415,8 @@ document.addEventListener('DOMContentLoaded', function () {
       while (item && controls(item).panel.hidden) {
         item = item.parentElement.closest('.ciocia-has-submenu');
       }
+      // In the desktop panel one Escape closes the whole panel, not just the active entry.
+      if (item && isDesktop() && isPanelEntry(item)) item = item.closest('#top-menu > li');
       if (item) {
         event.preventDefault();
         setOpen(item, false);
