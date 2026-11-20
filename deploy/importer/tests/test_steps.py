@@ -40,6 +40,13 @@ def test_a_changed_description_text_differs():
     assert differs(IN_SHOP, {**WANTED, "description": Lang("<p>Himalaya kredka niebieska</p>")})
 
 
+def test_a_video_left_in_the_shop_differs():
+    # Imported before the importer removed video players: same text, but the shop still has the player
+    video = '<video controls="controls"><source src="/img/cms/a.mp4" type="video/mp4" /></video>'
+    in_shop = {**IN_SHOP, "description": IN_SHOP["description"].replace("</p>", f"{video}</p>")}
+    assert differs(in_shop, WANTED)
+
+
 def test_another_category_differs():
     categories = {"categories": [("category", {"id": 12})]}
     assert differs(IN_SHOP, {**WANTED, "associations": categories})

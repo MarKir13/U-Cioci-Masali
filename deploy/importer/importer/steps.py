@@ -276,7 +276,7 @@ def product_fields(product: dict, shop: Shop, category_ids: dict[int, int], bran
         "condition": "new",
         "minimal_quantity": 1,
         "name": Lang(product["name"]),
-        "description": Lang(product["description"]),
+        "description": Lang(mapping.without_videos(product["description"])),
         # A product with variants has a slug made from its own name (variants.product_record)
         "link_rewrite": Lang(product.get("link_rewrite") or mapping.link_rewrite(product["url"], product["name"])),
         "associations": {"categories": [("category", {"id": c}) for c in categories]},
@@ -756,6 +756,10 @@ def differs(existing: dict, fields: dict) -> bool:
         have = existing.get(name)
         if name == "description":
             if mapping.visible_text(text(have)) != mapping.visible_text(str(wanted)):
+                return True
+            # A removed video player leaves the visible text as it was, so a shop imported before the
+            # importer removed them would otherwise keep the players for good (mapping.without_videos)
+            if mapping.VIDEO.search(text(have)) and not mapping.VIDEO.search(str(wanted)):
                 return True
         elif isinstance(wanted, Lang):
             if text(have) != str(wanted):
