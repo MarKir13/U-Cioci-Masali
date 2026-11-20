@@ -441,9 +441,10 @@ body#checkout section.checkout-step.-unreachable .step-title {
   text-transform: none;
 }
 
+/* As on the source, the eye button has no hover effect: Classic's btn-primary:hover would darken it. */
 #wrapper .input-group .input-group-btn > .btn:hover,
 #wrapper .input-group .input-group-btn > .btn:focus {
-  background: var(--ciocia-primary-dark);
+  background: var(--ciocia-primary);
 }
 
 #wrapper .input-group .input-group-btn > .btn .material-icons {
@@ -2946,6 +2947,174 @@ body#password #wrapper > .container > .row {
   text-decoration: underline;
 }
 
+/* The "Masz już konto? Zaloguj się" line under the registration form: on the source the link is not underlined. */
+#wrapper .ciocia-have-account a {
+  text-decoration: none;
+}
+
+/*
+ * Registration consents, as on the source (the order itself is set in customer/_partials/customer-form.tpl):
+ * the box sits at the left edge, the star of a required box is the first thing on the text line, and the
+ * description lines up with the star. Same approach as the checkout form below.
+ */
+body#registration #wrapper #customer-form .custom-checkbox label {
+  position: relative;
+  display: block;
+  margin: 0;
+  padding-left: 1.875rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+body#registration #wrapper #customer-form .custom-checkbox input[type="checkbox"],
+body#registration #wrapper #customer-form .custom-checkbox input[type="checkbox"] + span {
+  position: absolute;
+  top: 0.1875rem;
+  left: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+}
+
+body#registration #wrapper #customer-form .custom-checkbox:has(input[required]) > label::after {
+  content: none;
+}
+
+body#registration #wrapper #customer-form .custom-checkbox label:has(input[required])::before {
+  content: "* " / "";
+  color: var(--ciocia-required);
+}
+
+/*
+ * Field state after a failed submit (custom.js adds .was-validated), as on the source: invalid fields get a red
+ * border and an icon, valid ones a green border; a required box and its text turn red, a valid one green
+ * (the optional newsletter box too). A ticked box is blue with a white tick, green once the form is marked.
+ */
+body#registration #wrapper #customer-form .custom-checkbox input[type="checkbox"]:checked + span {
+  border-color: #2e67ed;
+  background: #2e67ed;
+}
+
+body#registration #wrapper #customer-form.was-validated .custom-checkbox input[type="checkbox"]:checked + span {
+  border-color: #3d8055;
+  background: #3d8055;
+}
+
+body#registration #wrapper #customer-form .custom-checkbox .checkbox-checked {
+  margin: 0;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+body#registration #wrapper #customer-form.was-validated .form-control:invalid {
+  padding-right: 2.25rem;
+  border-color: #eb565d;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eb565d' stroke-width='2' stroke-linecap='round'%3e%3ccircle cx='12' cy='12' r='10'/%3e%3cpath d='M12 7v6M12 16.5v.01'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.625rem center;
+  background-size: 1.5rem 1.5rem;
+}
+
+body#registration #wrapper #customer-form.was-validated .form-control:valid {
+  padding-right: 2.25rem;
+  border-color: #3d8055;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233d8055' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='10'/%3e%3cpath d='M7.5 12.5l3 3 6-6.5'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.625rem center;
+  background-size: 1.5rem 1.5rem;
+}
+
+body#registration #wrapper #customer-form.was-validated .custom-checkbox label:has(input:invalid) {
+  color: #eb565d;
+}
+
+body#registration #wrapper #customer-form.was-validated .custom-checkbox label:has(input:invalid) em {
+  color: inherit;
+}
+
+body#registration #wrapper #customer-form.was-validated .custom-checkbox input[type="checkbox"]:invalid + span {
+  border-color: #eb565d;
+}
+
+body#registration #wrapper #customer-form.was-validated .custom-checkbox label:has(input:valid),
+body#registration #wrapper #customer-form.was-validated .custom-checkbox label:has(input:valid) em {
+  color: #3d8055;
+}
+
+body#registration #wrapper #customer-form.was-validated .custom-checkbox input[type="checkbox"]:valid + span {
+  border-color: #3d8055;
+}
+
+/*
+ * Password field and its strength feedback, as on the source: a valid password turns the field green (border,
+ * tick, wide green focus ring), the strength bar is a thick green pill, and each requirement is a line with a
+ * round green tick. The markup comes from Classic (.password-strength-feedback, filled in by its script).
+ */
+body#registration #wrapper #customer-form .field-password-policy .form-control:valid {
+  padding-right: 2.75rem;
+  border-color: #3d8055;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233d8055' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M4.5 12.5l5 5L19.5 7'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.5rem 1.5rem;
+}
+
+body#registration #wrapper #customer-form .field-password-policy .input-group.focus:has(.form-control:valid) {
+  box-shadow: 0 0 0 0.25rem rgba(61, 128, 85, 0.25);
+}
+
+body#registration #wrapper #customer-form .password-strength-feedback {
+  margin-top: 1rem;
+}
+
+body#registration #wrapper #customer-form .password-strength-feedback .progress {
+  height: 1rem;
+  border-radius: 1rem;
+  background: rgba(0, 0, 0, 0.08);
+  box-shadow: none;
+}
+
+body#registration #wrapper #customer-form .password-strength-feedback .progress-bar {
+  border-radius: 1rem;
+}
+
+body#registration #wrapper #customer-form .password-strength-feedback .progress-bar.bg-success {
+  background-color: #3d8055 !important;
+}
+
+body#registration #wrapper #customer-form .password-requirements {
+  margin-top: 1rem;
+}
+
+body#registration #wrapper #customer-form .password-requirements p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  color: var(--ciocia-text);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+body#registration #wrapper #customer-form .password-requirements .material-icons {
+  flex: none;
+  font-size: 1.5rem;
+}
+
+body#registration #wrapper #customer-form .password-requirements .text-success,
+body#registration #wrapper #customer-form .password-requirements .text-success .material-icons {
+  color: #3d8055 !important;
+}
+
+body#registration #wrapper #customer-form .password-requirements p:not(.text-success) .material-icons {
+  color: #eb565d;
+}
+
+body#registration #wrapper #customer-form .password-requirements p.text-success {
+  color: var(--ciocia-text) !important;
+}
+
 /* Registration has more fields; the source gives it a wider card, 696 px (as the 404 page). */
 body#registration #wrapper > .container > .row {
   max-width: 43.5rem;
@@ -4133,9 +4302,10 @@ body#cart .ciocia-line__remove {
   font-size: 0.9375rem;
 }
 
+/* As on the source: "Usuń" has no underline on hover, it only gets a little lighter. */
 body#cart .ciocia-line__remove:hover {
-  color: var(--ciocia-link-hover);
-  text-decoration: underline;
+  color: #c48b70;
+  text-decoration: none;
 }
 
 body#cart .ciocia-line__actions {
@@ -4231,6 +4401,145 @@ body#cart .ciocia-line .bootstrap-touchspin input::-webkit-outer-spin-button {
     align-items: center;
     justify-content: space-between;
   }
+}
+
+/*
+ * Cart line measured against the source (from 576 px): a 2:3 image (the white sides of our square thumbnail are
+ * cropped, so the product fills the frame) centred in a 8 rem column, "Usuń" at the bottom of the description,
+ * lighter copper links, a cool grey rule between lines, and a quantity field with 2.35 rem buttons that sit on
+ * the page colour; on hover only the icon greys out.
+ */
+@media (min-width: 576px) {
+  body#cart .ciocia-line {
+    grid-template-columns: 8rem minmax(0, 1fr) auto;
+    column-gap: 1.5rem;
+  }
+
+  body#cart .ciocia-line__image img {
+    width: 5.25rem;
+    height: 7.875rem;
+    margin: 0 auto;
+    object-fit: cover;
+  }
+
+  body#cart .ciocia-line__body {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+  }
+
+  body#cart .ciocia-line__body .cart-line-product-actions {
+    margin-top: auto;
+  }
+
+  body#cart .ciocia-line__name {
+    font-size: 1rem;
+  }
+
+  body#cart .ciocia-line__delivery {
+    font-size: 0.75rem;
+  }
+
+  body#cart .ciocia-line__remove {
+    margin-top: 0.625rem;
+    font-size: 1rem;
+  }
+
+  body#cart .ciocia-line__actions {
+    gap: 0.15rem;
+  }
+
+  body#cart .ciocia-line .bootstrap-touchspin .btn-touchspin {
+    width: 2.3125rem;
+    height: 2.35rem;
+    background: transparent;
+    color: #222529;
+  }
+
+  body#cart .ciocia-line .bootstrap-touchspin .btn-touchspin:hover {
+    background: transparent;
+    color: #82807b;
+  }
+
+  body#cart .ciocia-line .bootstrap-touchspin input.form-control {
+    width: 4.3125rem;
+    height: 2.35rem;
+    color: #222529;
+  }
+}
+
+body#cart .ciocia-line__name,
+body#cart .ciocia-line__remove {
+  color: #be8266;
+}
+
+body#cart .cart-container .separator,
+body#cart .cart-items .cart-item,
+body#cart .cart-items .cart-item:last-child {
+  border-color: #dfe2e6;
+}
+
+body#cart .cart-items .cart-item {
+  margin-top: 0;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+/*
+ * "<product> został usunięty z koszyka." notice (custom.js), as on the source: green box with a 1 px frame, a tick,
+ * the product as a copper link that darkens on hover, and a grey close button that darkens on hover.
+ */
+body#cart .ciocia-cart-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.9375rem 1.0625rem;
+  border: 1px solid #abccba;
+  border-radius: 0.5rem;
+  background: #d5e5dd;
+  color: #173322;
+}
+
+body#cart .ciocia-cart-notice > .material-icons {
+  flex: none;
+  font-size: 1.5rem;
+}
+
+body#cart .ciocia-cart-notice p {
+  flex: 1 1 auto;
+  margin: 0;
+  line-height: 1.5;
+}
+
+body#cart .ciocia-cart-notice p a {
+  color: #be8266;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+body#cart .ciocia-cart-notice p a:hover,
+body#cart .ciocia-cart-notice p a:focus {
+  color: #a77057;
+}
+
+body#cart .ciocia-cart-notice__close {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #6b726f;
+  line-height: 1;
+  cursor: pointer;
+}
+
+body#cart .ciocia-cart-notice__close:hover,
+body#cart .ciocia-cart-notice__close:focus-visible {
+  color: #353937;
+}
+
+body#cart .ciocia-cart-notice__close .material-icons {
+  font-size: 1.75rem;
 }
 
 /*
@@ -7371,6 +7680,67 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
     font-weight: 400;
     color: var(--ciocia-text-muted);
   }
+}
+
+/*
+ * Measured against the source on a 800 px wide dialog (desktop): 24 px side padding, a larger product image
+ * without the extra left padding, the columns split 7:5, the text a notch larger and in the dark text colour,
+ * Bootstrap-sized buttons. The primary button keeps its fill on hover and only its text turns copper.
+ */
+@media (min-width: 992px) {
+  #blockcart-modal .modal-header {
+    padding: 1.5rem 1.5rem 0.5rem;
+  }
+
+  #blockcart-modal .modal-body {
+    padding: 1.5rem 1.5rem 1.25rem;
+  }
+
+  #blockcart-modal .modal-title {
+    gap: 1rem;
+  }
+
+  #blockcart-modal .ciocia-added {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  }
+
+  #blockcart-modal .ciocia-added__product {
+    gap: 1.5rem;
+    padding-left: 0;
+  }
+
+  #blockcart-modal .product-image {
+    width: 10.25rem;
+  }
+
+  #blockcart-modal .ciocia-added__info,
+  #blockcart-modal .ciocia-added__cart,
+  #blockcart-modal .product-price {
+    color: var(--ciocia-text);
+  }
+
+  #blockcart-modal .ciocia-added__info p,
+  #blockcart-modal .ciocia-added__cart p {
+    font-size: 1.0625rem;
+    line-height: 1.18;
+  }
+
+  #blockcart-modal .product-name {
+    line-height: 1.5;
+  }
+
+  #blockcart-modal .ciocia-added__actions .btn {
+    padding: 0.375rem 0.75rem;
+  }
+}
+
+/* No fill change on hover, as on the source: only the text turns copper (Classic would recolour the button). */
+#blockcart-modal .ciocia-added__actions a.btn-primary:hover,
+#blockcart-modal .ciocia-added__actions a.btn-primary:focus,
+#blockcart-modal .ciocia-added__actions a.btn-primary:active {
+  border-color: #571109;
+  background-color: #571109;
+  color: #a77057;
 }
 
 /*

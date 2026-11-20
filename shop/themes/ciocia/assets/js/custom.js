@@ -1456,3 +1456,94 @@ document.addEventListener('change', function (event) {
   sync();
   new MutationObserver(sync).observe(carousel, { attributes: true, subtree: true, attributeFilter: ['class'] });
 })();
+
+/*
+ * Registration form, as on the source: the fields show their state only after the person has pressed
+ * "Utwórz konto" (Enter in a field counts: the browser then clicks that button). The click marks the form, and
+ * custom.css colours the invalid fields red and the valid ones (also the optional newsletter) green. Not
+ * triggered by "invalid" events: other scripts validate the form on load, which would mark it at once.
+ */
+(function () {
+  document.addEventListener('click', function (event) {
+    var button = event.target && event.target.closest && event.target.closest('#customer-form [data-link-action="save-customer"]');
+    if (button && document.body.id === 'registration') {
+      button.form.classList.add('was-validated');
+    }
+  });
+})();
+
+/*
+ * Cart page: after a product leaves the cart (the "Usuń" link, or the quantity going down to 0) the source shows
+ * a green notice under the heading: "<product> został usunięty z koszyka." with a close button. Classic replaces
+ * .cart-overview after every change, so the page keeps a list of the lines it has seen and compares it after each
+ * replacement; a line that is gone is a removed product. The notice sits in .card-block, which is not replaced.
+ */
+(function () {
+  if (document.body.id !== 'cart') return;
+  var container = document.querySelector('.cart-container');
+  if (!container) return;
+
+  function readLines() {
+    var lines = {};
+    container.querySelectorAll('.cart-item .ciocia-line__name').forEach(function (link) {
+      lines[link.href] = link.textContent.trim();
+    });
+    return lines;
+  }
+
+  function showNotice(url, name) {
+    var host = container.querySelector('.card-block');
+    if (!host) return;
+    var old = host.querySelector('.ciocia-cart-notice');
+    if (old) old.remove();
+
+    var notice = document.createElement('div');
+    notice.className = 'ciocia-cart-notice';
+    notice.setAttribute('role', 'status');
+
+    var tick = document.createElement('i');
+    tick.className = 'material-icons';
+    tick.setAttribute('aria-hidden', 'true');
+    tick.textContent = 'check';
+
+    var text = document.createElement('p');
+    var link = document.createElement('a');
+    link.href = url;
+    link.textContent = name;
+    text.appendChild(link);
+    text.appendChild(document.createTextNode(' został usunięty z koszyka.'));
+
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'ciocia-cart-notice__close';
+    close.setAttribute('aria-label', 'Zamknij');
+    var cross = document.createElement('i');
+    cross.className = 'material-icons';
+    cross.setAttribute('aria-hidden', 'true');
+    cross.textContent = 'close';
+    close.appendChild(cross);
+    close.addEventListener('click', function () { notice.remove(); });
+
+    notice.appendChild(tick);
+    notice.appendChild(text);
+    notice.appendChild(close);
+    host.appendChild(notice);
+  }
+
+  // url -> name of every line seen so far; the name of a removed line is read from here, after it is gone.
+  var known = readLines();
+  var queued = false;
+  new MutationObserver(function () {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(function () {
+      queued = false;
+      var now = readLines();
+      var removed = Object.keys(known).filter(function (url) { return !(url in now); });
+      var last = removed[removed.length - 1];
+      var name = last && known[last];
+      known = now;
+      if (last) showNotice(last, name);
+    });
+  }).observe(container, { childList: true, subtree: true });
+})();
