@@ -8,10 +8,20 @@ import path from "node:path";
 // console errors: the blocked requests are counted on their own.
 export const BLOCKED_MESSAGE = "net::ERR_BLOCKED_BY_CLIENT";
 
+// Addresses that imported product descriptions embed on purpose: 92 descriptions show images from the source
+// shop's /img/cms/, and one plays a YouTube video. They load fine in a customer's browser, and the shop keeps
+// them, so the descriptions look as on the source (W3). The tests still block them (AGENTS.md rule 7: tests never
+// touch the source shop), but count them apart: anything else from another host is a mistake, such as a font or
+// a script from a CDN.
+export const DESCRIPTION_MEDIA = ["https://www.magiczne-indie.pl/img/cms/", "https://www.youtube.com/embed/"];
+
+export function isDescriptionMedia(url) {
+  return DESCRIPTION_MEDIA.some((prefix) => url.startsWith(prefix));
+}
+
 // Stops every request to another host than the shop's, and returns the list of what it stopped, as
-// { url, page }: the address, and the shop page that asked for it (the product whose description needs fixing).
-// Imported product descriptions can still embed images from the source shop, and AGENTS.md rule 7 says tests
-// never touch it. data: and blob: URLs never reach the network, so route() does not see them.
+// { url, page }: the address, and the shop page that asked for it (the product whose description has it).
+// data: and blob: URLs never reach the network, so route() does not see them.
 export async function keepToShop(page, baseURL) {
   const origin = new URL(baseURL).origin;
   const blocked = [];
