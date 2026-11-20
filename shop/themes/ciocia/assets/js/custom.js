@@ -1388,7 +1388,9 @@ document.addEventListener('click', function (event) {
  */
 (function () {
   if (!document.body || document.body.id !== 'product') return;
-  var tabs = document.querySelector('#main .tabs');
+  // Only the .tabs with the tab panes: the module ps_emailalerts wraps its block in a div.tabs too.
+  var tabsContent = document.querySelector('#main .tabs .tab-content');
+  var tabs = tabsContent && tabsContent.closest('.tabs');
   if (!tabs || document.querySelector('.ciocia-product-info')) return;
 
   // The child of #main that holds the tabs (Classic's row with the photo and the buying column).
