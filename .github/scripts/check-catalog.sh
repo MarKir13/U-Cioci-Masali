@@ -97,6 +97,12 @@ check "Active products with 2 or more images" 50 - \
   "SELECT COUNT(*) FROM ps_product p
    WHERE p.active = 1 AND (SELECT COUNT(*) FROM ps_image i WHERE i.id_product = p.id_product) >= 2"
 
+# W3: 0 responses 4xx over the shop's pages. A video player from a source description asks for a file in the
+# source shop's /img/cms/ that our shop does not have (404); the importer leaves them out (mapping.without_videos).
+# Checked here over the whole catalogue, since the acceptance crawl may never open one of those products.
+check "Product descriptions with a video" 0 0 \
+  "SELECT COUNT(DISTINCT id_product) FROM ps_product_lang WHERE description LIKE '%<video%'"
+
 # D3: at least 20 products with a price promotion that applies now: a reduction for every customer, with no end
 # date or one still to come. 0000-00-00 is PrestaShop's "no date".
 check "Active products with a current promotion" 20 - \

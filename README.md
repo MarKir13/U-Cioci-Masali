@@ -450,15 +450,16 @@ run on a local shop with all products, from the repository root (Git Bash on Win
 
 | Check | Command | Limits |
 |---|---|---|
-| Catalogue, with SQL in the `db` container | `sh .github/scripts/check-catalog.sh` | At least 1000 products; 4 top-level categories with 2 non-empty subcategories each; no empty category; 5–20% out of stock; stock 0–10; images; 20 promotions; 5 products with variants |
+| Catalogue, with SQL in the `db` container | `sh .github/scripts/check-catalog.sh` | At least 1000 products; 4 top-level categories with 2 non-empty subcategories each; no empty category; 5–20% out of stock; stock 0–10; images; no description with a video player; 20 promotions; 5 products with variants |
 | Crawl and console errors (from `tests/`) | `npm run acceptance` | At least 200 pages without a 4xx/5xx response; 10 random products of the crawl match `scraper-results/products.jsonl` (name, price, number of images); no console errors on home, category, product, cart and checkout |
 | Lighthouse on desktop (on the Chromium of the E2E setup) | `sh .github/scripts/lighthouse.sh` | Performance of the home page at least 60 (middle of 3 runs), Accessibility at least 85 on home, category and product |
 
 The crawl of 250 pages took 11 minutes on Docker Desktop. For a quick try, `ACCEPTANCE_PAGES=30 npm run acceptance`
 crawls 30 pages, half of them products, and still compares 10 products; only its page count then fails. Its report opens with `npx playwright show-report acceptance-report/html`, and
 Lighthouse's reports are in `tests/acceptance-report/lighthouse/`. The browser of these checks never loads anything
-from another host than the shop: imported descriptions can embed images from the source shop (rule 7 in AGENTS.md),
-so such requests are blocked and counted. Each check also writes a row with its value and limit through
+from another host than the shop (rule 7 in AGENTS.md): such requests are blocked and counted. The images that 92
+imported descriptions show from the source shop, and one YouTube video, are expected and counted in their own row;
+any other host fails the crawl (see "Descriptions" in [`deploy/importer/README.md`](deploy/importer/README.md)). Each check also writes a row with its value and limit through
 [`.github/scripts/acceptance-results.sh`](.github/scripts/acceptance-results.sh); `sh
 .github/scripts/acceptance-results.sh report` prints the table of a local run.
 
