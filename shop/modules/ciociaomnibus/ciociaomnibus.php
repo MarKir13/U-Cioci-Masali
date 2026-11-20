@@ -7,6 +7,9 @@
  *   one row each time that price changes;
  * - ciocia_promo_start: when a promotion started, for promotions saved without a "from" date.
  *
+ * The module also prints the unit price of the product page ("100g = 12.37 zł", type 'ciocia_unit_price'),
+ * because both lines hang on the same hook of the price block.
+ *
  * Copied into the shop by shop/scripts/sync-code.sh and installed by shop/scripts/setup/configure-shop.php.
  */
 if (!defined('_PS_VERSION_')) {
@@ -128,6 +131,9 @@ class CiociaOmnibus extends Module
     public function hookDisplayProductPriceBlock(array $params): string
     {
         $product = $params['product'] ?? null;
+        if (($params['type'] ?? '') === 'ciocia_unit_price') {
+            return $this->unitPriceLine($product);
+        }
         if (($params['type'] ?? '') !== 'omnibus_price' || empty($product['show_price'])
             || empty($product['has_discount'])) {
             return '';
@@ -148,8 +154,24 @@ class CiociaOmnibus extends Module
                 $regularPrice
             );
 
+        // "-7%" and the end of the promotion, as on the source ("Cena bezpośrednio przed obniżką: 165,00 zł -7%",
+        // "Promocja ważna do: 21.11.2026"); the end date is shown only when the promotion has one
+        // Worked out from the two prices: for a promotion of a fixed amount PrestaShop's own discount_percentage holds
+        // the amount (11.61 zł gave "-1161%")
+        $percent = '';
+        if ((float) $product['regular_price_amount'] > 0) {
+            $percent = '-' . round((1 - (float) $product['price_amount'] / (float) $product['regular_price_amount']) * 100) . '%';
+        }
+        $until = '';
+        $to = (string) ($product['specific_prices']['to'] ?? '');
+        if ($to !== '' && strpos($to, '0000-00-00') !== 0 && ($time = strtotime($to)) !== false) {
+            $until = date('d.m.Y', $time);
+        }
+
         $locale = $this->context->getCurrentLocale();
         $this->context->smarty->assign([
+            'omnibus_percent' => $percent,
+            'omnibus_until' => $until,
             'omnibus_price' => $locale->formatPrice(Tools::convertPrice($lowest, $currency), $currency->iso_code),
             // Lists ask for the short two-line form with ciocia_short (the source's cards: "Cena przed" and
             // "Najniższa 30 dni"); the product page keeps the full wording
@@ -158,6 +180,42 @@ class CiociaOmnibus extends Module
         ]);
 
         return $this->fetch('module:ciociaomnibus/views/templates/hook/omnibus-price.tpl');
+    }
+
+    /**
+     * The unit price under the price, as on the source: "100g = 12.37 zł" (the price of 100 g or 100 ml, from the size at
+     * the end of the product name: "... Najel 180g" is 22.27 / 180 * 100), and "1szt = 35.90 zł" for a product that is
+     * sold as one piece: a set ("2 x 50g", "5 szt. po 125g"), or a name with no size at all.
+     */
+    private function unitPriceLine($product): string
+    {
+        $name = (string) ($product['name'] ?? '');
+        $price = (float) ($product['price_amount'] ?? 0);
+        if (empty($product['show_price']) || $name === '' || $price <= 0) {
+            return '';
+        }
+
+        $text = $this->pricePerPiece($price);
+        $isSet = preg_match('/\d\s*[x×*]\s*\d|\bszt\b|\bopak\b|\bsaszet/iu', $name);
+        if (!$isSet && preg_match_all('/(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l)(?![\p{L}\d])/iu', $name, $matches, PREG_SET_ORDER)) {
+            $last = end($matches);
+            $amount = (float) str_replace(',', '.', $last[1]);
+            $unit = mb_strtolower($last[2]);
+            if ($unit === 'kg' || $unit === 'l') {
+                $amount *= 1000;
+                $unit = $unit === 'kg' ? 'g' : 'ml';
+            }
+            if ($amount > 0) {
+                $text = '100' . $unit . ' = ' . number_format($price / $amount * 100, 2, '.', '') . ' ' . $this->context->currency->sign;
+            }
+        }
+
+        return '<p class="product-unit-price ciocia-unit-price">' . htmlspecialchars($text, ENT_QUOTES, 'UTF-8') . '</p>';
+    }
+
+    private function pricePerPiece(float $price): string
+    {
+        return '1szt = ' . number_format($price, 2, '.', '') . ' ' . $this->context->currency->sign;
     }
 
     /**
