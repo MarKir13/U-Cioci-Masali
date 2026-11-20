@@ -31,9 +31,7 @@ WANTED = {
     "ean13": "",
     "name": Lang("Kredka"),
     "description": Lang('<p><a href="x" rel="pmsil">Himalaya</a> kredka<br>czarna</p>'),
-    "associations": {
-        "categories": [("category", {"id": 40}), ("category", {"id": 12})]
-    },
+    "associations": {"categories": [("category", {"id": 40}), ("category", {"id": 12})]},
 }
 
 
@@ -46,9 +44,7 @@ def test_a_new_price_differs():
 
 
 def test_a_changed_description_text_differs():
-    assert differs(
-        IN_SHOP, {**WANTED, "description": Lang("<p>Himalaya kredka niebieska</p>")}
-    )
+    assert differs(IN_SHOP, {**WANTED, "description": Lang("<p>Himalaya kredka niebieska</p>")})
 
 
 def test_a_video_left_in_the_shop_differs():
@@ -193,10 +189,7 @@ def test_category_description_is_imported_and_a_second_run_changes_nothing():
     ]
     import_categories(api, read_shop(api), categories, Report())
     by_name = {c["name"]: c for c in api.all("categories")}
-    assert (
-        by_name["Kosmetyki"]["description"]
-        == "<p>Tylko u nas kupisz naturalne henny.</p>"
-    )
+    assert by_name["Kosmetyki"]["description"] == "<p>Tylko u nas kupisz naturalne henny.</p>"
     assert by_name["Higiena"]["description"] == ""
 
     writes_before = len(api.writes)
@@ -206,7 +199,5 @@ def test_category_description_is_imported_and_a_second_run_changes_nothing():
     # Source text changed: the shop's description is updated, not duplicated
     categories[0]["description"] = "<p>Nowy opis.</p>"
     import_categories(api, read_shop(api), categories, Report())
-    assert [
-        c["description"] for c in api.all("categories") if c["name"] == "Kosmetyki"
-    ] == ["<p>Nowy opis.</p>"]
+    assert [c["description"] for c in api.all("categories") if c["name"] == "Kosmetyki"] == ["<p>Nowy opis.</p>"]
     assert len([c for c in api.all("categories") if c["name"] == "Kosmetyki"]) == 1
