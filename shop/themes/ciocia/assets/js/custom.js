@@ -347,17 +347,18 @@ document.addEventListener('DOMContentLoaded', function () {
   function setOpen(item, open) {
     var parts = controls(item);
     if (!parts.button || !parts.panel) return;
+    var wasOpen = !parts.panel.hidden;
     parts.button.setAttribute('aria-expanded', String(open));
     parts.panel.hidden = !open;
     if (item.parentElement === categoryMenu) updateOverlay();
     if (!open) {
       item.querySelectorAll('.ciocia-has-submenu').forEach(function (child) { setOpen(child, false); });
-    } else if (isDesktop() && item.parentElement === categoryMenu) {
-      // A freshly opened panel starts with its first entry (with or without children), as on the source.
+    } else if (!wasOpen && isDesktop() && item.parentElement === categoryMenu) {
+      // A freshly opened panel always starts with its first entry (with or without children), as on the
+      // source. The entry that was active when the panel was closed keeps .is-active, but its children were
+      // hidden on closing: activating the first entry again clears that and opens the children.
       var first = parts.panel.querySelector('.ciocia-mega__body > ul > li');
-      if (first && !parts.panel.querySelector('.ciocia-mega__body > ul > li.is-active')) {
-        activateEntry(first);
-      }
+      if (first) activateEntry(first);
     }
   }
 

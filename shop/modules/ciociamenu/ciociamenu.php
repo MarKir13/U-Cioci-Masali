@@ -25,7 +25,7 @@ class Ciociamenu extends Module
 
     // Fired for every object PrestaShop saves or deletes; the module reacts only to CATALOG_CLASSES
     const HOOKS = ['actionObjectAddAfter', 'actionObjectUpdateAfter', 'actionObjectDeleteAfter'];
-    const CATALOG_CLASSES = ['Category', 'Product', 'Combination', 'SpecificPrice', 'StockAvailable', 'Image'];
+    const CATALOG_CLASSES = ['Category', 'Manufacturer', 'Product', 'Combination', 'SpecificPrice', 'StockAvailable', 'Image'];
 
     public function __construct()
     {
@@ -74,7 +74,8 @@ class Ciociamenu extends Module
         if (!in_array(get_class($object), self::CATALOG_CLASSES, true)) {
             return;
         }
-        if ($object instanceof Category) {
+        // A brand link can only be built once the brand exists, and the importer creates brands after categories
+        if ($object instanceof Category || $object instanceof Manufacturer) {
             $this->rebuildMenu();
         }
         // The cached page parts only, not the compiled templates (Tools::clearSmartyCache() would drop those
@@ -96,11 +97,23 @@ class Ciociamenu extends Module
         $items = [];
         foreach ($names as $name) {
             if (is_array($name)) {
-                // A link under its own label to a category at any level, e.g. "Himalaya" (a subcategory)
-                $idCategory = $this->topLevelCategoryId((string) ($name['category'] ?? ''), true);
-                if ($idCategory) {
-                    $path = parse_url(Context::getContext()->link->getCategoryLink($idCategory), PHP_URL_PATH);
-                    $idLink = $this->ensureLink((string) $name['label'], $path ?: '/');
+                // A link under its own label to a brand page ("manufacturer", e.g. "Himalaya") or, when the
+                // brand does not exist (yet), to a category at any level ("category")
+                $path = '';
+                if (!empty($name['manufacturer'])) {
+                    $idManufacturer = (int) Manufacturer::getIdByName((string) $name['manufacturer']);
+                    if ($idManufacturer) {
+                        $path = (string) parse_url(Context::getContext()->link->getManufacturerLink($idManufacturer), PHP_URL_PATH);
+                    }
+                }
+                if ($path === '' && !empty($name['category'])) {
+                    $idCategory = $this->topLevelCategoryId((string) $name['category'], true);
+                    if ($idCategory) {
+                        $path = (string) parse_url(Context::getContext()->link->getCategoryLink($idCategory), PHP_URL_PATH);
+                    }
+                }
+                if ($path !== '') {
+                    $idLink = $this->ensureLink((string) $name['label'], $path);
                     if ($idLink) {
                         $items[] = 'LNK' . $idLink;
                     }

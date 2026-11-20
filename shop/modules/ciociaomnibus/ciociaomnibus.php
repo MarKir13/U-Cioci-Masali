@@ -148,10 +148,14 @@ class CiociaOmnibus extends Module
                 $regularPrice
             );
 
-        $this->context->smarty->assign(
-            'omnibus_price',
-            $this->context->getCurrentLocale()->formatPrice(Tools::convertPrice($lowest, $currency), $currency->iso_code)
-        );
+        $locale = $this->context->getCurrentLocale();
+        $this->context->smarty->assign([
+            'omnibus_price' => $locale->formatPrice(Tools::convertPrice($lowest, $currency), $currency->iso_code),
+            // Lists ask for the short two-line form with ciocia_short (the source's cards: "Cena przed" and
+            // "Najniższa 30 dni"); the product page keeps the full wording
+            'omnibus_short' => !empty($params['ciocia_short']),
+            'omnibus_regular' => $locale->formatPrice(Tools::convertPrice($regularPrice, $currency), $currency->iso_code),
+        ]);
 
         return $this->fetch('module:ciociaomnibus/views/templates/hook/omnibus-price.tpl');
     }
