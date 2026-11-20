@@ -2,7 +2,8 @@
 
 from importer.api import Lang
 from importer.report import Report
-from importer.steps import Shop, differs, remove_other_records
+from importer.steps import Shop, differs, import_categories, read_shop, remove_other_records
+from tests.fake_shop import FakeApi
 
 # A product as the API returns it: everything as text, empty fields left out, cleaned description
 IN_SHOP = {
@@ -126,3 +127,27 @@ def test_an_unreadable_line_stops_deleting_products_and_manufacturers():
     )
     # Only the demo category: no product (not even the demo one) and no manufacturer
     assert api.deleted == [("categories", 3)]
+
+
+def test_category_description_is_imported_and_a_second_run_changes_nothing():
+    api = FakeApi()
+    categories = [
+        {"id": 8, "name": "Kosmetyki", "url": "https://www.magiczne-indie.pl/8-kosmetyki", "parent_id": None,
+         "description": "<p>Tylko u nas kupisz naturalne henny.</p>"},
+        {"id": 36, "name": "Higiena", "url": "https://www.magiczne-indie.pl/36-higiena", "parent_id": 8,
+         "description": None},
+    ]
+    import_categories(api, read_shop(api), categories, Report())
+    by_name = {c["name"]: c for c in api.all("categories")}
+    assert by_name["Kosmetyki"]["description"] == "<p>Tylko u nas kupisz naturalne henny.</p>"
+    assert by_name["Higiena"]["description"] == ""
+
+    writes_before = len(api.writes)
+    import_categories(api, read_shop(api), categories, Report())
+    assert len(api.writes) == writes_before
+
+    # Source text changed: the shop's description is updated, not duplicated
+    categories[0]["description"] = "<p>Nowy opis.</p>"
+    import_categories(api, read_shop(api), categories, Report())
+    assert [c["description"] for c in api.all("categories") if c["name"] == "Kosmetyki"] == ["<p>Nowy opis.</p>"]
+    assert len([c for c in api.all("categories") if c["name"] == "Kosmetyki"]) == 1
