@@ -183,7 +183,9 @@ Documentation is in English, except `docs/AI_LOG.md`.
   on their own. A full run deletes what is not in the data. Through the API, an update (PUT) empties every field it
   leaves out, so send the complete record; two product saves at the same time deadlock in PrestaShop's search index,
   so the importer saves products one at a time; and the HTML cleaner needs `var/cache/prod/purifier`, which
-  `sync-code.sh` recreates. The top menu follows `catalog.menu_categories` in `shop/config/shop-settings.php` through
+  `sync-code.sh` recreates. The importer leaves `<video>` players out of descriptions (their files 404 in our shop),
+  but keeps the images that 92 descriptions load from the source shop, and one YouTube video: the acceptance crawl
+  blocks those and counts them apart (`DESCRIPTION_MEDIA` in `tests/support/acceptance.js`). The top menu follows `catalog.menu_categories` in `shop/config/shop-settings.php` through
   the module `ciociamenu`, which also clears the page cache after catalogue changes: PrestaShop's own cache hooks
   fire only in the back office, not for API writes.
 - Data init (`deploy/importer/importer/init.py`, ADR 0010) puts the images into `scraper-results/images/` (gitignored),
