@@ -111,7 +111,8 @@ return [
     'catalog' => [
         // Top menu: these top-level categories, in this order. Names exactly as in
         // scraper-results/categories.json. The module ciociamenu keeps the menu in step with them.
-        'menu_categories' => ['Kosmetyki', 'Żywność', 'Zdrowie', 'Różności', 'NA PREZENT', 'Nowości'],
+        'menu_categories' => ['NA PREZENT', 'Nowości', 'Promocje', 'Kosmetyki', 'Żywność', 'Zdrowie',
+            ['label' => 'Himalaya', 'category' => 'Suplementy Himalaya Herbals, Himalaya Herbs'], 'Różności'],
         // false: a product with stock 0 cannot be ordered (the brief wants some products unavailable)
         'order_out_of_stock' => false,
         // Allow <iframe> in descriptions: product 9536 embeds a YouTube video, as on the source shop

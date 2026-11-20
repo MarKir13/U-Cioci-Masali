@@ -6660,3 +6660,379 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
     color: var(--ciocia-text-muted);
   }
 }
+
+/*
+ * Top bar tools (currency + contact) - source colours and look (#107).
+ * Source: label "Waluta:" light, then a native select showing the current currency bold in gold,
+ * with an up/down chevron (unfold_more icon). "Kontakt" with phone icon in light beige.
+ */
+#header .ciocia-topbar-tools #currency-selector-label {
+  color: #f0d5bc;
+  font-weight: 300;
+  opacity: 0.9;
+  margin-right: 12px;
+}
+
+#header .ciocia-topbar-tools .currency-selector {
+  display: inline-flex;
+  align-items: center;
+}
+
+#header .ciocia-currency-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+#header .ciocia-currency-select select {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  padding: 0 20px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+#header .ciocia-currency-select .material-icons {
+  position: absolute;
+  right: 0;
+  font-size: 18px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+#header .ciocia-topbar-tools .ciocia-currency-select select,
+#header .ciocia-topbar-tools .ciocia-currency-select .material-icons {
+  color: #f9d28f;
+}
+
+#header .ciocia-topbar-tools .ciocia-currency-select select {
+  font-weight: 700;
+}
+
+#header .ciocia-topbar-tools .ciocia-contact-link,
+#header .ciocia-topbar-tools .ciocia-contact-link .material-icons {
+  color: #f0d5bc;
+}
+
+#header .ciocia-topbar-tools .ciocia-contact-link {
+  font-weight: 300;
+}
+
+#header .ciocia-topbar-tools .ciocia-contact-link:hover,
+#header .ciocia-topbar-tools .ciocia-contact-link:hover .material-icons {
+  color: var(--ciocia-header-accent);
+}
+
+/* Search placeholder: darker and fully opaque, as in the source shop (#107). */
+#header #search_widget input[type="text"]::placeholder {
+  color: #595a5b;
+  opacity: 1;
+}
+
+/*
+ * Main menu as in the source shop (#107): special entries first, with their icons, slightly larger
+ * labels and a small chevron close to the label of entries that have a submenu.
+ */
+#header .ciocia-menu-icon {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  #header #_desktop_top_menu > .top-menu > li > a {
+    display: inline-flex;
+    align-items: center;
+    font-size: 13.76px;
+    letter-spacing: 0.344px;
+  }
+
+  #header #_desktop_top_menu .ciocia-menu-icon {
+    display: inline-block;
+    margin-right: 8px;
+    font-size: 18px;
+    color: #f9d28f;
+  }
+
+  #header #_desktop_top_menu > .top-menu > li:first-child {
+    margin-left: -26px;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu {
+    margin-right: 17px;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > a {
+    padding-right: 7px;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > .ciocia-submenu-toggle {
+    width: 33px;
+    color: #f9d28f;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > .ciocia-submenu-toggle .material-icons {
+    font-size: 16px;
+  }
+}
+
+/* From "Kosmetyki" on the source shows the entries and their chevrons in light beige, the first three in gold. */
+@media (min-width: 768px) {
+  #header #_desktop_top_menu > .top-menu > li:nth-child(n+4) > a {
+    color: #f0d5bc;
+  }
+
+  #header #_desktop_top_menu > .top-menu > li:nth-child(n+4) > a:hover {
+    color: var(--ciocia-header-accent);
+  }
+}
+
+/* The wishlist heart is gold, as on the source. */
+#header .ciocia-header-wishlist {
+  color: #f9d28f;
+}
+
+/*
+ * Keep the whole menu on one row: tighter gaps (measured against the source: 1.5 px less between entries)
+ * and no wrapping, so a few pixels of rounding can never push the last entry to a second row.
+ */
+@media (min-width: 768px) {
+  #header #_desktop_top_menu > .top-menu {
+    flex-wrap: nowrap;
+  }
+
+  #header #_desktop_top_menu > .top-menu > li > a {
+    padding-left: 15.25px;
+    padding-right: 15.25px;
+    white-space: nowrap;
+  }
+
+  #header #_desktop_top_menu > .top-menu > li:first-child > a {
+    padding-left: 0;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > a {
+    padding-left: 12.6px; /* + 1px transparent border = 13.6px, as on the source */
+    padding-right: 0;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu {
+    margin-right: 2.25px;
+  }
+
+  #header #_desktop_top_menu .ciocia-menu-icon {
+    margin-right: 6px;
+  }
+}
+
+/*
+ * Hover / focus of an entry with a submenu, as on the source: a rounded dark-red pill around the label and
+ * its chevron (the link is the left half, the chevron button the right half) and a thin gold line fading out
+ * at both ends near the bottom of the pill.
+ */
+@media (min-width: 768px) {
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > a,
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > .ciocia-submenu-toggle {
+    height: 44px;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    background: transparent;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > a {
+    position: relative;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-right: 0;
+    border-radius: 10.4px 0 0 10.4px;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > .ciocia-submenu-toggle {
+    border-left: 0;
+    border-radius: 0 10.4px 10.4px 0;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 2px;
+    width: calc(100% + 33px);
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #efcf95 50%, transparent);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu:has(> .ciocia-submenu-toggle[aria-expanded="true"]) > a,
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu:has(> .ciocia-submenu-toggle[aria-expanded="true"]) > .ciocia-submenu-toggle {
+    background: #381615;
+    border-color: #4f2d25;
+    color: #fefaf1;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu:has(> .ciocia-submenu-toggle[aria-expanded="true"]) > a::after {
+    opacity: 1;
+  }
+}
+
+/*
+ * The entries fill the row up to the wishlist heart (as on the source): the gaps stretch or shrink and the last
+ * entry stays put. Its chevron box hangs over the heart, so the chevron lands on the left side of the heart.
+ */
+@media (min-width: 768px) {
+  #header #_desktop_top_menu > .top-menu {
+    justify-content: space-between;
+  }
+
+  #header #_desktop_top_menu > .top-menu > li:last-child {
+    margin-right: -25px;
+  }
+}
+
+/*
+ * Label-to-chevron distance as on the source (about 10 px): the chevron sits at the left of its button, not
+ * centred in it, and is gold like the first three entries. The button stays 33 px wide for the hover pill.
+ */
+@media (min-width: 768px) {
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > .ciocia-submenu-toggle {
+    justify-content: flex-start;
+    padding-left: 5.7px;
+  }
+
+  /* Measured on the running shop: the glyph sat 8 px (16 device px) further right than the source, and the gap after it was just as much too small. */
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > .ciocia-submenu-toggle .material-icons {
+    margin-left: -8px;
+  }
+}
+
+/*
+ * Main menu geometry copied from the values of the source shop's stylesheet (#107). This block supersedes the
+ * pixel-calibrated rules above: the row is centred (it overflows evenly on both sides, which is why the last
+ * chevron ends up under the wishlist heart), entries are 0.2rem apart, links have 0.65rem 0.85rem padding,
+ * a 0.25rem gap and a 16px chevron inside the pill. The pill is drawn on the whole <li> (link + chevron button).
+ */
+@media (min-width: 768px) {
+  #header #_desktop_top_menu > .top-menu {
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 3.2px;
+    /* Without this the list is as wide as its content and overflows only to the right; the source's list is
+       as wide as the space before the heart and overflows evenly on both sides. */
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    /* Measured against the source: the whole row sits about 6px further right. */
+    padding-left: 12.4px;
+  }
+
+  #header #_desktop_top_menu > .top-menu > li,
+  #header #_desktop_top_menu > .top-menu > li:first-child,
+  #header #_desktop_top_menu > .top-menu > li:last-child,
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu {
+    margin: 0;
+    border-radius: 10.4px;
+    transition: background-color 0.18s, box-shadow 0.18s;
+  }
+
+  #header #_desktop_top_menu > .top-menu > li > a,
+  #header #_desktop_top_menu > .top-menu > li:first-child > a,
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > a {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: auto;
+    min-height: 44px;
+    padding: 10.4px 13.6px;
+    border: 0;
+    border-radius: 10.4px;
+    font-size: 13.76px;
+    letter-spacing: 0.344px;
+    line-height: 20.64px;
+    white-space: nowrap;
+  }
+
+  /* The chevron button is the right part of the link: text, 4px gap, 16px chevron, 13.6px padding. */
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > a {
+    padding-right: 0;
+    border-radius: 10.4px 0 0 10.4px;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > .ciocia-submenu-toggle {
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    width: 33.6px;
+    min-height: 44px;
+    height: auto;
+    padding: 0 13.6px 0 4px;
+    border: 0;
+    border-radius: 0 10.4px 10.4px 0;
+    background: transparent;
+    justify-content: flex-start;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > .ciocia-submenu-toggle .material-icons {
+    width: 16px;
+    margin: 0;
+    font-size: 16px;
+    transition: transform 0.18s;
+  }
+
+  #header #_desktop_top_menu .ciocia-menu-icon {
+    margin-right: 1.6px;
+    font-size: 18.4px;
+    line-height: 1;
+  }
+
+  #header #_desktop_top_menu > .top-menu > li:nth-child(n+4) > a:hover,
+  #header #_desktop_top_menu > .top-menu > li > a:hover {
+    color: #fff;
+  }
+
+  /* Open state: translucent pill around the whole entry, light label, rotated chevron. */
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu:has(> .ciocia-submenu-toggle[aria-expanded="true"]) {
+    background: rgba(255, 250, 240, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(249, 210, 143, 0.12);
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu:has(> .ciocia-submenu-toggle[aria-expanded="true"]) > a,
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu:has(> .ciocia-submenu-toggle[aria-expanded="true"]) > .ciocia-submenu-toggle {
+    background: transparent;
+    border-color: transparent;
+    color: #fffaf0;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu:has(> .ciocia-submenu-toggle[aria-expanded="true"]) > .ciocia-submenu-toggle {
+    color: #f9d28f;
+  }
+
+  /* Gold line near the bottom edge that grows out from the centre of the whole entry (link + chevron). */
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu > a::after {
+    content: "";
+    position: absolute;
+    left: 8px;
+    bottom: 2.4px;
+    width: calc(100% + 17.6px);
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #f9d28f, transparent);
+    opacity: 0;
+    transform: scaleX(0.35);
+    transition: opacity 0.18s, transform 0.18s;
+    pointer-events: none;
+  }
+
+  #header #_desktop_top_menu > .top-menu > .ciocia-has-submenu:has(> .ciocia-submenu-toggle[aria-expanded="true"]) > a::after {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+/* The line under the menu row is brighter on the source (about 24% gold) than the one above it (about 12%). */
+@media (min-width: 768px) {
+  #header .ciocia-desktop-navigation {
+    box-shadow: inset 0 1px rgba(249, 210, 143, 0.12), inset 0 -1px rgba(249, 210, 143, 0.24);
+  }
+}

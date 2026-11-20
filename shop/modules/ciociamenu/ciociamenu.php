@@ -95,9 +95,27 @@ class Ciociamenu extends Module
 
         $items = [];
         foreach ($names as $name) {
+            if (is_array($name)) {
+                // A link under its own label to a category at any level, e.g. "Himalaya" (a subcategory)
+                $idCategory = $this->topLevelCategoryId((string) ($name['category'] ?? ''), true);
+                if ($idCategory) {
+                    $path = parse_url(Context::getContext()->link->getCategoryLink($idCategory), PHP_URL_PATH);
+                    $idLink = $this->ensureLink((string) $name['label'], $path ?: '/');
+                    if ($idLink) {
+                        $items[] = 'LNK' . $idLink;
+                    }
+                }
+                continue;
+            }
             $idCategory = $this->topLevelCategoryId((string) $name);
             if ($idCategory) {
                 $items[] = 'CAT' . $idCategory;
+            } elseif (mb_strtolower((string) $name) === 'promocje') {
+                // Not a category: the source shop's "Promocje" entry points to the price-drop page
+                $idLink = $this->ensureLink('Promocje', $this->pricesDropPath());
+                if ($idLink) {
+                    $items[] = 'LNK' . $idLink;
+                }
             }
         }
         $value = implode(',', $items);
@@ -113,14 +131,45 @@ class Ciociamenu extends Module
     }
 
     /** ID of the category with this name directly under Home, or 0. */
-    private function topLevelCategoryId($name)
+    // Path of PrestaShop's own price-drop page (/promocje), relative so it works on any host and port
+    private function pricesDropPath()
+    {
+        $path = parse_url(Context::getContext()->link->getPageLink('prices-drop'), PHP_URL_PATH);
+
+        return $path ?: '/promocje';
+    }
+
+    // The custom link of ps_mainmenu (tables linksmenutop and linksmenutop_lang): created once, updated afterwards
+    private function ensureLink($label, $path)
+    {
+        $idShop = (int) Configuration::get('PS_SHOP_DEFAULT');
+        $db = Db::getInstance();
+        $id = (int) $db->getValue('SELECT l.id_linksmenutop FROM ' . _DB_PREFIX_ . 'linksmenutop_lang l WHERE l.label = "'
+            . pSQL($label) . '" AND l.id_shop = ' . $idShop);
+        if (!$id) {
+            if (!$db->insert('linksmenutop', ['new_window' => 0, 'id_shop' => $idShop])) {
+                return 0;
+            }
+            $id = (int) $db->Insert_ID();
+        }
+        foreach (Language::getLanguages(false) as $language) {
+            $db->execute('REPLACE INTO ' . _DB_PREFIX_ . 'linksmenutop_lang (id_linksmenutop, id_lang, id_shop, label, link) VALUES ('
+                . $id . ', ' . (int) $language['id_lang'] . ', ' . $idShop . ', "' . pSQL($label) . '", "' . pSQL($path) . '")');
+        }
+
+        return $id;
+    }
+
+    private function topLevelCategoryId($name, $anyLevel = false)
     {
         $sql = new DbQuery();
         $sql->select('c.id_category');
         $sql->from('category', 'c');
         $sql->innerJoin('category_lang', 'cl', 'cl.id_category = c.id_category AND cl.id_lang = '
             . (int) Configuration::get('PS_LANG_DEFAULT') . ' AND cl.id_shop = ' . (int) Configuration::get('PS_SHOP_DEFAULT'));
-        $sql->where('c.id_parent = ' . (int) Configuration::get('PS_HOME_CATEGORY'));
+        if (!$anyLevel) {
+            $sql->where('c.id_parent = ' . (int) Configuration::get('PS_HOME_CATEGORY'));
+        }
         $sql->where('cl.name = "' . pSQL($name) . '"');
         $sql->orderBy('c.id_category');
 

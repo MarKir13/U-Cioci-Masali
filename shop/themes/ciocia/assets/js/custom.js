@@ -291,10 +291,15 @@ document.addEventListener('DOMContentLoaded', function () {
     parts.button.addEventListener('click', function () {
       setOpen(item, parts.button.getAttribute('aria-expanded') !== 'true');
     });
+    // Opens a moment after the pointer arrives (as on the source), closes at once when it leaves.
+    var openTimer = null;
     item.addEventListener('mouseenter', function () {
-      if (window.matchMedia('(min-width: 768px)').matches) setOpen(item, true);
+      if (!window.matchMedia('(min-width: 768px)').matches) return;
+      clearTimeout(openTimer);
+      openTimer = setTimeout(function () { setOpen(item, true); }, 150);
     });
     item.addEventListener('mouseleave', function () {
+      clearTimeout(openTimer);
       if (!item.contains(document.activeElement) && window.matchMedia('(min-width: 768px)').matches) setOpen(item, false);
     });
     // Desktop only: in the drawer, closing on press shifts the layout and the tap misses its target.
@@ -1301,3 +1306,11 @@ document.addEventListener('click', function (event) {
   if (trust) row.appendChild(trust);
   else row.classList.add('ciocia-product-info--solo');
 })();
+
+// Currency select in the top bar: go to the chosen currency's URL.
+document.addEventListener('change', function (event) {
+  var select = event.target;
+  if (select && select.matches && select.matches('.currency-selector select.link') && select.value) {
+    window.location.href = select.value;
+  }
+});

@@ -34,6 +34,8 @@
                 href="{$node.url}" data-depth="{$depth}"
                 {if $node.open_in_new_window} target="_blank" {/if}
               >
+                {if $depth === 0 && $node.label|lower === 'na prezent'}<i class="material-icons ciocia-menu-icon" aria-hidden="true">card_giftcard</i>{/if}
+                {if $depth === 0 && $node.label|lower === 'promocje'}<i class="material-icons ciocia-menu-icon" aria-hidden="true">local_offer</i>{/if}
                 {if $node.image_urls|count}
                   {foreach from=$node.image_urls item=image_url}
                     <img src="{$image_url}" alt="{$node.label|escape:'htmlall':'UTF-8'}">
