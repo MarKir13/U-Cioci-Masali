@@ -182,7 +182,7 @@ def test_without_source_links_keeps_the_text_and_drops_the_address():
 
 
 def test_without_source_links_handles_other_attributes_and_letter_case():
-    source = "<A class=\"x\" HREF='http://magiczne-indie.pl/content/54-a' title=\"t\">jak <b>czyścić</b></A>"
+    source = '<A class="x" HREF=\'http://magiczne-indie.pl/content/54-a\' title="t">jak <b>czyścić</b></A>'
     html = f'{source} i <a href="/koszyk">koszyk</a>'
     assert mapping.without_source_links(html) == 'jak <b>czyścić</b> i <a href="/koszyk">koszyk</a>'
 
