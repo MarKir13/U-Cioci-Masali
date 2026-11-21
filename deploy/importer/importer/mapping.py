@@ -183,6 +183,21 @@ def without_videos(html: str) -> str:
     return VIDEO.sub("", html)
 
 
+def descriptions(product: dict) -> tuple[str, str]:
+    """The long description (the product page's description tab) and the short one (above "Add to cart").
+
+    A product whose long description is empty on the source has its short one in `description` too, because the
+    scraper falls back to it (ADR 0007). The source shows that text only above the button, so the shop gets the
+    same: an empty long description, which PrestaShop does not show. A product without a short description
+    gets an empty one.
+    """
+    long = without_videos(product["description"])
+    short = without_videos(product.get("description_short") or "")
+    if short and visible_text(short) == visible_text(long):
+        return "", short
+    return long, short
+
+
 def parents_first(categories: list[dict]) -> list[dict]:
     """Categories ordered so that every parent comes before its children (top-level first)."""
     by_id = {c["id"]: c for c in categories}

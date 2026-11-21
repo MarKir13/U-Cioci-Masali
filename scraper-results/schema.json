@@ -99,6 +99,19 @@
           "title": "Description",
           "type": "string"
         },
+        "description_short": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description Short"
+        },
         "price": {
           "pattern": "^\\d+(\\.\\d{1,2})?$",
           "title": "Price",

@@ -44,6 +44,11 @@ def _blank_to_none(value: object) -> object:
     return None if isinstance(value, str) and not value.strip() else value
 
 
+def _no_text_to_none(value: object) -> object:
+    """An optional HTML field with no visible text (such as `<p></p>`) means the shop has no value."""
+    return None if isinstance(value, str) and not has_visible_text(value) else value
+
+
 def _normalize_price(value: Decimal) -> Decimal:
     """Normalizes the price, removing redundant zeros and converts scientific notation"""
     return Decimal(format(value.normalize(), "f"))
@@ -58,6 +63,9 @@ OptionalText = Annotated[Text | None, BeforeValidator(_blank_to_none)]
 
 # non empty HTML tag (saved with the Tag)
 Description = Annotated[Text, AfterValidator(_require_visible_text)]
+
+# Optional HTML: null when it has no visible text
+OptionalDescription = Annotated[Text | None, BeforeValidator(_no_text_to_none)]
 
 # Two decimal places, so a raw value like 69.58764 fails unless the parser has rounded it.
 # Decimals are saved as JSON strings, which is what the schema has to describe.
@@ -113,6 +121,8 @@ class Product(Record):
     url: HttpUrl
     name: Text
     description: Description
+    # Shown above the "Add to cart" button. May be the same text as `description` when the long one is empty.
+    description_short: OptionalDescription = None
     price: Price
     regular_price: Price
     has_discount: bool

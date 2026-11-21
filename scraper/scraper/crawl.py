@@ -36,6 +36,7 @@ from .parsers import (
     parse_sitemap,
     parse_sitemap_index,
     product_urls,
+    short_description,
 )
 
 log = logging.getLogger(__name__)
@@ -157,6 +158,59 @@ class PageCache:
         tmp = path.with_name(path.name + ".tmp")
         tmp.write_bytes(gzip.compress(text.encode("utf-8")))
         os.replace(tmp, path)
+
+
+# ---------- Adding a new field to saved products ----------
+
+
+def backfill_short_descriptions(products_file: Path, cache: PageCache) -> int:
+    """Adds `description_short` to the saved products from their pages in the page cache. Never uses the network.
+
+    A full crawl skips products that are already saved, so a field added to the parser after the crawl would
+    reach them only through a new snapshot. Here only that one field changes: prices, categories and the
+    `local_path` of the images stay as they are. A product whose page is not in the cache keeps its record and
+    is counted; the exit code is then 1, so the missing pages are noticed.
+    """
+    records = load_lines(products_file)
+    stats = Counter()
+    updated = []
+    for record in records:
+        html = cache.get(record["url"])
+        if html is None:
+            log.warning(
+                "Product %d: page not in the cache, short description left as it was: %s", record["id"], record["url"]
+            )
+            stats["not in the cache"] += 1
+            updated.append(record)
+            continue
+        try:
+            short = short_description(record["url"], html)
+        except ValueError as exc:
+            log.error("Product %d: %s", record["id"], exc)
+            stats["failed"] += 1
+            updated.append(record)
+            continue
+        product = validate_record(Product, {**record, "description_short": short}, record["url"])
+        if product is None:  # logged by validate_record
+            stats["failed"] += 1
+            updated.append(record)
+            continue
+        new_record = product.model_dump(mode="json")
+        stats["changed" if new_record != record else "unchanged"] += 1
+        stats["with a short description"] += new_record["description_short"] is not None
+        updated.append(new_record)
+    save_lines(products_file, updated)
+    log.info(
+        "Short descriptions: %d products, %d changed, %d unchanged, %d with a short description, "
+        "%d not in the cache, %d failed",
+        len(records),
+        stats["changed"],
+        stats["unchanged"],
+        stats["with a short description"],
+        stats["not in the cache"],
+        stats["failed"],
+    )
+    return 1 if stats["not in the cache"] or stats["failed"] else 0
 
 
 # ---------- The run ----------
