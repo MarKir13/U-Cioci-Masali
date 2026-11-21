@@ -8,7 +8,7 @@ import pytest
 import requests
 
 from scraper.__main__ import main
-from scraper.crawl import Crawler, PageCache, load_lines
+from scraper.crawl import Crawler, PageCache, backfill_short_descriptions, load_lines, save_lines
 from scraper.http_client import HttpClient
 
 BASE = "https://shop.test"
@@ -402,6 +402,64 @@ def test_product_without_any_description_is_rejected_with_the_reason(tmp_path):
     rejected = json.loads((tmp_path / "results" / "rejected.json").read_text(encoding="utf-8"))
     assert [(entry["id"], entry["url"]) for entry in rejected] == [(102, product_url(102))]
     assert "description" in rejected[0]["reason"]
+
+
+# ---------- Backfilling the short description ----------
+
+
+def crawl_without_short_descriptions(tmp_path, pages: dict) -> None:
+    """A crawl that fills the cache, then products saved as an older crawl did: no short description, and an
+    image already downloaded."""
+    make_crawler(pages, tmp_path, cache=True)[0].run()
+    products_file = tmp_path / "results" / "products.jsonl"
+    records = load_lines(products_file)
+    for record in records:
+        del record["description_short"]
+        record["images"][0]["local_path"] = f"images/{record['id']}-1.jpg"
+    save_lines(products_file, records)
+
+
+def test_backfill_adds_the_short_description_and_keeps_the_rest(tmp_path):
+    pages = shop_pages()
+    pages[product_url(102)] = product_page(102, {"description_short": "<p>Krótki</p>"})
+    crawl_without_short_descriptions(tmp_path, pages)
+    before = saved_products(tmp_path)
+
+    assert backfill_short_descriptions(tmp_path / "results" / "products.jsonl", PageCache(tmp_path / "cache")) == 0
+
+    after = saved_products(tmp_path)
+    assert after[102]["description_short"] == "<p>Krótki</p>"
+    assert after[101]["description_short"] is None
+    for product_id, record in after.items():
+        assert {**record, "description_short": None} == {**before[product_id], "description_short": None}
+        assert record["images"][0]["local_path"] == f"images/{product_id}-1.jpg"
+
+
+def test_second_backfill_changes_nothing(tmp_path, caplog):
+    pages = shop_pages()
+    pages[product_url(102)] = product_page(102, {"description_short": "<p>Krótki</p>"})
+    crawl_without_short_descriptions(tmp_path, pages)
+    products_file = tmp_path / "results" / "products.jsonl"
+    backfill_short_descriptions(products_file, PageCache(tmp_path / "cache"))
+    first = products_file.read_bytes()
+
+    with caplog.at_level(logging.INFO):
+        assert backfill_short_descriptions(products_file, PageCache(tmp_path / "cache")) == 0
+    assert products_file.read_bytes() == first
+    assert "4 products, 0 changed, 4 unchanged, 1 with a short description" in caplog.text
+
+
+def test_backfill_keeps_a_product_whose_page_is_not_cached_and_fails(tmp_path, caplog):
+    crawl_without_short_descriptions(tmp_path, shop_pages())
+    cache = PageCache(tmp_path / "cache")
+    cache._path(product_url(103)).unlink()
+    before = saved_products(tmp_path)
+
+    with caplog.at_level(logging.WARNING):
+        assert backfill_short_descriptions(tmp_path / "results" / "products.jsonl", cache) == 1
+
+    assert saved_products(tmp_path)[103] == before[103]
+    assert "Product 103: page not in the cache" in caplog.text
 
 
 # ---------- Categories that are not in the shop ----------
