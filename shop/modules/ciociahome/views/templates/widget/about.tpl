@@ -21,7 +21,7 @@
     <ul class="ciocia-home-about__contact-list">
       <li><strong>SMS:</strong> <a href="tel:+48794265385">+48 794 265 385</a> (pon–pt 8:00–15:00)</li>
       <li><strong>Email:</strong> <a href="mailto:{$ciocia_email}">{$ciocia_email}</a></li>
-      <li><strong>Adres korespondencyjny:</strong> ul. Szkolna 42, 05-077 Zakręt / Warszawa-Wesoła</li>
+      {if $ciocia_address}<li><strong>Adres korespondencyjny:</strong> {$ciocia_address}</li>{/if}
     </ul>
     <p class="ciocia-home-about__contact-note">Godziny kontaktu: poniedziałek – piątek 8:00–15:00</p>
   </aside>

@@ -28,17 +28,26 @@
  *}
 {block name='product_miniature_item'}
 {$ciocia_ribbon = null}
+{$ciocia_new_flag = null}
 {$ciocia_out_of_stock = $product.availability == 'unavailable'}
 {foreach from=$product.flags item=flag}
-  {if $flag.type == 'discount' || $flag.type == 'on-sale'}
+  {if $flag.type == 'discount' && $product.regular_price_amount > 0}
+    {* The importer saves promotions as a fixed amount, so the label would be "-11,61 zł"; as on the source and on
+       the product page (product-flags.tpl) the ribbon shows the percentage *}
+    {$ciocia_percent = (($product.regular_price_amount - $product.price_amount) / $product.regular_price_amount * 100)|round:0}
+    {if !$ciocia_ribbon}{$ciocia_ribbon = ['type' => 'discount', 'label' => "-`$ciocia_percent`%"]}{/if}
+  {elseif $flag.type == 'discount' || $flag.type == 'on-sale'}
     {if !$ciocia_ribbon}{$ciocia_ribbon = $flag}{/if}
   {elseif $flag.type == 'new'}
-    {* "Nowy" wins over the discount, as on the source (a new product in a promotion wears "Nowy") *}
-    {$ciocia_ribbon = $flag}
+    {$ciocia_new_flag = $flag}
   {elseif $flag.type == 'out_of_stock'}
     {$ciocia_out_of_stock = true}
   {/if}
 {/foreach}
+{* The discount wins over "Nowy": the importer sets date_add to the import date, so PrestaShop flags every product
+   as new for 20 days, and "Nowy" would hide every promotion. "Nowy" is shown only without a discount. The flags
+   come in any order, so "new" is kept apart and chosen after the loop. *}
+{if !$ciocia_ribbon && $ciocia_new_flag}{$ciocia_ribbon = $ciocia_new_flag}{/if}
 {* As on the source, an unavailable product wears "Obecnie brak na stanie" on its ribbon, in place of "Nowy" or the discount. *}
 {if $ciocia_out_of_stock}{$ciocia_ribbon = ['type' => 'out_of_stock', 'label' => 'Obecnie brak na stanie']}{/if}
 {if $product.cover}

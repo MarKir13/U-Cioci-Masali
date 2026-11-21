@@ -1,13 +1,15 @@
 <?php
 /**
- * Static sections of the home page (issue: home page as on the source): the category tiles, "what do you need",
- * brands, shopping guides, the SEO text and "our story". The theme calls them from templates/index.tpl:
+ * Sections of the home page (issue: home page as on the source): "featured" and "new" products, the category
+ * tiles ("categories"), "what do you need" ("needs"), "brands", shopping "guides", the "seo" text and "our
+ * story" ("about"). The theme calls them from templates/index.tpl:
  *
  *   {widget name='ciociahome' section='categories'}
  *
- * The text is fixed (it is the source shop's own copy). Only the links are looked up, because the ids of
- * categories and brands differ between shops: a tile points to the active category or brand with the given
- * name, the shallowest one first, and falls back to the search page when there is none.
+ * The text of the static sections is fixed (it is the source shop's own copy). Only the links are looked up,
+ * because the ids of categories and brands differ between shops: a tile points to the active category or brand
+ * with the given name, the shallowest one first, and falls back to the search page when there is none. The
+ * "featured" and "new" sections pick products from the catalogue instead.
  */
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -160,6 +162,12 @@ class CiociaHome extends Module implements WidgetInterface
                 $vars['ciocia_free_shipping'] = (int) Configuration::get('PS_SHIPPING_FREE_PRICE');
                 $vars['ciocia_gallery'] = $this->gallery();
                 $vars['ciocia_email'] = (string) Configuration::get('PS_SHOP_EMAIL');
+                // The store's own (fictional) address from the settings, as in the footer and on the contact page.
+                $vars['ciocia_address'] = trim(
+                    (string) Configuration::get('PS_SHOP_ADDR1') . ', '
+                    . trim((string) Configuration::get('PS_SHOP_CODE') . ' ' . (string) Configuration::get('PS_SHOP_CITY')),
+                    ' ,'
+                );
                 break;
         }
 
@@ -345,13 +353,14 @@ class CiociaHome extends Module implements WidgetInterface
     }
 
     /**
-     * The two photos of the old shop, if they are in the theme (assets/img/home-banner/home-store-1.jpg and -2.jpg).
+     * The two photos of the old shop, if they are in the theme: the same files as the two banner slides
+     * (assets/img/home-banner/mi-slide-1.jpg and -2.jpg, listed in shop-settings.php).
      */
     private function gallery()
     {
         $photos = [];
         foreach ([1, 2] as $number) {
-            $file = 'home-store-' . $number . '.jpg';
+            $file = 'mi-slide-' . $number . '.jpg';
             if (is_file(_PS_ALL_THEMES_DIR_ . 'ciocia/assets/img/home-banner/' . $file)) {
                 $photos[] = $this->context->link->getBaseLink() . 'themes/ciocia/assets/img/home-banner/' . $file;
             }

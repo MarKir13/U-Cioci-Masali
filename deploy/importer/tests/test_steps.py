@@ -57,6 +57,20 @@ def test_a_video_left_in_the_shop_differs():
     assert differs(in_shop, WANTED)
 
 
+def test_a_source_link_left_in_the_shop_differs():
+    # Imported before the importer turned source links into text: same words, but the shop still has the link
+    link = '<a href="https://www.magiczne-indie.pl/399-x">Himalaya</a>'
+    in_shop = {**IN_SHOP, "description": f"<p>{link} kredka<br />czarna</p>"}
+    assert differs(in_shop, {**WANTED, "description": Lang("<p>Himalaya kredka<br>czarna</p>")})
+
+
+def test_a_source_link_the_importer_keeps_does_not_differ():
+    # Product descriptions keep their links, so the same link in the shop is not a change
+    link = '<a href="https://www.magiczne-indie.pl/399-x">Himalaya</a>'
+    in_shop = {**IN_SHOP, "description": f"<p>{link} kredka<br />czarna</p>"}
+    assert not differs(in_shop, {**WANTED, "description": Lang(f"<p>{link} kredka<br>czarna</p>")})
+
+
 def test_another_category_differs():
     categories = {"categories": [("category", {"id": 12})]}
     assert differs(IN_SHOP, {**WANTED, "associations": categories})

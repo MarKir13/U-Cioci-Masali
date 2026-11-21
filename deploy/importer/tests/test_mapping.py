@@ -175,6 +175,31 @@ def test_without_videos_removes_two_players_and_what_is_between_them_stays():
     assert mapping.without_videos(html) == "<strong>Waga 1750 g.</strong><br /><p>koniec</p>"
 
 
+def test_without_source_links_keeps_the_text_and_drops_the_address():
+    link = '<a href="https://www.magiczne-indie.pl/399-miedziane-naczynia-do-wody">Miedziane naczynia</a>'
+    html = f"<p>Wróć do {link}.</p>"
+    assert mapping.without_source_links(html) == "<p>Wróć do Miedziane naczynia.</p>"
+
+
+def test_without_source_links_handles_other_attributes_and_letter_case():
+    source = "<A class=\"x\" HREF='http://magiczne-indie.pl/content/54-a' title=\"t\">jak <b>czyścić</b></A>"
+    html = f'{source} i <a href="/koszyk">koszyk</a>'
+    assert mapping.without_source_links(html) == 'jak <b>czyścić</b> i <a href="/koszyk">koszyk</a>'
+
+
+def test_without_source_links_leaves_other_sites_alone():
+    html = '<a href="http://www.lawana.pl/x">Lawana</a>'
+    assert mapping.without_source_links(html) == html
+
+
+def test_no_category_description_links_to_the_source_shop_after_the_import_mapping():
+    path = RESULTS / "categories.json"
+    if not path.is_file():
+        pytest.skip("scraper-results/categories.json not found")
+    for category in json.loads(path.read_text(encoding="utf-8")):
+        assert not mapping.SOURCE_LINK.search(mapping.without_source_links(category.get("description") or ""))
+
+
 def test_without_videos_ignores_letter_case():
     assert mapping.without_videos('<p>a<VIDEO controls><SOURCE src="/x.mp4"></Video>b</p>') == "<p>ab</p>"
 

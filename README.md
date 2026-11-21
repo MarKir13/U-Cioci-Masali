@@ -45,7 +45,7 @@ Requirements: [Docker Desktop](https://www.docker.com/products/docker-desktop/) 
    It downloads the product images (585 MB, from the GitHub Release) while the shop installs, waits until the shop
    is ready, then imports 2165 products in 160 categories. It ends with `init: done` and the shop's address. On a
    team laptop this took about 35–40 minutes, mostly the download and the image uploads
-   ([ADR 0010](docs/adr/0010-one-command-data-init.md)). For a quick look, `init --subset` imports only 53 products
+   ([ADR 0010](docs/adr/0010-one-command-data-init.md)). For a quick look, `init --subset` imports only 54 products
    of two categories in about 2 minutes. Running init again downloads nothing and changes nothing. More:
    [Loading the data into the shop](#loading-the-data-into-the-shop).
 5. Open the shop (HTTPS only; http://localhost:8080 redirects there with 301):
@@ -291,7 +291,7 @@ One command, from the repository root, right after `up -d` (step 4 of [Running t
 
 ```sh
 docker compose -f deploy/compose.yaml --profile init run --rm --build init            # all 2165 products
-docker compose -f deploy/compose.yaml --profile init run --rm --build init --subset   # 53 products, about 2 minutes
+docker compose -f deploy/compose.yaml --profile init run --rm --build init --subset   # 54 products, about 2 minutes
 ```
 
 Init does three things in order ([`deploy/importer/importer/init.py`](deploy/importer/importer/init.py)):

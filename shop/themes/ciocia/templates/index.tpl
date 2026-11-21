@@ -4,8 +4,9 @@
  * displayHome in the order of their positions; here each section has its place.
  *
  * - The banner is ps_imageslider (modules/ps_imageslider/.../slider.tpl, issue #63).
- * - Featured and new products are Classic's modules; their markup is styled in custom.css.
- * - The static sections are the widgets of our module ciociahome (shop/modules/ciociahome).
+ * - Every other section, "featured" and "new" products included, is a widget of our module ciociahome
+ *   (shop/modules/ciociahome); their markup is styled in custom.css. Classic's ps_featuredproducts and
+ *   ps_newproducts are not printed here.
  * ps_specials ("Wyprzedaż"), which Classic also hooks on displayHome, is not on the source's home page.
  *}
 {extends file='parent:index.tpl'}

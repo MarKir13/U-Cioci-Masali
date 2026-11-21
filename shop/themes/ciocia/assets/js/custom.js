@@ -222,47 +222,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (event.matches) setDrawer(false);
   });
 
-  var currencyToggle = document.getElementById('ciocia-currency-toggle');
-  if (currencyToggle) {
-    var currencyMenu = currencyToggle.parentElement.querySelector('.dropdown-menu');
-    function currencyLinks() {
-      return Array.from(currencyMenu.querySelectorAll('a'));
-    }
-    function closeCurrency() {
-      if (currencyToggle.getAttribute('aria-expanded') === 'true') currencyToggle.click();
-    }
-    currencyToggle.addEventListener('keydown', function (event) {
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault();
-        event.stopPropagation();
-        if (currencyToggle.getAttribute('aria-expanded') !== 'true') currencyToggle.click();
-        var links = currencyLinks();
-        if (links.length) links[event.key === 'ArrowDown' ? 0 : links.length - 1].focus();
-      } else if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        closeCurrency();
-      }
-    });
-    currencyMenu.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        closeCurrency();
-        currencyToggle.focus();
-      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault();
-        event.stopPropagation();
-        var links = currencyLinks();
-        var index = links.indexOf(document.activeElement);
-        links[(index + (event.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length].focus();
-      }
-    });
-    currencyToggle.parentElement.addEventListener('focusout', function (event) {
-      if (!currencyToggle.parentElement.contains(event.relatedTarget)) closeCurrency();
-    });
-  }
-
   // Keep category navigation usable without a mouse, at every menu depth.
   var categoryMenu = document.getElementById('top-menu');
   if (!categoryMenu) return;

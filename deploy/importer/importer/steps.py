@@ -134,7 +134,7 @@ def import_categories(api: ShopApi, shop: Shop, categories: list[dict], report: 
             "name": Lang(category["name"]),
             "link_rewrite": Lang(mapping.link_rewrite(category["url"], category["name"])),
             # The text under the category name, as on the source (the theme shows it on the first page)
-            "description": Lang(category.get("description") or ""),
+            "description": Lang(mapping.without_source_links(category.get("description") or "")),
         }
         existing = shop.categories.get((parent, category["name"]))
         try:
@@ -762,6 +762,9 @@ def differs(existing: dict, fields: dict) -> bool:
             # A removed video player leaves the visible text as it was, so a shop imported before the
             # importer removed them would otherwise keep the players for good (mapping.without_videos)
             if mapping.VIDEO.search(text(have)) and not mapping.VIDEO.search(str(wanted)):
+                return True
+            # The same for a link to the source shop that was turned into plain text
+            if mapping.SOURCE_LINK.search(text(have)) and not mapping.SOURCE_LINK.search(str(wanted)):
                 return True
         elif isinstance(wanted, Lang):
             if text(have) != str(wanted):
