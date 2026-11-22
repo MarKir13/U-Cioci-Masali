@@ -98,6 +98,8 @@ class Category(Record):
     url: HttpUrl
     # No default: a parser that forgets the parent must fail, not create a top-level category.
     parent_id: PositiveInt | None
+    # The text under the category name on the source (HTML). Many categories have none, so it may be null.
+    description: Annotated[Description | None, BeforeValidator(_blank_to_none)] = None
 
 
 class Image(Record):

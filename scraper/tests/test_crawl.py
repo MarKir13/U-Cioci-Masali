@@ -540,6 +540,28 @@ def test_empty_categories_helper_keeps_the_parent_of_a_filled_subcategory():
     assert empty_categories(categories, products) == [3, 4]
 
 
+def test_run_adds_descriptions_to_categories_saved_without_one(tmp_path):
+    """categories.json from before descriptions were scraped gets them on the next run, from the cache."""
+    pages = shop_pages()
+    pages[category_url(10)] = pages[category_url(10)].replace(
+        '<div id="js-product-list">',
+        '<div id="category-description"><p>Opis kategorii</p></div><div id="js-product-list">',
+    )
+    crawler, _ = make_crawler(pages, tmp_path, cache=True)
+    crawler.run()
+    path = tmp_path / "results" / "categories.json"
+    old_records = [{k: v for k, v in c.items() if k != "description"} for c in json.loads(path.read_text("utf-8"))]
+    path.write_text(json.dumps(old_records), encoding="utf-8")
+
+    crawler, shop = make_crawler(pages, tmp_path, cache=True)
+    crawler.run()
+
+    categories = saved_categories(tmp_path)
+    assert categories[10]["description"] == "<p>Opis kategorii</p>"
+    assert categories[11]["description"] is None
+    assert not [url for url in shop.calls if url in (category_url(10), category_url(11))]
+
+
 def add_empty_category(tmp_path) -> None:
     path = tmp_path / "results" / "categories.json"
     categories = json.loads(path.read_text(encoding="utf-8"))

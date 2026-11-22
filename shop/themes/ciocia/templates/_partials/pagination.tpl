@@ -9,6 +9,8 @@
  * catalog/_partials/products-top.tpl passes ciocia_position='top' for the copy above the products:
  * links only, and a label of its own, so the two navigation landmarks can be told apart.
  * Links keep .js-search-link: Classic's listing script loads the page without a reload.
+ * The source always shows both arrows, the unavailable one faded: if PrestaShop leaves "Poprzedni" out on the
+ * first page (or "Następny" on the last), a disabled one is drawn here.
  *}
 {$ciocia_top = !empty($ciocia_position) && $ciocia_position == 'top'}
 <nav class="ciocia-pagination{if $ciocia_top} ciocia-pagination--top{/if}" aria-label="{if $ciocia_top}Strony produktów (nad listą){else}Strony produktów{/if}">
@@ -22,7 +24,21 @@
 
   {block name='pagination_page_list'}
     {if $pagination.should_be_displayed}
+      {assign var='ciocia_has_previous' value=false}
+      {assign var='ciocia_has_next' value=false}
+      {foreach from=$pagination.pages item="ciocia_page"}
+        {if $ciocia_page.type === 'previous'}{assign var='ciocia_has_previous' value=true}{/if}
+        {if $ciocia_page.type === 'next'}{assign var='ciocia_has_next' value=true}{/if}
+      {/foreach}
       <ul class="ciocia-pagination__list">
+        {if !$ciocia_has_previous}
+          <li class="ciocia-pagination__item">
+            <span class="ciocia-pagination__link ciocia-pagination__link--previous is-disabled">
+              <i class="material-icons" aria-hidden="true">chevron_left</i>
+              <span class="ciocia-pagination__word">{l s='Previous' d='Shop.Theme.Actions'}</span>
+            </span>
+          </li>
+        {/if}
         {foreach from=$pagination.pages item="page"}
           <li class="ciocia-pagination__item">
             {if $page.type === 'spacer'}
@@ -48,6 +64,14 @@
             {/if}
           </li>
         {/foreach}
+        {if !$ciocia_has_next}
+          <li class="ciocia-pagination__item">
+            <span class="ciocia-pagination__link ciocia-pagination__link--next is-disabled">
+              <span class="ciocia-pagination__word">{l s='Next' d='Shop.Theme.Actions'}</span>
+              <i class="material-icons" aria-hidden="true">chevron_right</i>
+            </span>
+          </li>
+        {/if}
       </ul>
     {/if}
   {/block}

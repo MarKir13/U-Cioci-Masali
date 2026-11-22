@@ -37,6 +37,14 @@ def id_from_url(url: str) -> int:
     return int(category_id)
 
 
+def description_from_soup(soup: BeautifulSoup) -> str | None:
+    """HTML of the text under the category name (div#category-description), or None if the page has none."""
+    description = soup.select_one("#category-description")
+    if description is None:
+        return None
+    return description.decode_contents().strip() or None
+
+
 def parent_url_from_soup(soup: BeautifulSoup) -> str:
     for script in soup.select('script[type="application/ld+json"]'):
         data = json.loads(script.string)
@@ -68,6 +76,7 @@ def parse_category(url: str, html: str) -> Category | None:
         "name": name,
         "url": url,
         "parent_id": parent_id,
+        "description": description_from_soup(soup),
     }
     category = validate_record(model=Category, data=category_dict, url=url)
     return category

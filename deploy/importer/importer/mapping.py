@@ -28,6 +28,13 @@ POLISH_TO_ASCII = str.maketrans("ąćęłńóśźżĄĆĘŁŃÓŚŹŻ", "acelnos
 # A video player in a description, from <video to </video>, across lines and in any letter case (see without_videos)
 VIDEO = re.compile(r"<video\b.*?</video\s*>", re.IGNORECASE | re.DOTALL)
 
+# A link to the source shop, <a href="https://www.magiczne-indie.pl/...">text</a>; group 2 is the link text
+# (see without_source_links)
+SOURCE_LINK = re.compile(
+    r"<a\b[^>]*?\bhref\s*=\s*([\"'])https?://(?:www\.)?magiczne-indie\.pl\b[^\"']*\1[^>]*>(.*?)</a\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
+
 
 def net_price(gross: str, vat_rate: float) -> str:
     """The net price PrestaShop stores for a gross price, with 6 decimals.
@@ -196,6 +203,16 @@ def descriptions(product: dict) -> tuple[str, str]:
     if short and visible_text(short) == visible_text(long):
         return "", short
     return long, short
+
+
+def without_source_links(html: str) -> str:
+    """A description with the links to the source shop turned into plain text.
+
+    The descriptions of the copper vessel categories (399, 464) point to sibling categories and to an article on
+    the source shop, so a click would take a customer out of our shop to the real one. The article has no
+    counterpart here and the category ids differ between shops, so the link text stays and the address goes.
+    """
+    return SOURCE_LINK.sub(r"\2", html)
 
 
 def parents_first(categories: list[dict]) -> list[dict]:

@@ -24,23 +24,15 @@
  *}
 
 <div id="_desktop_currency_selector">
-  <div class="currency-selector dropdown js-dropdown">
+  <div class="currency-selector">
     <span id="currency-selector-label">{l s='Currency:' d='Shop.Theme.Global'}</span>
-    <button id="ciocia-currency-toggle" data-toggle="dropdown" class="hidden-sm-down btn-unstyle" aria-haspopup="true" aria-expanded="false" aria-labelledby="currency-selector-label ciocia-current-currency">
-      <span id="ciocia-current-currency" class="expand-more _gray-darker">{$current_currency.iso_code}{if $current_currency.iso_code !== $current_currency.sign} {$current_currency.sign}{/if}</span>
-      <i class="material-icons expand-more" aria-hidden="true">&#xE5C5;</i>
-    </button>
-    <ul class="dropdown-menu hidden-sm-down" aria-labelledby="ciocia-currency-toggle">
-      {foreach from=$currencies item=currency}
-        <li {if $currency.current} class="current" {/if}>
-          <a title="{$currency.name}" rel="nofollow" href="{$currency.url}" class="dropdown-item">{$currency.iso_code}{if $currency.sign !== $currency.iso_code} {$currency.sign}{/if}</a>
-        </li>
-      {/foreach}
-    </ul>
-    <select class="link hidden-md-up" aria-labelledby="currency-selector-label">
-      {foreach from=$currencies item=currency}
-        <option value="{$currency.url}"{if $currency.current} selected="selected"{/if}>{$currency.iso_code}{if $currency.sign !== $currency.iso_code} {$currency.sign}{/if}</option>
-      {/foreach}
-    </select>
+    <span class="ciocia-currency-select">
+      <select class="link" aria-labelledby="currency-selector-label">
+        {foreach from=$currencies item=currency}
+          <option value="{$currency.url}"{if $currency.current} selected="selected"{/if}>{$currency.iso_code}{if $currency.sign !== $currency.iso_code} {$currency.sign}{/if}</option>
+        {/foreach}
+      </select>
+      <i class="material-icons" aria-hidden="true">&#xE5D7;</i>
+    </span>
   </div>
 </div>

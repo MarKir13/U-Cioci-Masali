@@ -35,7 +35,7 @@ jobs:
       # only the files in scraper-results/. Same job, so the required check `scraper` keeps its name.
       - name: Install importer dependencies
         if: ${{ !cancelled() }}
-        run: pip install -r deploy/importer/requirements.txt
+        run: pip install -r deploy/importer/requirements.txt pytest==9.2.0
       - name: Importer unit tests
         if: ${{ !cancelled() }}
         working-directory: deploy/importer

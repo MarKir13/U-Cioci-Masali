@@ -10,6 +10,9 @@
  * The slider uses Bootstrap 4's carousel from Classic. As on the source it does not slide by itself
  * (data-interval="false"): it changes only when the customer clicks an arrow or swipes.
  *}
+{* The buttons lead to the categories Kosmetyki and Suplementy, found by name (ciociahome, bannerUrl). *}
+{capture assign='ciocia_primary_url'}{widget name='ciociahome' section='banner-url' button='primary'}{/capture}
+{capture assign='ciocia_secondary_url'}{widget name='ciociahome' section='banner-url' button='secondary'}{/capture}
 <section class="ciocia-hero" aria-labelledby="ciocia-hero-title">
   {if $homeslider.slides}
     <div class="ciocia-hero__media">
@@ -39,10 +42,10 @@
     <h1 id="ciocia-hero-title" class="ciocia-hero__title">{Configuration::get('CIOCIA_BANNER_TITLE')|escape:'htmlall':'UTF-8'}</h1>
     <p class="ciocia-hero__lead">{Configuration::get('CIOCIA_BANNER_LEAD')|escape:'htmlall':'UTF-8'}</p>
     <div class="ciocia-hero__actions">
-      <a class="btn btn-primary" href="{Configuration::get('CIOCIA_BANNER_PRIMARY_URL')|escape:'htmlall':'UTF-8'}">
+      <a class="btn btn-primary" href="{if $ciocia_primary_url}{$ciocia_primary_url|escape:'htmlall':'UTF-8'}{else}{Configuration::get('CIOCIA_BANNER_PRIMARY_URL')|escape:'htmlall':'UTF-8'}{/if}">
         {Configuration::get('CIOCIA_BANNER_PRIMARY_LABEL')|escape:'htmlall':'UTF-8'}
       </a>
-      <a class="btn btn-outline-primary" href="{Configuration::get('CIOCIA_BANNER_SECONDARY_URL')|escape:'htmlall':'UTF-8'}">
+      <a class="btn btn-outline-primary" href="{if $ciocia_secondary_url}{$ciocia_secondary_url|escape:'htmlall':'UTF-8'}{else}{Configuration::get('CIOCIA_BANNER_SECONDARY_URL')|escape:'htmlall':'UTF-8'}{/if}">
         {Configuration::get('CIOCIA_BANNER_SECONDARY_LABEL')|escape:'htmlall':'UTF-8'}
       </a>
     </div>

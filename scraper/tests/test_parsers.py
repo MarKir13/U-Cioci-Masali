@@ -55,6 +55,27 @@ def test_top_level_category_has_no_parent():
     assert category.parent_id is None
 
 
+def test_category_has_its_description():
+    """The text under the category name is kept as HTML, with the Polish characters intact."""
+    category = parse_category(
+        "https://www.magiczne-indie.pl/8-kosmetyki",
+        read_fixture("category_with_subcategories.html"),
+    )
+    assert category.description.startswith("<p>Tylko u nas kupisz naturalne henny do farbowania włosów")
+    assert category.description.endswith("naturalnym pięknem i blaskiem.</p>")
+
+
+def test_category_without_a_description_has_none():
+    """A page with no div#category-description is not an error: many categories have no text."""
+    assert parse_category(CATEGORY_URL, H1 + BREADCRUMB).description is None
+
+
+def test_blank_description_is_none():
+    """An empty or whitespace-only description div means the same as no div."""
+    page = H1 + BREADCRUMB + '<div id="category-description" class="category__description">  </div>'
+    assert parse_category(CATEGORY_URL, page).description is None
+
+
 def test_category_has_a_parent():
     """The parent is the second-to-last breadcrumb item, and Polish characters in the name stay intact."""
     category = parse_category(

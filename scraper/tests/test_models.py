@@ -283,7 +283,9 @@ def test_price_above_regular_price_is_logged_with_its_url(caplog):
 
 def test_schema_describes_both_record_types():
     definitions = json_schema()["$defs"]
-    assert {"id", "name", "url", "parent_id"} == set(definitions["Category"]["properties"])
+    assert {"id", "name", "url", "parent_id", "description"} == set(definitions["Category"]["properties"])
+    # The description is optional: many categories have no text on the source
+    assert {"id", "name", "url", "parent_id"} == set(definitions["Category"]["required"])
     assert {"name", "description", "price", "images"} <= set(definitions["Product"]["properties"])
     assert {"name", "description", "price", "images"} <= set(definitions["Product"]["required"])
 

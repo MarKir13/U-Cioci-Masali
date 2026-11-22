@@ -28,16 +28,28 @@
  *}
 {block name='product_miniature_item'}
 {$ciocia_ribbon = null}
+{$ciocia_new_flag = null}
 {$ciocia_out_of_stock = $product.availability == 'unavailable'}
 {foreach from=$product.flags item=flag}
-  {if $flag.type == 'discount' || $flag.type == 'on-sale'}
-    {if !$ciocia_ribbon || $ciocia_ribbon.type == 'new'}{$ciocia_ribbon = $flag}{/if}
-  {elseif $flag.type == 'new'}
+  {if $flag.type == 'discount' && $product.regular_price_amount > 0}
+    {* The importer saves promotions as a fixed amount, so the label would be "-11,61 zł"; as on the source and on
+       the product page (product-flags.tpl) the ribbon shows the percentage *}
+    {$ciocia_percent = (($product.regular_price_amount - $product.price_amount) / $product.regular_price_amount * 100)|round:0}
+    {if !$ciocia_ribbon}{$ciocia_ribbon = ['type' => 'discount', 'label' => "-`$ciocia_percent`%"]}{/if}
+  {elseif $flag.type == 'discount' || $flag.type == 'on-sale'}
     {if !$ciocia_ribbon}{$ciocia_ribbon = $flag}{/if}
+  {elseif $flag.type == 'new'}
+    {$ciocia_new_flag = $flag}
   {elseif $flag.type == 'out_of_stock'}
     {$ciocia_out_of_stock = true}
   {/if}
 {/foreach}
+{* The discount wins over "Nowy": the importer sets date_add to the import date, so PrestaShop flags every product
+   as new for 20 days, and "Nowy" would hide every promotion. "Nowy" is shown only without a discount. The flags
+   come in any order, so "new" is kept apart and chosen after the loop. *}
+{if !$ciocia_ribbon && $ciocia_new_flag}{$ciocia_ribbon = $ciocia_new_flag}{/if}
+{* As on the source, an unavailable product wears "Obecnie brak na stanie" on its ribbon, in place of "Nowy" or the discount. *}
+{if $ciocia_out_of_stock}{$ciocia_ribbon = ['type' => 'out_of_stock', 'label' => 'Obecnie brak na stanie']}{/if}
 {if $product.cover}
   {$ciocia_image = $product.cover.bySize.home_default}
   {$ciocia_image_2x = null}
@@ -77,7 +89,7 @@
 
       {block name='product_flags'}
         {if $ciocia_ribbon}
-          <p class="ciocia-card__ribbon ciocia-card__ribbon--{$ciocia_ribbon.type}">{$ciocia_ribbon.label}</p>
+          <p class="ciocia-card__ribbon ciocia-card__ribbon--{$ciocia_ribbon.type}"{if $ciocia_ribbon.type == 'out_of_stock'} aria-hidden="true"{/if}>{$ciocia_ribbon.label}</p>
         {/if}
       {/block}
     </div>
@@ -115,7 +127,7 @@
               {/if}
             </div>
             {capture name='ciocia_price_note'}
-              {hook h='displayProductPriceBlock' product=$product type='omnibus_price'}
+              {hook h='displayProductPriceBlock' product=$product type='omnibus_price' ciocia_short=true}
               {hook h='displayProductPriceBlock' product=$product type='after_price' hook_origin='products_list'}
               {hook h='displayProductPriceBlock' product=$product type='unit_price'}
               {hook h='displayProductPriceBlock' product=$product type='weight'}
@@ -147,7 +159,7 @@
               <input type="hidden" name="qty" value="{if !empty($product.minimal_quantity)}{$product.minimal_quantity}{else}1{/if}">
               <input type="hidden" name="add" value="1">
               <input type="hidden" name="action" value="update">
-              <button type="submit" class="btn btn-primary ciocia-card__button" data-ciocia-add-to-cart>
+              <button type="submit" class="btn btn-primary ciocia-card__button" data-ciocia-add-to-cart title="Dodaj do koszyka: {$product.name|escape:'html':'UTF-8'}">
                 <i class="material-icons" aria-hidden="true">add_shopping_cart</i>
                 <span class="ciocia-card__button-text">Dodaj do koszyka</span><span class="sr-only">: {$product.name}</span>
               </button>

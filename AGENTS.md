@@ -74,7 +74,7 @@ Run from the repository root unless noted.
 | Re-apply `shop/config/shop-settings.php` and shop content to a running shop, after a rebuild (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/20-shop-content.sh`, then the same with `30-configure-shop.sh` |
 | Re-apply the Webservice API key and its permissions (`PS_WEBSERVICE_KEY`) to a running shop, after `up -d` (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker compose -f deploy/compose.yaml exec shop sh /tmp/post-install-scripts/40-webservice.sh` |
 | Stop, keeping data | `docker compose -f deploy/compose.yaml down` |
-| Data init, right after `up -d`: downloads the images if missing, waits for the shop, imports (`--subset`: 53 products, as in CI) | `docker compose -f deploy/compose.yaml --profile init run --rm --build init` |
+| Data init, right after `up -d`: downloads the images if missing, waits for the shop, imports (`--subset`: 54 products, as in CI) | `docker compose -f deploy/compose.yaml --profile init run --rm --build init` |
 | Only the import, with the images already in `scraper-results/images/` (`--limit N` for a quick run) | `docker compose -f deploy/compose.yaml --profile init run --rm --build importer` |
 | Download the images from the source shop (init's fallback; only when a person asks, rule 7) | `docker compose -f deploy/compose.yaml --profile init run --rm --build scraper images` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
