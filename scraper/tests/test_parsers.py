@@ -20,6 +20,7 @@ from scraper.parsers import (
     product_urls,
     round_price,
     short_description,
+    subcategory_ids,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -74,6 +75,32 @@ def test_blank_description_is_none():
     """An empty or whitespace-only description div means the same as no div."""
     page = H1 + BREADCRUMB + '<div id="category-description" class="category__description">  </div>'
     assert parse_category(CATEGORY_URL, page).description is None
+
+
+def test_subcategories_keep_the_order_of_the_page():
+    """/8-kosmetyki lists its 7 subcategories in the source shop's order, which is not the order of their ids."""
+    ids = subcategory_ids(read_fixture("category_with_subcategories.html"))
+    # Kosmetyki BIO, Dla Mężczyzn, Do twarzy, Pielęgnacja okolic oczu, Do ciała, Do włosów, Higiena i akcesoria
+    assert ids == [360, 359, 45, 99, 37, 38, 36]
+
+
+def test_category_without_subcategories_has_none():
+    """A leaf category has no subcategory block, which is not an error."""
+    assert subcategory_ids(read_fixture("category_leaf_first_page.html")) == []
+
+
+def test_subcategory_links_that_are_not_categories_or_repeat_are_skipped():
+    """Only category pages count, and a repeated link keeps its first place."""
+    page = """
+    <div class="subcategory__list">
+      <a class="subcategory__link" href="https://www.magiczne-indie.pl/37-do-ciala">Do ciała</a>
+      <a class="subcategory__link" href="https://www.magiczne-indie.pl/242-olejek-amla.html">Produkt</a>
+      <a class="subcategory__link" href="https://www.magiczne-indie.pl/content/1-koszt-wysylki">Strona</a>
+      <a class="subcategory__link" href="/36-higiena-i-akcesoria">Higiena</a>
+      <a class="subcategory__link" href="https://www.magiczne-indie.pl/37-do-ciala">Do ciała</a>
+    </div>
+    """
+    assert subcategory_ids(page) == [37, 36]
 
 
 def test_category_has_a_parent():

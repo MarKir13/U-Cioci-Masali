@@ -82,6 +82,24 @@ def parse_category(url: str, html: str) -> Category | None:
     return category
 
 
+def subcategory_ids(html: str) -> list[int]:
+    """Ids of the subcategories linked under the category description, in the order the page shows them.
+
+    This order is the one the source shop uses for the category's children (its `position` there).
+    A page without the subcategory block gives an empty list.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    ids: list[int] = []
+    for link in soup.select("div.subcategory__list a.subcategory__link"):
+        path = urlparse(link.get("href", "")).path
+        if not CATEGORY_PATH.match(path):
+            continue  # not a category page, so it cannot be a subcategory
+        category_id = id_from_url(path)
+        if category_id not in ids:
+            ids.append(category_id)
+    return ids
+
+
 def children_by_parent(categories: list[Category]) -> dict[int | None, list[Category]]:
     """Groups categories by the id of their parent. Top-level categories are under None."""
     groups: dict[int | None, list[Category]] = {}
