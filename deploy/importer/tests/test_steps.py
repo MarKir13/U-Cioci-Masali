@@ -215,3 +215,63 @@ def test_category_description_is_imported_and_a_second_run_changes_nothing():
     import_categories(api, read_shop(api), categories, Report())
     assert [c["description"] for c in api.all("categories") if c["name"] == "Kosmetyki"] == ["<p>Nowy opis.</p>"]
     assert len([c for c in api.all("categories") if c["name"] == "Kosmetyki"]) == 1
+
+
+# --- Category positions: the order among siblings, as on the source ----------------------------------
+
+
+def kosmetyki_tree() -> list[dict]:
+    """Kosmetyki with three of its subcategories, in the source order 360, 37, 36 (not the order of their ids)."""
+
+    def category(category_id: int, name: str, parent_id: int | None, position: int | None) -> dict:
+        url = f"https://www.magiczne-indie.pl/{category_id}-k"
+        return {"id": category_id, "name": name, "url": url, "parent_id": parent_id, "position": position}
+
+    return [
+        category(8, "Kosmetyki", None, 1),
+        category(36, "Higiena i akcesoria", 8, 3),
+        category(37, "Do ciała", 8, 2),
+        category(360, "Kosmetyki BIO", 8, 1),
+    ]
+
+
+def shop_positions(api: FakeApi) -> dict[str, str]:
+    return {c["name"]: c["position"] for c in api.all("categories") if c["name"] != "Strona główna"}
+
+
+def test_new_categories_get_the_source_position_counted_from_0():
+    api = FakeApi()
+    report = Report()
+    import_categories(api, read_shop(api), kosmetyki_tree(), report)
+    assert shop_positions(api) == {"Kosmetyki": "0", "Higiena i akcesoria": "2", "Do ciała": "1", "Kosmetyki BIO": "0"}
+    # The shop puts a new category last, so the ones it put elsewhere get an update right after being created.
+    # They count as created only: the update is part of creating them.
+    assert report.counts["categories"] == {"created": 4}
+
+
+def test_a_wrong_position_in_the_shop_is_updated_and_a_second_run_changes_nothing():
+    api = FakeApi()
+    import_categories(api, read_shop(api), kosmetyki_tree(), Report())
+    # As after an import from before positions were scraped: Do ciała where the shop put it
+    do_ciala = next(c for c in api.all("categories") if c["name"] == "Do ciała")
+    do_ciala["position"] = "5"
+
+    report = Report()
+    import_categories(api, read_shop(api), kosmetyki_tree(), report)
+    assert shop_positions(api)["Do ciała"] == "1"
+    assert report.counts["categories"] == {"updated": 1, "unchanged": 3}
+
+    writes_before = len(api.writes)
+    report = Report()
+    import_categories(api, read_shop(api), kosmetyki_tree(), report)
+    assert len(api.writes) == writes_before
+    assert report.counts["categories"] == {"unchanged": 4}
+
+
+def test_a_category_without_a_position_stays_where_the_shop_put_it():
+    """Data from before positions were scraped: no position is sent, so the shop's order is kept."""
+    api = FakeApi()
+    tree = [{**c, "position": None} for c in kosmetyki_tree()]
+    import_categories(api, read_shop(api), tree, Report())
+    assert shop_positions(api) == {"Kosmetyki": "0", "Higiena i akcesoria": "0", "Do ciała": "1", "Kosmetyki BIO": "2"}
+    assert ("PUT", "categories") not in api.writes
