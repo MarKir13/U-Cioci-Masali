@@ -109,6 +109,11 @@ def test_top_level_category_has_no_parent():
     assert Category.model_validate(category_data(id=8, parent_id=None)).parent_id is None
 
 
+def test_category_position_is_kept_and_empty_by_default():
+    assert Category.model_validate(category_data(position=3)).position == 3
+    assert Category.model_validate(category_data()).position is None
+
+
 def test_saved_product_reads_back_unchanged():
     """Resuming a run reads products.jsonl, so a saved line has to load back into the same record."""
     product = Product.model_validate(product_data(weight={"value": "250.000000", "unit": "g"}))
@@ -225,6 +230,8 @@ def test_product_without_a_required_field_is_rejected(field):
         category_data(url="/104-olejki"),
         category_data(id=0),
         category_data(parent_id=0),
+        category_data(position=0),  # positions start at 1, as on the source page
+        category_data(position=-1),
         without(category_data(), "parent_id"),  # forgetting the parent must not create a top-level category
     ],
 )
@@ -283,8 +290,9 @@ def test_price_above_regular_price_is_logged_with_its_url(caplog):
 
 def test_schema_describes_both_record_types():
     definitions = json_schema()["$defs"]
-    assert {"id", "name", "url", "parent_id", "description"} == set(definitions["Category"]["properties"])
-    # The description is optional: many categories have no text on the source
+    assert {"id", "name", "url", "parent_id", "description", "position"} == set(definitions["Category"]["properties"])
+    # The description is optional: many categories have no text on the source. The position is filled in
+    # only after the parent's page is read, so it is optional too.
     assert {"id", "name", "url", "parent_id"} == set(definitions["Category"]["required"])
     assert {"name", "description", "price", "images"} <= set(definitions["Product"]["properties"])
     assert {"name", "description", "price", "images"} <= set(definitions["Product"]["required"])

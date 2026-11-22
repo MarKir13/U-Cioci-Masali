@@ -100,6 +100,9 @@ class Category(Record):
     parent_id: PositiveInt | None
     # The text under the category name on the source (HTML). Many categories have none, so it may be null.
     description: Annotated[Description | None, BeforeValidator(_blank_to_none)] = None
+    # Place among the siblings on the source, from 1, as the parent's page lists them. Null until the crawl has
+    # read the parent's page: a category is saved as soon as its own page is parsed, which may be before it.
+    position: PositiveInt | None = None
 
 
 class Image(Record):
