@@ -8,7 +8,7 @@ from pathlib import Path
 import requests
 
 from . import config
-from .crawl import Crawler, PageCache
+from .crawl import Crawler, PageCache, backfill_short_descriptions
 from .http_client import HttpClient, SkippedURL, check_delay
 from .images import ImageDownloader
 from .logging_config import setup_logging
@@ -98,6 +98,9 @@ def main(argv: list[str] | None = None) -> int:
     images.add_argument("--limit", type=positive_int, metavar="N", help="test run: download at most N new images")
 
     # Commands for the finished results (no network)
+    commands.add_parser(
+        "backfill", help="add the short description to the saved products from the page cache (no network)"
+    )
     commands.add_parser("verify", help="check the results against the requirements and write verification-report.md")
     sample = commands.add_parser(
         "sample", help=f"copy {config.SAMPLE_COUNT} sample images to {config.SAMPLE_IMAGES_DIR.name}/ (committed)"
@@ -129,6 +132,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "verify":
         return run_verify()
+    if args.command == "backfill":
+        return backfill_short_descriptions(config.PRODUCTS_FILE, PageCache(config.CACHE_DIR))
     if args.command == "sample":
         return make_samples(seed=args.seed)
     if args.command == "archive":

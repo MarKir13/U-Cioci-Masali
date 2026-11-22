@@ -89,7 +89,9 @@ prices, weight, barcodes and stock are in `importer/mapping.py`, each with its r
 
 ## Descriptions
 
-A description goes to the shop as the source wrote it, with one change: video players (`<video>`) are left out
+Each product has two descriptions, as on the source: the short one above the "Add to cart" button
+(`description_short`) and the long one in the product page's description tab (`description`). Both go to the shop
+as the source wrote them, with one change: video players (`<video>`) are left out
 (`mapping.without_videos`). The descriptions of 7 singing bowls play videos from the source shop's `/img/cms/`
 through a relative address, so in our shop they would ask for a file that is not there and get a 404. The players
 hold no text, so what a customer reads is the same as on the source.
@@ -102,6 +104,12 @@ counts them apart (`DESCRIPTION_MEDIA` in `tests/support/acceptance.js`).
 The importer compares descriptions by their visible text (`mapping.visible_text`), since PrestaShop's HTML cleaner
 rewrites the markup on save. A description that only lost a video player would look unchanged that way, so a
 description in the shop that still has one also counts as changed, and the next run updates it.
+
+Some products have only a short description on the source. The scraper saves it as the long one too, because a
+product needs a description (ADR 0007). The importer sends such a text once, as the short one, and leaves the long
+one empty, so the product page shows it above the button and has no description tab, as on the source
+(`mapping.descriptions`). A product without a short description gets an empty one. Data scraped before
+`description_short` existed has no such field, so all its products get an empty one and a second run changes nothing.
 
 ## Products with variants
 
@@ -202,7 +210,7 @@ archive with the same IDs as `SUBSET.categories`.
 | `importer/__main__.py` | options, logging, and `run()`, which calls the steps in order |
 | `importer/steps.py` | one function per step: read the shop, categories, brands, products with stock and promotion, then their images, the products with variants and their combinations, delete what is not in the data |
 | `importer/variants.py` | reads and checks `variants.json`, checks the image files of a product with variants, and makes its product record |
-| `importer/mapping.py` | pure conversion rules: net price, weight, stock, barcodes, slugs, visible text, descriptions without video players, combination price and weight |
+| `importer/mapping.py` | pure conversion rules: net price, weight, stock, barcodes, slugs, visible text, long and short description without video players, combination price and weight |
 | `importer/api.py` | the only code that talks to the shop: JSON for reading, XML for writing |
 | `importer/data.py` | reads the scraped files and validates them against the schema |
 | `importer/report.py` | the counts and the `REJECTED` log lines, and the time spent per step and per kind of request |

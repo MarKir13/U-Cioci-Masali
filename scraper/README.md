@@ -26,6 +26,7 @@ python -m scraper images --limit 5                              # test run: at m
 python -m scraper fetch /8-kosmetyki                            # download one page, print status and size
 python -m scraper fetch /8-kosmetyki -o tests/fixtures/x.html   # save it, e.g. as a test fixture
 python -m scraper schema                                        # write ../scraper-results/schema.json
+python -m scraper backfill                                      # add description_short to saved products, from the page cache
 python -m scraper verify                                        # check the results against the requirements, write the report
 python -m scraper sample                                        # copy 20 sample images to ../scraper-results/sample-images/
 python -m scraper archive                                       # pack all images into ../scraper-results/product-images.tar.gz
@@ -135,6 +136,11 @@ Every downloaded category, listing and product page is also saved, gzipped, in `
 about 40 KB per page, so about 90 MB for a full run). Pages found there are not downloaded again, so after a parser fix you can delete
 `products.jsonl` and rebuild it without the network. Use `--no-cache` to turn this off, and delete the folder to
 download fresh pages.
+
+`python -m scraper backfill` adds `description_short` to the products already in `products.jsonl`, from their pages in
+the cache. It never uses the network and changes no other field, so prices, categories and the `local_path` of the
+images stay as they are. A product whose page is not in the cache keeps its record, is listed as a warning, and the
+command exits with 1. Running it again changes nothing.
 
 ## Images
 
@@ -267,6 +273,8 @@ All requests go through `HttpClient` in [scraper/http_client.py](scraper/http_cl
 - Weight stays as raw text (`"250.000000"`, `"g"`), because the unit on the source page is unreliable.
 - A description needs visible text: `<p>&nbsp;</p>` counts as empty. The crawl takes the long description, or the
   short one if the long one is empty.
+- `description_short` (shown above the "Add to cart" button) is optional: one without visible text is saved as
+  `null`. It is kept even when it is the same text as `description` (the importer then sends it only once).
 
 After changing a model, run `python -m scraper schema` and commit the new `schema.json`. A test fails if it is out of date.
 
@@ -287,6 +295,8 @@ After changing a model, run `python -m scraper schema` and commit the new `schem
 - `product_urls(url, html)` returns absolute, unique product URLs from a product list page.
 - `next_page_url(url, html)` returns the absolute URL of the next page of results, or `None` if there is no next page.
 - `description_from(data)` returns the long description, or the short one if the long one has no visible text.
+- `product_data(url, soup)` returns the `data-product` JSON of a product page; `short_description(url, html)` returns
+  only its raw `description_short` (used by `backfill`).
 - `parse_product(url, html, problems=None)` returns a `Product` from the `data-product` JSON and the JSON-LD blocks. It raises
   `ValueError` (with the page URL) when `data-product` is missing or not valid JSON.
   - Both prices go through `round_price()`: two decimal places, halves up (`2.675` becomes `2.68`; `round(float(...), 2)`

@@ -19,6 +19,7 @@ from scraper.parsers import (
     parse_sitemap_index,
     product_urls,
     round_price,
+    short_description,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -473,3 +474,32 @@ def test_missing_or_odd_weight_gives_none(weight):
     product = parse_product(PRODUCT_URL, product_html(weight=weight))
     assert product is not None
     assert product.weight is None
+
+
+def test_short_description_is_kept_next_to_the_long_one():
+    """The fixture's short description is the text the source shows above the "Add to cart" button."""
+    product = parse_product(PRODUCT_URL, read_fixture("product_one_image.html"))
+    assert product.description_short == (
+        "<p>W 100% naturalny olejek z cennymi wyciągami z ajurwedyjskich ziół. "
+        "Polecany dla sportowców a także osób starszych.</p>"
+    )
+    assert product.description != product.description_short
+
+
+@pytest.mark.parametrize("short", ["", "   ", "<p></p>", "<p>&nbsp;</p>\r\n<p></p>", None])
+def test_short_description_without_text_is_null(short):
+    product = parse_product(PRODUCT_URL, product_html(description_short=short))
+    assert product is not None
+    assert product.description_short is None
+
+
+def test_page_without_short_description_gives_null():
+    product = parse_product(PRODUCT_URL, product_html())
+    assert product is not None
+    assert product.description_short is None
+
+
+def test_short_description_reads_only_data_product():
+    assert short_description(PRODUCT_URL, product_html(description_short="<p>Krótki</p>")) == "<p>Krótki</p>"
+    with pytest.raises(ValueError, match="Missing data-product"):
+        short_description(PRODUCT_URL, "<div>no product</div>")

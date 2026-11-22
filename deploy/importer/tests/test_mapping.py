@@ -221,6 +221,30 @@ def test_no_real_description_keeps_a_video_or_loses_text():
     assert with_video == 7
 
 
+# --- Long and short description ---
+
+
+def test_descriptions_keep_the_long_and_the_short_one():
+    product = {"description": "<p>Długi opis</p>", "description_short": "<p>Krótki</p>"}
+    assert mapping.descriptions(product) == ("<p>Długi opis</p>", "<p>Krótki</p>")
+
+
+@pytest.mark.parametrize("record", [{}, {"description_short": None}])
+def test_a_product_without_a_short_description_gets_an_empty_one(record):
+    assert mapping.descriptions({"description": "<p>Długi</p>", **record}) == ("<p>Długi</p>", "")
+
+
+def test_a_short_description_copied_into_the_long_one_is_shown_only_once():
+    # The source had no long description, so the scraper used the short one for it (ADR 0007)
+    product = {"description": "<p>Tylko krótki</p>", "description_short": "<p>Tylko  krótki</p>\r\n"}
+    assert mapping.descriptions(product) == ("", "<p>Tylko  krótki</p>\r\n")
+
+
+def test_descriptions_lose_their_video_players():
+    product = {"description": f"<p>a</p>{VIDEO_LF}", "description_short": f"<p>b</p>{VIDEO_CRLF}"}
+    assert mapping.descriptions(product) == ("<p>a</p>", "<p>b</p>")
+
+
 # --- Category tree ---
 
 CATEGORIES = [
