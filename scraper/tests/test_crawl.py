@@ -8,7 +8,15 @@ import pytest
 import requests
 
 from scraper.__main__ import main
-from scraper.crawl import Crawler, PageCache, backfill_short_descriptions, load_lines, save_lines
+from scraper.crawl import (
+    Crawler,
+    Listing,
+    PageCache,
+    backfill_short_descriptions,
+    category_positions,
+    load_lines,
+    save_lines,
+)
 from scraper.http_client import HttpClient
 
 BASE = "https://shop.test"
@@ -49,8 +57,17 @@ def category_path(category_id: int | None) -> list[tuple[str, str]]:
     return [("Strona główna", f"{BASE}/"), *path]
 
 
+def subcategory_links(category_id: int) -> str:
+    """The block of links to the subcategories of `category_id`, as the source shows it under the description."""
+    children = [child for child, (_, _, parent_id) in CATEGORIES.items() if parent_id == category_id]
+    if not children:
+        return ""
+    links = "".join(f'<a class="subcategory__link" href="{category_url(c)}">{CATEGORIES[c][1]}</a>' for c in children)
+    return f'<div class="subcategory"><div class="subcategory__list">{links}</div></div>'
+
+
 def category_page(category_id: int, products: list[int], next_page: str | None = None) -> str:
-    """A listing page: name, breadcrumb, product tiles and the "next" button."""
+    """A listing page: name, breadcrumb, subcategory links, product tiles and the "next" button."""
     tiles = "".join(f'<article class="product-miniature"><a href="{product_url(p)}">x</a></article>' for p in products)
     if next_page:
         button = f'<button class="next" data-ps-data="{next_page}">Następna</button>'
@@ -59,6 +76,7 @@ def category_page(category_id: int, products: list[int], next_page: str | None =
     return (
         f'<h1 class="page-title-section">{CATEGORIES[category_id][1]}</h1>'
         f"{breadcrumb(category_path(category_id))}"
+        f"{subcategory_links(category_id)}"
         f'<div id="js-product-list">{tiles}</div>{button}'
     )
 
@@ -560,6 +578,96 @@ def test_run_adds_descriptions_to_categories_saved_without_one(tmp_path):
     assert categories[10]["description"] == "<p>Opis kategorii</p>"
     assert categories[11]["description"] is None
     assert not [url for url in shop.calls if url in (category_url(10), category_url(11))]
+
+
+# ---------- Category positions ----------
+
+
+def category(category_id: int, parent_id: int | None) -> dict:
+    return {
+        "id": category_id,
+        "name": f"Kategoria {category_id}",
+        "url": f"{BASE}/{category_id}-k",
+        "parent_id": parent_id,
+    }
+
+
+def test_full_run_saves_the_position_of_every_category(tmp_path):
+    """Top-level 10 and 50 by id; 11 is the only subcategory linked on the page of 10."""
+    make_crawler(shop_pages(), tmp_path)[0].run()
+    categories = saved_categories(tmp_path)
+    assert {c: categories[c]["position"] for c in categories} == {10: 1, 11: 1, 50: 2}
+    listings = json.loads((tmp_path / "results" / "listings.json").read_text(encoding="utf-8"))
+    assert listings["10"]["subcategories"] == [11]
+    assert listings["11"]["subcategories"] == []
+
+
+def test_subcategories_follow_the_order_of_the_parent_page_not_their_ids():
+    """As on /8-kosmetyki: Kosmetyki BIO (360) first, Higiena i akcesoria (36) last."""
+    categories = {c: category(c, 8) for c in (36, 37, 360)} | {8: category(8, None)}
+    listings = {8: Listing(subcategories=[360, 37, 36])}
+    positions = category_positions(categories, listings)
+    assert [positions[c] for c in (360, 37, 36)] == [1, 2, 3]
+
+
+def test_positions_have_no_gap_and_unlinked_subcategories_come_last_by_id():
+    """99 is linked but was removed as empty; 45 and 40 are not linked, so they follow the linked 37 by id."""
+    categories = {c: category(c, 8) for c in (37, 40, 45)} | {8: category(8, None)}
+    listings = {8: Listing(subcategories=[99, 37])}
+    assert category_positions(categories, listings) == {8: 1, 37: 1, 40: 2, 45: 3}
+
+
+def test_top_level_categories_and_children_of_an_unread_page_are_ordered_by_id():
+    categories = {c: category(c, None) for c in (193, 8, 80)} | {c: category(c, 80) for c in (85, 81)}
+    listings = {80: Listing(subcategories=None)}
+    assert category_positions(categories, listings) == {8: 1, 80: 2, 193: 3, 81: 1, 85: 2}
+
+
+def forget_subcategories(tmp_path) -> None:
+    """Make the saved results look like a run from before positions were scraped."""
+    listings_file = tmp_path / "results" / "listings.json"
+    listings = json.loads(listings_file.read_text(encoding="utf-8"))
+    for listing in listings.values():
+        del listing["subcategories"]
+    listings_file.write_text(json.dumps(listings), encoding="utf-8")
+    categories_file = tmp_path / "results" / "categories.json"
+    records = [{k: v for k, v in c.items() if k != "position"} for c in json.loads(categories_file.read_text("utf-8"))]
+    categories_file.write_text(json.dumps(records), encoding="utf-8")
+
+
+def test_run_adds_positions_to_categories_saved_without_one(tmp_path):
+    """Results from before positions were scraped get them on the next run, from the cache."""
+    make_crawler(shop_pages(), tmp_path, cache=True)[0].run()
+    forget_subcategories(tmp_path)
+
+    crawler, shop = make_crawler(shop_pages(), tmp_path, cache=True)
+    crawler.run()
+
+    categories = saved_categories(tmp_path)
+    assert {c: categories[c]["position"] for c in categories} == {10: 1, 11: 1, 50: 2}
+    assert not [url for url in shop.calls if url in (category_url(10), category_url(11), category_url(50))]
+
+
+def test_unreadable_parent_page_leaves_its_subcategories_by_id_until_the_next_run(tmp_path, caplog):
+    make_crawler(shop_pages(), tmp_path)[0].run()
+    forget_subcategories(tmp_path)
+    pages = shop_pages()
+    pages[category_url(10)] = requests.ConnectionError("connection reset")
+
+    with caplog.at_level(logging.WARNING):
+        make_crawler(pages, tmp_path)[0].run()
+    assert saved_categories(tmp_path)[11]["position"] == 1
+    assert "Subcategory order of category 10 is unknown until the next run" in caplog.text
+    listings = json.loads((tmp_path / "results" / "listings.json").read_text(encoding="utf-8"))
+    assert listings["10"]["subcategories"] is None
+    assert listings["11"]["subcategories"] == []
+
+
+def test_second_run_leaves_the_positions_unchanged(tmp_path, caplog):
+    make_crawler(shop_pages(), tmp_path)[0].run()
+    with caplog.at_level(logging.INFO):
+        make_crawler(shop_pages(), tmp_path)[0].run()
+    assert "Category positions: 0 set or changed, 3 unchanged" in caplog.text
 
 
 def add_empty_category(tmp_path) -> None:
