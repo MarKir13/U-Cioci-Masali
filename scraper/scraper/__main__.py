@@ -91,6 +91,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     crawl.add_argument("--no-cache", action="store_true", help="do not read or write saved pages in scraper/cache/")
 
+    # Positions subcommand
+    commands.add_parser(
+        "positions",
+        help="only set the order of the saved categories, from the pages of those with subcategories "
+        "(no sitemap, no products)",
+    )
+
     # Images subcommand
     images = commands.add_parser(
         "images", help="download product images into scraper-results/images/ and fit them to the store's limits"
@@ -144,6 +151,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "crawl":
         cache = None if args.no_cache else PageCache(config.CACHE_DIR)
         return Crawler(client, cache=cache, limit=args.limit).run()
+    if args.command == "positions":
+        return Crawler(client, cache=PageCache(config.CACHE_DIR)).run_positions()
     if args.command == "images":
         return ImageDownloader(client, limit=args.limit).run()
     return 0

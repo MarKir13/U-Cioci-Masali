@@ -282,6 +282,28 @@ class Crawler:
             log.warning("Interrupted. Everything saved so far is kept; run the same command to resume.")
             return 130
 
+    def run_positions(self) -> int:
+        """Only set the category positions in the saved results: no sitemap, no products (`positions` command).
+
+        Downloads just the pages of categories with subcategories whose order is not saved yet, so results from
+        before positions were scraped get them without picking up products that are new in the source shop.
+        """
+        try:
+            self.client.load_robots()
+        except requests.RequestException as exc:
+            log.error("Could not read robots.txt, stopping: %s", exc)
+            return 1
+        categories = {category["id"]: category for category in load_json(self.categories_file, [])}
+        if not categories:
+            log.error("No saved categories in %s: run the crawl first", self.categories_file)
+            return 1
+        try:
+            self.assign_positions(categories, load_listings(self.listings_file))
+        except KeyboardInterrupt:
+            log.warning("Interrupted. The orders read so far are saved; run the same command to resume.")
+            return 130
+        return 0
+
     def _run(self) -> int:
         # robots.txt is loaded once, before any loop. If that fails the run stops here: the per-URL error
         # handling below would otherwise try to download it again for every single URL.
@@ -587,11 +609,13 @@ class Crawler:
     def read_missing_subcategories(self, categories: dict[int, dict], listings: dict[int, Listing]) -> None:
         """Fills in the subcategory order of listings saved before it was scraped, from the page (the cache has it).
 
+        Only categories with saved subcategories need their page: the others have no children to order.
         A page that cannot be read is left for the next run; until then its subcategories are ordered by id.
         """
+        parents = {category["parent_id"] for category in categories.values()}
         for category_id, category in categories.items():
             listing = listings.get(category_id)
-            if listing is None or listing.subcategories is not None:
+            if category_id not in parents or listing is None or listing.subcategories is not None:
                 continue
             html = self.fetch(category["url"])
             if html is None:

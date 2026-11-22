@@ -659,8 +659,30 @@ def test_unreadable_parent_page_leaves_its_subcategories_by_id_until_the_next_ru
     assert saved_categories(tmp_path)[11]["position"] == 1
     assert "Subcategory order of category 10 is unknown until the next run" in caplog.text
     listings = json.loads((tmp_path / "results" / "listings.json").read_text(encoding="utf-8"))
-    assert listings["10"]["subcategories"] is None
-    assert listings["11"]["subcategories"] == []
+    assert listings["10"].get("subcategories") is None  # still unknown, so the next run reads the page again
+
+
+def test_positions_command_reads_only_the_pages_of_parents(tmp_path):
+    """Results from before positions were scraped: robots.txt and the page of 10, the only parent. No sitemap,
+    no product, and not the pages of 11 and 50, which have no subcategories to order."""
+    make_crawler(shop_pages(), tmp_path)[0].run()
+    forget_subcategories(tmp_path)
+    products_before = (tmp_path / "results" / "products.jsonl").read_text(encoding="utf-8")
+
+    crawler, shop = make_crawler(shop_pages(), tmp_path)
+    assert crawler.run_positions() == 0
+
+    assert shop.calls == [f"{BASE}/robots.txt", category_url(10)]
+    categories = saved_categories(tmp_path)
+    assert {c: categories[c]["position"] for c in categories} == {10: 1, 11: 1, 50: 2}
+    assert (tmp_path / "results" / "products.jsonl").read_text(encoding="utf-8") == products_before
+
+
+def test_positions_command_without_saved_categories_fails(tmp_path, caplog):
+    crawler, _ = make_crawler(shop_pages(), tmp_path)
+    with caplog.at_level(logging.ERROR):
+        assert crawler.run_positions() == 1
+    assert "No saved categories" in caplog.text
 
 
 def test_second_run_leaves_the_positions_unchanged(tmp_path, caplog):
