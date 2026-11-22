@@ -332,7 +332,10 @@ docker compose -f deploy/compose.yaml --profile init run --rm --build importer -
 ```
 
 The top menu shows the categories listed under `catalog` in
-[`shop/config/shop-settings.php`](shop/config/shop-settings.php). Design notes:
+[`shop/config/shop-settings.php`](shop/config/shop-settings.php). Their subcategories, in the menu and on category
+pages, are in the source shop's order: `position` in `scraper-results/categories.json`
+([Category order](scraper/README.md#category-order)). A shop imported before positions existed gets that order when
+init or the importer is run again. Design notes:
 [ADR 0008](docs/adr/0008-product-import-through-the-webservice-api.md).
 
 Seven products have variants (sizes or weights, D3). The source shop sells each size as a separate product; the

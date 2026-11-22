@@ -87,6 +87,16 @@ valid JSON).
 A product's stock comes from its source ID (`mapping.stock_quantity`), so it is the same on every run. Rules for
 prices, weight, barcodes and stock are in `importer/mapping.py`, each with its reason and unit tests.
 
+## Category order
+
+The shop lists subcategories (on a category page and in the top menu) by their `position`, so the importer sends
+the one from `categories.json`: the place among its siblings on the source, from 1, minus 1 because PrestaShop
+counts from 0. An update through the API stores it exactly as sent, but a new category is always put last among its
+siblings, whatever position it is sent (`Category::add`). So right after creating a category the importer updates
+it if the shop put it elsewhere; the report counts it as created only. A category in the shop with another position
+is updated like any other changed field, and a second run changes nothing. Data scraped before positions existed has
+no `position`, so the importer sends none and the shop keeps its own order.
+
 ## Descriptions
 
 Each product has two descriptions, as on the source: the short one above the "Add to cart" button

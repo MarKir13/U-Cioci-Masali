@@ -21,6 +21,7 @@ pip install -r requirements.txt
 python -m scraper --help
 python -m scraper crawl                                         # full run into ../scraper-results/ (resumable)
 python -m scraper crawl --limit 5                               # test run: at most 5 new pages per stage
+python -m scraper positions                                     # only set the category order (pages of parents only)
 python -m scraper images                                        # download and fit the product images (resumable)
 python -m scraper images --limit 5                              # test run: at most 5 new images
 python -m scraper fetch /8-kosmetyki                            # download one page, print status and size
@@ -47,7 +48,7 @@ docker compose -f deploy/compose.yaml --profile init run --rm --build scraper im
 
 It reads and writes `scraper-results/` as above; the log goes to `deploy/logs/scraper.log` (`SCRAPER_LOG`), since
 files inside the container are gone after the run. The page cache (`scraper/cache/`) is not kept between runs there.
-`images` and `crawl` contact the source shop: run them only when a person decides to, never in CI.
+`images`, `crawl` and `positions` contact the source shop: run them only when a person decides to, never in CI.
 
 ## Crawl
 
@@ -58,7 +59,7 @@ these pages: [ADR 0004](../docs/adr/0004-crawl-sources-and-category-assignment.m
 2. **Sitemap** (`/1_index_sitemap.xml` and the sitemap it lists): product and category URLs. Downloaded on every run.
    If it fails, the run stops.
 3. **Categories:** each category page. It is also page 1 of the category's product listing, so the product URLs on it
-   are kept too.
+   are kept too, and so is the order of the subcategory links under its description.
 4. **Full listings:** Na prezent (458) and Nowości (50) are walked to the last page with `?page=N`, because no
    product has them as its default category. Other listings stop at page 1 (`FULL_LISTING_CATEGORY_IDS` in
    [config.py](scraper/config.py)).
@@ -66,7 +67,11 @@ these pages: [ADR 0004](../docs/adr/0004-crawl-sources-and-category-assignment.m
    product page (default category and its breadcrumb) are merged with the listings it was seen on, without duplicates.
    Category ids that are not categories of the shop are dropped, see [Rejected products](#rejected-products-and-empty-categories).
 6. **Cleaning** (full runs only): categories without products are removed and `rejected.json` is written.
-7. **Report:** a warning for each category that lists products in the source shop but has none saved, and for
+7. **Positions** (full runs only): every category gets `position`, its place among its siblings from 1, in the
+   order its parent's page links them. Numbered after the cleaning, so a removed category leaves no gap. Top-level
+   categories have no parent page and are ordered by id, and so is a subcategory its parent's page does not link
+   (after the linked ones). The shop sorts categories by this field, see [Category order](#category-order).
+8. **Report:** a warning for each category that lists products in the source shop but has none saved, and for
    category ids that products use but that were not saved.
 
 A page that fails (blocked by robots.txt, HTTP error, network error, parse or validation error) is logged and skipped,
@@ -78,7 +83,7 @@ At the end of each stage the log shows how many records were saved, already save
 | File in `scraper-results/` | Contents | Written |
 |---|---|---|
 | `categories.json` | List of categories (`Category` in the schema) | Whole file again after each new category |
-| `listings.json` | Per category id: product URLs seen on its listing, and `next_page` (`null` once finished) | Whole file again after each listing page |
+| `listings.json` | Per category id: product URLs seen on its listing, `next_page` (`null` once finished), and `subcategories`: ids of the subcategories in the page's order (`null` if not read yet) | Whole file again after each listing page |
 | `products.jsonl` | One product per line (`Product` in the schema) | One line appended per product |
 | `rejected.json` | Products left out on purpose, each with `id`, `url` and `reason` | At the end of a full run |
 
@@ -141,6 +146,20 @@ download fresh pages.
 the cache. It never uses the network and changes no other field, so prices, categories and the `local_path` of the
 images stay as they are. A product whose page is not in the cache keeps its record, is listed as a warning, and the
 command exits with 1. Running it again changes nothing.
+
+### Category order
+
+`position` of a category is its place among its siblings on the source, read from the subcategory links on the
+parent's page (`div.subcategory__list`), not from the menu. The source's mega menu shows the same order wherever it
+lists the subcategories; it does not go below the second level. Checked on 2026-11-22 for all 27 categories that
+have subcategories.
+
+Results saved before positions were scraped have `subcategories` missing in `listings.json`. The next full crawl
+reads the pages it needs, from the cache if they are there. `python -m scraper positions` does only that: it loads
+robots.txt, downloads the pages of the categories that have saved subcategories (27 pages, about 30 seconds) and
+writes `position` into `categories.json`, without the sitemap and without products. Use it when only the order is
+needed, so that products added to the source shop since the last crawl are not picked up. Running it again
+downloads nothing and changes nothing.
 
 ## Images
 
