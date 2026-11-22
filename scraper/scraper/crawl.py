@@ -257,7 +257,12 @@ class Crawler:
         for url in urls:
             category_id = id_from_url(url)
             if category_id in categories:
-                stats["already saved"] += 1
+                if "description" not in categories[category_id]:
+                    # Saved before descriptions were scraped: add it from the page (the cache has it)
+                    self.add_description(categories, category_id, url)
+                    stats["description added"] += 1
+                else:
+                    stats["already saved"] += 1
                 continue
             if category_id in self.empty_category_ids:
                 log.info("Skipping category %d: it is empty in the source shop and has no breadcrumb", category_id)
@@ -288,6 +293,21 @@ class Crawler:
             save_json(self.categories_file, list(categories.values()))
             stats["saved"] += 1
         self._log_stats("Categories", stats)
+
+    def add_description(self, categories: dict[int, dict], category_id: int, url: str) -> None:
+        """Fills in `description` of a saved category. The record is left as it was if the page is unavailable."""
+        html = self.fetch(url)
+        if html is None:
+            return
+        try:
+            category = parse_category(url, html)
+        except ValueError as exc:
+            log.error("Could not parse category %s: %s", url, exc)
+            return
+        if category is None:
+            return
+        categories[category_id]["description"] = category.description
+        save_json(self.categories_file, list(categories.values()))
 
     def walk_full_listings(self, listings: dict[int, Listing]) -> None:
         """Walk Na prezent and Nowości to their last page, saving after every page.
@@ -504,3 +524,5 @@ class Crawler:
             stats["already saved"],
             stats["failed"],
         )
+        if stats["description added"]:
+            log.info("%s: description added to %d saved ones", stage, stats["description added"])

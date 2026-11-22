@@ -42,10 +42,10 @@ class Archive:
 
 
 # Both made by `python -m scraper archive` (scraper/README.md, "Publishing the images"). A new build has a new hash.
-FULL = Archive("product-images.tar.gz", "54e3a0d705e5256a2f1bfee998f6176dc7164d78bd43c9208b0355d7b5f770c5")
+FULL = Archive("product-images.tar.gz", "14de759842c2bafb2564fe54c42925060e7405a5a7168024aeed8eb00c3db1b3")
 # Przyprawy (under Żywność) and Pielęgnacja okolic oczu (under Kosmetyki): two branches of the top menu with enough
 # products in stock for the E2E scenario. Made with `archive --categories 85,99`; change both together.
-SUBSET = Archive("subset-images.tar.gz", "ee7bab8b91855d2c75c1140384815c4643c5d993819617f1ac897925a06b63b6", (85, 99))
+SUBSET = Archive("subset-images.tar.gz", "91e65d55c55e553eebe5a4955d78bfb5cc699d5ba940af257d6428a3a66d5093", (85, 99))
 
 # The shop on the Compose network. Apache starts only after the install and the post-install scripts, so an answer
 # means the shop is ready: the same test as the healthcheck in compose.yaml.

@@ -42,10 +42,46 @@ configurePromoCode($settings['promo_code']);
 configureCatalog($settings['catalog']);
 
 configureOmnibus();
+configureHomeSections();
+configureTranslations();
 
 Tools::clearSmartyCache();
 Cache::clear();
 echo "Shop configuration done.\n";
+
+/**
+ * Wording of the source shop where the Polish translation of PrestaShop says something else. The strings are stored in
+ * the translation table of the database (the way the back office saves "International > Translations"), so no core
+ * file is edited: "Checkout" (the button of the empty cart) is "Finalizacja zamówienia (checkout)" in the Polish
+ * pack, the source has "Przejdź do kasy".
+ */
+function configureTranslations()
+{
+    $overrides = [
+        ['ShopThemeActions', 'Proceed to checkout', 'Przejdź do kasy'],
+        // The button of the empty cart (Classic's checkout/cart-empty.tpl), which the Polish pack calls
+        // "Finalizacja zamówienia (checkout)"
+        ['ShopThemeActions', 'Checkout', 'Przejdź do kasy'],
+    ];
+    $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+    $theme = Context::getContext()->shop->theme ? Context::getContext()->shop->theme->getName() : 'ciocia';
+    $db = Db::getInstance();
+    foreach ($overrides as [$domain, $key, $translation]) {
+        $db->delete('translation', 'id_lang = ' . $idLang . " AND domain = '" . pSQL($domain) . "' AND `key` = '" . pSQL($key) . "'");
+        $db->insert('translation', [
+            'id_lang' => $idLang,
+            'key' => pSQL($key),
+            'translation' => pSQL($translation),
+            'domain' => pSQL($domain),
+            'theme' => pSQL($theme),
+        ]);
+        echo "Translation $domain / $key: $translation.\n";
+    }
+    // Translations are cached by Symfony, not by Smarty
+    if (method_exists('Tools', 'clearSf2Cache')) {
+        Tools::clearSf2Cache('prod');
+    }
+}
 
 /**
  * PLN as the default currency, extra currencies at a fixed rate, every other currency disabled.
@@ -387,6 +423,23 @@ function configureOmnibus()
 }
 
 /**
+ * Home page sections (module ciociahome, shop/modules/ciociahome): category tiles, needs, brands, guides, SEO
+ * text and the story. The theme's index.tpl calls them as widgets, so the module only has to be installed.
+ */
+function configureHomeSections()
+{
+    $home = Module::getInstanceByName('ciociahome');
+    if (!$home) {
+        throw new RuntimeException('Module ciociahome not found in modules/ (shop/modules/ciociahome)');
+    }
+    if (!Module::isInstalled('ciociahome') && !$home->install()) {
+        throw new RuntimeException('Could not install module ciociahome');
+    }
+    $home->enable();
+    echo "Home page: module ciociahome enabled.\n";
+}
+
+/**
  * The promo code as a cart rule: a percentage off the products, once per customer, valid for ten
  * years from the last run. Found by its code, so a second run updates it instead of adding another.
  * PrestaShop shows the promo code field in the cart and checkout only while a cart rule exists.
@@ -410,6 +463,56 @@ function configurePromoCode(array $promo)
 }
 
 /**
+ * Makes sure a PrestaShop module is installed, enabled and registered at the given hooks. Returns the module, or null
+ * when it is not in modules/ (the block is then simply not shown).
+ */
+function enableHookedModule(string $name, array $hooks)
+{
+    $module = Module::getInstanceByName($name);
+    if (!$module) {
+        echo "Module $name is not available, its block is not shown.\n";
+        return null;
+    }
+    if (!Module::isInstalled($name) && !$module->install()) {
+        throw new RuntimeException("Could not install module $name");
+    }
+    $module->enable();
+    foreach ($hooks as $hook) {
+        if (!$module->isRegisteredInHook($hook)) {
+            $module->registerHook($hook);
+            echo "Module $name registered at $hook.\n";
+        }
+    }
+    return $module;
+}
+
+/**
+ * The blocks under a product, as on the source: "N innych produktów w tej samej kategorii" (module ps_categoryproducts)
+ * "Ostatnio przeglądane" (module ps_viewedproduct) and "Klienci kupili również" (module ps_crossselling), all at the hook
+ * displayFooterProduct, with a limit each.
+ */
+function configureProductPageBlocks(int $categoryProducts, int $viewedProducts, int $crossSelling)
+{
+    if (enableHookedModule('ps_categoryproducts', ['displayFooterProduct'])) {
+        Configuration::updateValue('CATEGORYPRODUCTS_DISPLAY_PRODUCTS', $categoryProducts);
+        echo "Products of the same category (ps_categoryproducts): at most $categoryProducts.\n";
+    }
+    if (enableHookedModule('ps_crossselling', ['displayFooterProduct'])) {
+        Configuration::updateValue('CROSSSELLING_NBR', $crossSelling);
+        echo "Bought together (ps_crossselling): at most $crossSelling, from the orders of this shop.\n";
+    }
+    // displayProductAdditionalInfo is where the module notes the product being viewed (in the cookie); without it the
+    // list under the product stays empty. The shop of this project had it unregistered.
+    if (enableHookedModule('ps_viewedproduct', ['displayFooterProduct', 'displayProductAdditionalInfo'])) {
+        Configuration::updateValue('PRODUCTS_VIEWED_NBR', $viewedProducts);
+        echo "Recently viewed (ps_viewedproduct): at most $viewedProducts.\n";
+    }
+    // "Powiadom mnie kiedy będzie dostępny" under the add-to-cart button of an unavailable product (the module shows it
+    // only when the product cannot be bought); the look comes from the child theme.
+    enableHookedModule('ps_emailalerts', ['displayProductAdditionalInfo']);
+}
+
+/**
  * Stock rules, HTML in descriptions, and the top menu for the categories the importer creates (issue #70).
  */
 function configureCatalog(array $catalog)
@@ -417,6 +520,10 @@ function configureCatalog(array $catalog)
     Configuration::updateValue('PS_STOCK_MANAGEMENT', 1);
     Configuration::updateValue('PS_ORDER_OUT_OF_STOCK', $catalog['order_out_of_stock'] ? 1 : 0);
     Configuration::updateValue('PS_ALLOW_HTML_IFRAME', $catalog['allow_iframes'] ? 1 : 0);
+    // The line under the price of a product in stock ("Wysyłka w ciągu 24h" on the source)
+    Configuration::updateValue('PS_LABEL_IN_STOCK_PRODUCTS', [(int) Configuration::get('PS_LANG_DEFAULT') => $catalog['in_stock_label']]);
+
+    configureProductPageBlocks((int) $catalog['category_products'], (int) $catalog['viewed_products'], (int) $catalog['crossselling_products']);
 
     // The module rebuilds the menu after every category change, also those made through the API
     Configuration::updateValue('CIOCIA_MENU_CATEGORIES', json_encode($catalog['menu_categories'], JSON_UNESCAPED_UNICODE));

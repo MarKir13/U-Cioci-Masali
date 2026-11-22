@@ -3,7 +3,7 @@
  * Licensed under the Academic Free License 3.0 (AFL-3.0).
  * https://opensource.org/licenses/AFL-3.0
  *
- * Cart list, then "Kontynuuj zakupy", then the info box (cart-info.tpl), in the order of the source
+ * Cart list (or the empty-cart line), then "Kontynuuj zakupy", then the info box (cart-info.tpl), in the order of the source
  * (issue #44). All three sit inside .cart-overview: Classic replaces that element with this template
  * after every cart change, so the box stays current; outside it, every refresh would add a copy.
  * The link takes the place of Classic's continue_shopping block in cart.tpl, which is left empty.
@@ -24,8 +24,9 @@
     {include file='checkout/_partials/continue-shopping.tpl'}
     {include file='checkout/_partials/cart-info.tpl'}
     {else}
-      <span class="no-items">{l s='There are no more items in your cart' d='Shop.Theme.Checkout'}</span>
+      <span class="no-items">W koszyku nie ma jeszcze produktów</span>
       {include file='checkout/_partials/continue-shopping.tpl'}
+      {include file='checkout/_partials/cart-info.tpl'}
     {/if}
   </div>
 {/block}

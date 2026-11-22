@@ -111,10 +111,22 @@ return [
     'catalog' => [
         // Top menu: these top-level categories, in this order. Names exactly as in
         // scraper-results/categories.json. The module ciociamenu keeps the menu in step with them.
-        'menu_categories' => ['Kosmetyki', 'Żywność', 'Zdrowie', 'Różności', 'NA PREZENT', 'Nowości'],
+        // An entry with a label links to a brand page ('manufacturer', as on the source: /brand/3-himalaya),
+        // or to the category named in 'category' while that brand does not exist.
+        'menu_categories' => ['NA PREZENT', 'Nowości', 'Promocje', 'Kosmetyki', 'Żywność', 'Zdrowie',
+            ['label' => 'Himalaya', 'manufacturer' => 'Himalaya', 'category' => 'Suplementy Himalaya Herbals, Himalaya Herbs'], 'Różności'],
         // false: a product with stock 0 cannot be ordered (the brief wants some products unavailable)
         'order_out_of_stock' => false,
         // Allow <iframe> in descriptions: product 9536 embeds a YouTube video, as on the source shop
         'allow_iframes' => true,
+        // Shown on the product page of a product in stock, as on the source shop
+        'in_stock_label' => 'Wysyłka w ciągu 24h',
+        // Under a product: "N other products in the same category" (module ps_categoryproducts), N at most this
+        'category_products' => 4,
+        // Under them: "Ostatnio przeglądane" (module ps_viewedproduct), at most this many
+        'viewed_products' => 4,
+        // And "Klienci kupili również" (module ps_crossselling): products found together with this one in the
+        // orders of this shop, at most this many. Empty until there are orders.
+        'crossselling_products' => 8,
     ],
 ];
