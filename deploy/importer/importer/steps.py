@@ -260,6 +260,7 @@ def product_fields(product: dict, shop: Shop, category_ids: dict[int, int], bran
     if tax_group is None:
         return f"no tax rule group for VAT {product['vat_rate']}%"
     ean13, upc = mapping.barcodes(product.get("ean"))
+    description, description_short = mapping.descriptions(product)
     return {
         "reference": product["id"],
         "id_manufacturer": brand_ids.get(product.get("brand") or "", 0),
@@ -278,7 +279,8 @@ def product_fields(product: dict, shop: Shop, category_ids: dict[int, int], bran
         "condition": "new",
         "minimal_quantity": 1,
         "name": Lang(product["name"]),
-        "description": Lang(mapping.without_videos(product["description"])),
+        "description": Lang(description),
+        "description_short": Lang(description_short),
         # A product with variants has a slug made from its own name (variants.product_record)
         "link_rewrite": Lang(product.get("link_rewrite") or mapping.link_rewrite(product["url"], product["name"])),
         "associations": {"categories": [("category", {"id": c}) for c in categories]},
@@ -756,7 +758,7 @@ def differs(existing: dict, fields: dict) -> bool:
                     return True
             continue
         have = existing.get(name)
-        if name == "description":
+        if name in ("description", "description_short"):
             if mapping.visible_text(text(have)) != mapping.visible_text(str(wanted)):
                 return True
             # A removed video player leaves the visible text as it was, so a shop imported before the

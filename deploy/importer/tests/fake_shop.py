@@ -18,7 +18,7 @@ import itertools
 from importer.api import Lang
 from importer.report import Timings
 
-LANGUAGE_FIELDS = {"name", "public_name", "description", "link_rewrite"}
+LANGUAGE_FIELDS = {"name", "public_name", "description", "description_short", "link_rewrite"}
 
 
 class FakeApi:
