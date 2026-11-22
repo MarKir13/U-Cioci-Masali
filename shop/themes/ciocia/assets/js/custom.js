@@ -124,6 +124,28 @@
   update();
 })();
 
+/*
+ * The order of the subcategories in the source's phone menu, by the name of the category (lower case). It differs
+ * from the desktop panel. Used by the category drawer (below) and by the row of subcategories on a category page.
+ */
+window.ciociaPhoneOrder = {
+  'kosmetyki': ['kosmetyki bio', 'dla mężczyzn', 'do twarzy', 'pielęgnacja okolic oczu', 'do ciała', 'do włosów', 'higiena i akcesoria'],
+  'do twarzy': ['kremy i serum', 'olejki i wody kwiatowe', 'olejki do nosa', 'maseczki', 'żele i toniki do mycia twarzy', 'szminki i pomadki'],
+  'do ciała': ['olejki do ciała', 'olejki zapachowe do ciała w sprayu', 'balsamy i masła', 'mydełka', 'maści', 'kremy do rąk', 'do stóp', 'do masażu', 'mehandi'],
+  'do włosów': ['henny i farby do włosów', 'szampony', 'olejki do włosów', 'odżywki', 'maski do włosów'],
+  'higiena i akcesoria': ['pasty do zębów', 'do kąpieli', 'oczyszczanie jamy ustnej', 'grzebienie do włosów', 'ałuny potasowe i dezodoranty'],
+  'do kąpieli': ['żele do mycia ciała', 'mydła, mydełka', 'sole i minerały do kąpieli', 'gąbki i myjki'],
+  'herbaty indyjskie': ['cosmoveda - z tulsi, moringą i innymi ziołami indyjskimi', 'numi organic tea', 'organic india', 'pukka', 'shoti maa', 'yogi tea', 'herbaty sypane', 'herbaty zielone', 'herbaty dla kobiet', 'herbaty zdrowotne', 'herbaty dla mężczyzn', 'herbaty dla vata', 'herbaty dla pitta', 'herbaty dla kapha'],
+  'suplementy': ['suplementy himalaya herbals, himalaya herbs', 'suplementy maharishi', 'suplementy cosmoveda', 'suplementy organic india', 'nimi ayurveda', 'suplementy bio inne'],
+  'zioła ajurwedyjskie': ['odporność', 'oczyszczanie', 'dla kobiet', 'dla mężczyzn', 'odchudzanie', 'dobre trawienie', 'zdrowie psychiczne', 'witalność i energia', 'bezsenność', 'stres', 'pamięć i koncentracja', 'przeziębienie', 'stawy, mięśnie', 'cukrzyca', 'nerki i układ moczowy', 'ochrona wątroby', 'serce i układ krążenia', 'cholesterol', 'układ oddechowy'],
+  'miedziane naczynia do wody': ['dzbanki miedziane', 'butelki miedziane', 'kubki i szklanki miedziane'],
+  'biżuteria i kamienie szlachetne': ['bransoletki i pierścionki', 'kolczyki', 'naszyjniki i mala', 'zawieszki i amulety', 'pozostałe'],
+  'misy tybetańskie, gongi, dzwonki i cymbałki': ['misy nepalskie', 'akcesoria - pałki i puduszki do mis', 'cymbałki i dzwonki'],
+  'żywność': ['oleje i ghee', 'herbaty indyjskie', 'przyprawy', 'superfoods', 'napoje'],
+  'zdrowie': ['suplementy', 'zioła ajurwedyjskie', 'eliksiry ziołowe', 'maści', 'akcesoria'],
+  'różności': ['miedziane naczynia do wody', 'figurki i ozdoby', 'odpromienniki i wahadełka', 'biżuteria i kamienie szlachetne', 'akcesoria do jogi i medytacji', 'misy tybetańskie, gongi, dzwonki i cymbałki', 'środki czystości', 'akcesoria do herbaty', 'dla zwierząt', 'fontanny wodne']
+};
+
 /* Keep Classic's responsive module relocation; own the mobile drawer interaction. */
 document.addEventListener('DOMContentLoaded', function () {
   var toggle = document.getElementById('menu-icon');
@@ -180,6 +202,7 @@ document.addEventListener('DOMContentLoaded', function () {
       menu.removeAttribute('aria-labelledby');
     }
     menu.style.display = open ? 'flex' : 'none';
+    if (!open) resetSub();
     backdrop.hidden = !open;
     updateExpandedState();
     if (open) closeButton.focus();
@@ -237,6 +260,109 @@ document.addEventListener('DOMContentLoaded', function () {
   function isDesktop() {
     return window.matchMedia('(min-width: 768px)').matches;
   }
+
+  // Phones (up to 575 px): a category with subcategories opens as a page of its own inside the drawer, as on
+  // the source, at every depth ("Kosmetyki", then "Do twarzy" inside it). The heading shows a back button, the
+  // category's name is the first card (it goes back as well) and only its subcategories follow. custom.css
+  // (.is-sub on the drawer, .is-drilled on every entry of the open path) hides the rest. A page change slides
+  // the list in a little, as on the source.
+  var phoneQuery = window.matchMedia('(max-width: 575px)');
+  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  // The order of the subcategories in the source's phone menu, where it differs from the desktop panel.
+  var phoneOrder = window.ciociaPhoneOrder;
+  var drawerHeading = menu.querySelector('.ciocia-drawer-heading');
+  var backButton = document.createElement('button');
+  backButton.type = 'button';
+  backButton.className = 'ciocia-drawer-back';
+  backButton.innerHTML = '<i class="material-icons" aria-hidden="true">chevron_left</i>';
+  var backLabel = document.createTextNode('Wszystko');
+  backButton.appendChild(backLabel);
+  if (drawerHeading) drawerHeading.insertBefore(backButton, drawerHeading.firstChild);
+  var trail = []; // the entries of the open path, the last one is the page on screen
+
+  function linkLabel(item) {
+    var link = Array.from(item.children).find(function (el) { return el.tagName === 'A'; });
+    return link ? link.textContent.trim() : '';
+  }
+
+  // Back to the top of the list, and a short slide: in from the right when going deeper, from the left when going back.
+  function showPage(direction) {
+    var scroller = menu.querySelector('#_mobile_top_menu');
+    if (!scroller) return;
+    scroller.scrollTop = 0;
+    if (reducedMotion.matches || !scroller.animate) return;
+    scroller.animate(
+      [{ opacity: 0, transform: 'translateX(' + (direction * 28) + 'px)' }, { opacity: 1, transform: 'none' }],
+      { duration: 260, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' }
+    );
+  }
+
+  // As on the source: "Wszystko" on the first page, the name of the open page deeper.
+  function updateBackLabel() {
+    backLabel.nodeValue = trail.length > 1 ? linkLabel(trail[trail.length - 1]) : 'Wszystko';
+  }
+
+  function enterSub(item) {
+    var parts = controls(item);
+    if (!parts.button || !parts.panel) return;
+    var title = document.createElement('button');
+    title.type = 'button';
+    title.className = 'ciocia-sub-title';
+    title.innerHTML = '<i class="material-icons" aria-hidden="true">chevron_left</i>';
+    title.appendChild(document.createTextNode(linkLabel(item)));
+    title.addEventListener('click', function () { leaveSub(true); });
+    parts.panel.insertBefore(title, parts.panel.firstChild);
+    var order = phoneOrder[linkLabel(item).toLowerCase()];
+    var list = parts.panel.querySelector('ul');
+    if (order && list) {
+      Array.from(list.children).forEach(function (li) {
+        var position = order.indexOf(linkLabel(li).toLowerCase());
+        li.style.order = String(position < 0 ? order.length : position);
+      });
+    }
+    parts.panel.hidden = false;
+    parts.button.setAttribute('aria-expanded', 'true');
+    item.classList.add('is-drilled');
+    menu.classList.add('is-sub');
+    trail.push(item);
+    updateBackLabel();
+    showPage(1);
+    backButton.focus();
+  }
+
+  function leaveSub(restoreFocus, silent) {
+    var item = trail.pop();
+    if (!item) return;
+    var parts = controls(item);
+    var title = parts.panel.querySelector(':scope > .ciocia-sub-title');
+    if (title) title.remove();
+    var list = parts.panel.querySelector('ul');
+    if (list) Array.from(list.children).forEach(function (li) { li.style.order = ''; });
+    parts.panel.hidden = true;
+    parts.button.setAttribute('aria-expanded', 'false');
+    item.classList.remove('is-drilled');
+    if (!trail.length) menu.classList.remove('is-sub');
+    updateBackLabel();
+    if (!silent) showPage(-1);
+    if (restoreFocus) parts.button.focus();
+  }
+
+  // Called when the drawer closes, so it opens on the full list next time.
+  function resetSub() {
+    while (trail.length) leaveSub(false, true);
+  }
+
+  backButton.addEventListener('click', function () { leaveSub(true); });
+  phoneQuery.addEventListener('change', function (event) { if (!event.matches) resetSub(); });
+  // Capture phase: the chevron of an entry opens its page instead of unfolding it below the entry.
+  menu.addEventListener('click', function (event) {
+    if (!phoneQuery.matches) return;
+    var button = event.target.closest('.ciocia-submenu-toggle');
+    if (!button || !button.parentElement.classList.contains('ciocia-has-submenu')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    enterSub(button.parentElement);
+  }, true);
 
   // An entry of the left-hand list in the desktop panel (its children are shown on the right, not below).
   function isPanelEntry(item) {
@@ -1098,12 +1224,43 @@ document.addEventListener('click', function (event) {
     });
   }
 
+  // 360 px: the subcategory links in the order of the source's phone menu (the same as in the drawer, where it
+  // differs from the order of the desktop panel). custom.css makes the list a flex row, so style.order works.
+  var smallPhone = window.matchMedia('(max-width: 575px)');
+  var chipOrder = window.ciociaPhoneOrder;
+
+  function orderSubcategories() {
+    var title = document.querySelector('.ciocia-listing__title');
+    var order = title ? chipOrder[title.textContent.trim().toLowerCase()] : null;
+    document.querySelectorAll('.ciocia-subcategories__list').forEach(function (list) {
+      Array.from(list.children).forEach(function (item) {
+        var link = item.querySelector('a');
+        var position = order && link ? order.indexOf(link.textContent.trim().toLowerCase()) : -1;
+        item.style.order = order && smallPhone.matches ? String(position < 0 ? order.length : position) : '';
+      });
+    });
+  }
+
   function init() {
     document.querySelectorAll('.js-ciocia-subcategories').forEach(function (block) {
       block.classList.add('is-ready');
     });
     measureDescriptions();
+    orderSubcategories();
   }
+
+  // The scroll bar under the row of subcategories is there at rest, and disappears once the row has been moved
+  // and stops moving, as on the source (custom.css, .is-idle). The scroll event does not bubble: capture it.
+  var idleTimers = new WeakMap();
+  document.addEventListener('scroll', function (event) {
+    var list = event.target;
+    if (!list.classList || !list.classList.contains('ciocia-subcategories__list')) return;
+    list.classList.remove('is-idle');
+    clearTimeout(idleTimers.get(list));
+    idleTimers.set(list, setTimeout(function () {
+      list.classList.toggle('is-idle', list.scrollLeft > 2);
+    }, 800));
+  }, true);
 
   document.addEventListener('click', function (event) {
     var button = event.target.closest('.ciocia-category-description__toggle, .ciocia-subcategories__toggle');
@@ -1118,6 +1275,7 @@ document.addEventListener('click', function (event) {
     init();
   }
   phone.addEventListener('change', measureDescriptions);
+  smallPhone.addEventListener('change', orderSubcategories);
   window.addEventListener('load', measureDescriptions);
   if (window.prestashop && typeof window.prestashop.on === 'function') {
     // Classic's handler, registered before this file runs, has already put the new header in place.
