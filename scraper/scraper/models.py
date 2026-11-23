@@ -6,7 +6,7 @@ import logging
 import re
 from decimal import Decimal
 from pathlib import Path
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import (
     AfterValidator,
@@ -168,6 +168,37 @@ class Product(Record):
         return images
 
 
+class FamilyOption(Record):
+    """One tile or button of a family block: the source id of the product it stands for and the short label on it."""
+
+    source_id: PositiveInt
+    label: Text
+
+
+class FamilyAxis(Record):
+    """One row of a family block, such as "Mydło" (photo tiles) or "Pojemność" (text buttons)."""
+
+    # A few rows on the source have no title (Palo Santo), so it may be null
+    title: OptionalText = None
+    kind: Literal["image", "text"]
+    options: list[FamilyOption] = Field(min_length=1)
+
+    @field_validator("options")
+    @classmethod
+    def _no_duplicate_products(cls, options: list[FamilyOption]) -> list[FamilyOption]:
+        ids = [option.source_id for option in options]
+        if len(ids) != len(set(ids)):
+            raise ValueError("contains duplicate source_id")
+        return options
+
+
+class ProductFamily(Record):
+    """The family block of one product page (`families.json` stores `axes` under the product id)."""
+
+    product_id: PositiveInt
+    axes: list[FamilyAxis] = Field(min_length=1)
+
+
 def validate_record[T: Record](model: type[T], data: dict, url: str, problems: list[str] | None = None) -> T | None:
     """Return the validated record, or log why it is invalid and return None so that the run can go on.
 
@@ -184,8 +215,11 @@ def validate_record[T: Record](model: type[T], data: dict, url: str, problems: l
 
 
 def json_schema() -> dict:
-    """JSON schema of the saved records: `#/$defs/Category` and `#/$defs/Product`."""
-    _, schema = models_json_schema([(Category, "serialization"), (Product, "serialization")], title="Scraper results")
+    """JSON schema of the saved records: `#/$defs/Category`, `#/$defs/Product` and `#/$defs/ProductFamily`."""
+    _, schema = models_json_schema(
+        [(Category, "serialization"), (Product, "serialization"), (ProductFamily, "serialization")],
+        title="Scraper results",
+    )
     return schema
 
 
