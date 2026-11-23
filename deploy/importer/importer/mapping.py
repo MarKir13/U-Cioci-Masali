@@ -7,7 +7,8 @@ The reasons for the rules are in docs/adr/0008-product-import-through-the-webser
 import hashlib
 import re
 from decimal import ROUND_HALF_UP, Decimal
-from html import unescape
+from html import escape, unescape
+from urllib.parse import urlparse
 
 # PrestaShop keeps net prices with 6 decimals and rounds gross prices to the grosz, half up
 # (PS_PRICE_ROUND_MODE = 2).
@@ -245,3 +246,87 @@ def with_descendants(category_ids: set[int], categories: list[dict]) -> set[int]
                 result.add(category["id"])
                 changed = True
     return result
+
+
+# --- Brand pages: the text of a manufacturer (ADR 0014) ---------------------------------------------------
+
+# An <a href="..."> from the scraper: it keeps no other attribute on a link (scraper/sanitize.py)
+BRAND_LINK = re.compile(r'<a href="([^"]*)">(.*?)</a>', re.IGNORECASE | re.DOTALL)
+SOURCE_HOSTS = {"magiczne-indie.pl", "www.magiczne-indie.pl"}
+# PrestaShop's limits of the manufacturer fields (classes/Manufacturer.php)
+META_TITLE_MAX = 255
+META_DESCRIPTION_MAX = 512
+SHORT_DESCRIPTION_MAX = 400
+
+
+def brand_key(name: str) -> str:
+    """A brand name compared without case and spacing, the same way the scraper matches its brands."""
+    return " ".join(name.split()).casefold()
+
+
+def category_links(categories: list[dict], category_ids: dict[int, int]) -> dict[int, str]:
+    """Source category ID -> the address of the same category in our shop (`/<shop id>-<link rewrite>`).
+
+    Only categories that were imported get one: a link to any other category cannot be kept.
+    """
+    return {
+        c["id"]: f"/{category_ids[c['id']]}-{link_rewrite(c['url'], c['name'])}"
+        for c in categories
+        if c["id"] in category_ids
+    }
+
+
+def relink_brand_html(html: str, links: dict[int, str]) -> str:
+    """The brand text with its links to the source shop pointed at our shop, or dropped.
+
+    A link to a source category (`/335-slug`) becomes the link to the same category in our shop (`links`, mapped by
+    the category ID). A link to anything else on the source (a brand, an article, a category that is not in our
+    shop) is replaced by its text, as in without_source_links, so no click leaves our shop for the real one.
+    Links to other sites stay.
+    """
+
+    def replace(match: re.Match) -> str:
+        parts = urlparse(unescape(match.group(1)))
+        if parts.hostname not in SOURCE_HOSTS:
+            return match.group(0)
+        category = re.match(r"^/(\d+)-[^/.]+$", parts.path)
+        target = links.get(int(category.group(1))) if category else None
+        return f'<a href="{target}">{match.group(2)}</a>' if target else match.group(2)
+
+    return BRAND_LINK.sub(replace, html)
+
+
+def faq_html(brand: dict) -> str:
+    """The FAQ of a brand as plain HTML at the end of its description: an h2, then an h3 and the answer per question.
+
+    No accordion markup is stored: the theme builds it (ADR 0014). Questions are escaped, answers are the
+    scraper's cleaned HTML.
+    """
+    if not brand.get("faq"):
+        return ""
+    title = brand.get("faq_title") or "Najczęstsze pytania"
+    items = "\n".join(f"<h3>{escape(item['question'], quote=False)}</h3>\n{item['answer']}" for item in brand["faq"])
+    return f"<h2>{escape(title, quote=False)}</h2>\n{items}"
+
+
+def brand_description(brand: dict, links: dict[int, str]) -> str:
+    """The manufacturer's `description`: the page text with its links remapped, then the FAQ."""
+    parts = [brand.get("description") or "", faq_html(brand)]
+    return relink_brand_html("\n".join(part for part in parts if part), links)
+
+
+def brand_short_description(brand: dict) -> str:
+    """The manufacturer's `short_description`: the first paragraph of the page as plain text, cut at a word."""
+    first = re.search(r"<p>(.*?)</p>", brand.get("description") or "", re.DOTALL)
+    text = " ".join(unescape(re.sub(r"<[^>]*>", "", first.group(1))).split()) if first else ""
+    if len(text) <= SHORT_DESCRIPTION_MAX:
+        return text
+    return text[:SHORT_DESCRIPTION_MAX].rsplit(" ", 1)[0].rstrip(",;:—-") + "…"
+
+
+def limited(text: str | None, limit: int) -> str:
+    """A meta field cut to PrestaShop's limit (at a word, with an ellipsis), no tags."""
+    text = " ".join(unescape(re.sub(r"<[^>]*>", "", text or "")).split())
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1].rsplit(" ", 1)[0] + "…"

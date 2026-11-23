@@ -81,9 +81,18 @@ def run(api: ShopApi, args: argparse.Namespace) -> int:
         report.reject("products", source_id, reason)
     for line_number, reason in unreadable:
         report.reject("products", f"products.jsonl line {line_number}", reason)
+    brands, rejected = data.load_brands(args.data_dir, schema)
+    for name, reason in rejected:
+        report.reject("manufacturers", name, reason)
     full_run = not args.limit and not args.categories
     selected = select_products(products, categories, args)
-    log.info("data: %d categories, %d products (%d selected)", len(categories), len(products), len(selected))
+    log.info(
+        "data: %d categories, %d products (%d selected), %d brand pages",
+        len(categories),
+        len(products),
+        len(selected),
+        len(brands),
+    )
 
     # Products with variants: their source products are imported as one product with combinations, not alone
     try:
@@ -135,7 +144,8 @@ def run(api: ShopApi, args: argparse.Namespace) -> int:
     with timings.phase("categories"):
         category_ids = steps.import_categories(api, shop, categories, report)
     with timings.phase("manufacturers"):
-        brand_ids = steps.import_manufacturers(api, shop, products, report)
+        links = mapping.category_links(categories, category_ids)
+        brand_ids = steps.import_manufacturers(api, shop, products, report, brands, links)
 
     # Steps 3-6: each product with its stock, promotion and images, several at a time; then the products with
     # variants, one at a time, with their attribute values and combinations
