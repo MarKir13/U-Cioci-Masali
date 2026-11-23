@@ -154,7 +154,9 @@ with a title ("Mydło", "Pojemność", 3 rows have none) and one option per sibl
 `python -m scraper families` reads the pages of the products that have a `family` from the cache (never the network)
 and writes `families.json`: product ID -> list of rows `{title, kind: "image"|"text", options: [{source_id, label}]}`,
 one product per line, validated as `ProductFamily` in the schema. The current product's option has the page's own
-ID. A page missing from the cache, or a block that fails validation, is logged and the command exits with 1. The file
+ID. If any page is missing from the cache (`cache/` is not in git, so on a clean clone all of them are), nothing is
+written and the command exits with 1, so the committed files stay intact. A block that fails validation is logged
+and left out, and the command exits with 1 too. The file
 is also copied into the shop module `ciociafamily` (the shop image cannot read `scraper-results/`); a unit test
 checks that both copies are the same. On the real data: 1210 products, 1434 rows.
 

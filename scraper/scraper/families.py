@@ -73,8 +73,9 @@ def build_families(
 ) -> int:
     """Writes `families.json` for the saved products that have a family, from their pages in the cache.
 
-    Never uses the network. A page missing from the cache or a block that fails validation is logged and
-    counted, and the exit code is then 1. The file is also copied into the shop module (`shop_copy`), if its
+    Never uses the network. If any page is missing from the cache, nothing is written (the files stay as they
+    are) and the exit code is 1. A block that fails validation is logged and left out, and the exit code is
+    then 1 as well. The file is also copied into the shop module (`shop_copy`), if its
     folder exists: in the Compose service `scraper` only scraper-results/ is mounted, so copy it by hand there.
     """
     cache = cache or PageCache(config.CACHE_DIR)
@@ -97,6 +98,10 @@ def build_families(
             stats["failed"] += 1
             continue
         families[family.product_id] = family.axes
+    if stats["not in the cache"]:
+        # scraper/cache/ is gitignored: on a clean clone every page is missing, and writing would empty the data
+        log.error("%d pages not in the cache: %s left unchanged", stats["not in the cache"], out_file)
+        return 1
     save_families(out_file, families)
     log.info(
         "Families: %d products saved to %s, %d not in the cache, %d failed",

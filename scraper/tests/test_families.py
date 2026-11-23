@@ -88,11 +88,18 @@ def test_build_families_page_missing_from_cache(tmp_path, caplog):
     products = tmp_path / "products.jsonl"
     save_lines(products, [{"id": 242, "url": URL, "family": ["https://www.magiczne-indie.pl/706-x.html"]}])
     out = tmp_path / "families.json"
+    out.write_text('{\n"242": []\n}\n', encoding="utf-8")
+    shop_copy = tmp_path / "shop" / "families.json"
+    shop_copy.parent.mkdir()
+    shop_copy.write_text("old copy", encoding="utf-8")
 
+    # Without the cache (a clean clone) the saved families must survive, not be replaced by an empty file
     with caplog.at_level(logging.WARNING):
-        assert build_families(products, PageCache(tmp_path / "cache"), out, None) == 1
-    assert json.loads(out.read_text(encoding="utf-8")) == {}
+        assert build_families(products, PageCache(tmp_path / "cache"), out, shop_copy) == 1
+    assert out.read_text(encoding="utf-8") == '{\n"242": []\n}\n'
+    assert shop_copy.read_text(encoding="utf-8") == "old copy"
     assert "not in the cache" in caplog.text
+    assert "left unchanged" in caplog.text
 
 
 def test_shop_module_has_the_same_families_file():
