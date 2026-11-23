@@ -1668,3 +1668,51 @@ document.addEventListener('change', function (event) {
     });
   }).observe(container, { childList: true, subtree: true });
 })();
+
+/*
+ * Brand page FAQ (issue #107, ADR 0014): the importer stores the FAQ at the end of the brand description as the
+ * last <h2> followed by pairs of <h3> (the question) and the answer's paragraphs. Without JavaScript that is
+ * plain headings and text. Here each pair becomes <details><summary>question</summary>answer</details>, which
+ * the CSS (.ciocia-brand__text details) draws as an accordion. The block is only changed when every <h3> after
+ * the last <h2> is a question (ends with "?"), so a description with ordinary sections and no FAQ stays as it is.
+ */
+(function () {
+  function buildFaq() {
+    var text = document.querySelector('#manufacturer-description');
+    if (!text || text.querySelector('details')) return;
+
+    var headings = text.querySelectorAll(':scope > h2');
+    var title = headings[headings.length - 1];
+    if (!title) return;
+
+    var items = [];
+    var current = null;
+    for (var node = title.nextElementSibling; node; node = node.nextElementSibling) {
+      if (node.tagName === 'H3') {
+        current = { question: node, answer: [] };
+        items.push(current);
+      } else if (current && (node.tagName === 'P' || node.tagName === 'UL')) {
+        current.answer.push(node);
+      } else {
+        return; // anything else: these are not the FAQ pairs, leave the description as it is
+      }
+    }
+    if (!items.length) return;
+    var allQuestions = items.every(function (item) {
+      return item.answer.length && /\?\s*$/.test(item.question.textContent);
+    });
+    if (!allQuestions) return;
+
+    items.forEach(function (item) {
+      var details = document.createElement('details');
+      var summary = document.createElement('summary');
+      summary.textContent = item.question.textContent.trim();
+      details.appendChild(summary);
+      item.answer.forEach(function (node) { details.appendChild(node); });
+      item.question.replaceWith(details);
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildFaq);
+  else buildFaq();
+})();
