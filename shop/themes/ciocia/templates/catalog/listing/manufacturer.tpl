@@ -5,11 +5,12 @@
  *
  * Brand page as on the source (issue #107, e.g. /brand/3-himalaya): the product list of
  * catalog/listing/product-list.tpl under a header with the brand's title and its description (an
- * introduction, sections with headings and lists, and an FAQ). The title is the brand's meta title and the
- * description is the brand's HTML description, both set by the importer (see the issue for scraping the
- * brand pages). Without them the header shows the brand's name only. The description shows on the first
+ * introduction, sections with headings and lists, and an FAQ). The importer stores the source page's H1 as the
+ * manufacturer's meta title (also the browser tab's title) and the page's HTML as its description (ADR 0014). Without them the header shows the brand's name only. The description shows on the first
  * page only, as the category description does.
- * The FAQ is a list of <details><summary>question</summary>answer</details>; the CSS draws it as an accordion.
+ * The importer writes the FAQ as the last <h2> of the description, followed by <h3> questions (each ending with
+ * "?") and their answers. custom.js (buildFaq) turns each pair into <details><summary>question</summary>answer
+ * </details>, which the CSS draws as an accordion; without JavaScript they stay plain headings.
  *}
 {extends file='catalog/listing/product-list.tpl'}
 
