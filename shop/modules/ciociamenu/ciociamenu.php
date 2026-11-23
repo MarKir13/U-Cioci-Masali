@@ -25,7 +25,10 @@ class Ciociamenu extends Module
 
     // Fired for every object PrestaShop saves or deletes; the module reacts only to CATALOG_CLASSES
     const HOOKS = ['actionObjectAddAfter', 'actionObjectUpdateAfter', 'actionObjectDeleteAfter'];
-    const CATALOG_CLASSES = ['Category', 'Manufacturer', 'Product', 'Combination', 'SpecificPrice', 'StockAvailable', 'Image'];
+    // CiociaPromoEnd: the promotion end dates shown on product cards (module ciociaomnibus, #111)
+    const CATALOG_CLASSES = [
+        'Category', 'Manufacturer', 'Product', 'Combination', 'SpecificPrice', 'StockAvailable', 'Image', 'CiociaPromoEnd',
+    ];
 
     public function __construct()
     {

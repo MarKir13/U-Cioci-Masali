@@ -3543,6 +3543,13 @@ body#sitemap #wrapper .sitemap > [class*="col-"] {
   font-size: 0.625rem;
 }
 
+/* "· do 14.11.2026" after the price before the promotion (#111). As on the source (measured on its cards): the dot
+   is lighter (#bbb; the issue said #c1c1c1, the source uses #bbb), the date is styled as the price
+   (.omnibus-price-amount) */
+#wrapper .ciocia-card .omnibus-sep {
+  color: #bbb;
+}
+
 #wrapper .ciocia-card .omnibus-line--lowest .omnibus-price-amount {
   color: #777;
 }
