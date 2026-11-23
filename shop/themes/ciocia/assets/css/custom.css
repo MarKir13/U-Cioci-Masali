@@ -8671,6 +8671,11 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
   }
 }
 
+/* The drill-down back button (custom.js) exists at every width but is only used on phones: hidden by default. */
+#header #mobile_top_menu_wrapper .ciocia-drawer-back {
+  display: none;
+}
+
 @media (max-width: 575px) {
   #header #mobile_top_menu_wrapper {
     animation: ciocia-drawer-in 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both;
@@ -8685,10 +8690,6 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
    * A category opened inside the drawer (custom.js: .is-sub on the drawer, .is-drilled on the entry): the
    * heading shows "‹ Wszystko" and the entry's name is the first card, then its subcategories.
    */
-  #header #mobile_top_menu_wrapper .ciocia-drawer-back {
-    display: none;
-  }
-
   #header #mobile_top_menu_wrapper.is-sub .ciocia-drawer-back {
     display: flex;
     align-items: center;
@@ -8819,7 +8820,7 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
  *   the source's order); "Pokaż wszystkie (N)" unfolds them into rows.
  */
 @media (max-width: 575px) {
-  body:not(#index) #wrapper > .container {
+  body:not(#index):not(#checkout) #wrapper > .container {
     padding-inline: 0.75rem;
   }
 
