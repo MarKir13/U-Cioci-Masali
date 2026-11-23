@@ -28,6 +28,7 @@ python -m scraper fetch /8-kosmetyki                            # download one p
 python -m scraper fetch /8-kosmetyki -o tests/fixtures/x.html   # save it, e.g. as a test fixture
 python -m scraper schema                                        # write ../scraper-results/schema.json
 python -m scraper backfill                                      # add description_short and promo_end to saved products, from the page cache
+python -m scraper families                                      # write families.json (titles and labels of the variant tiles), from the page cache
 python -m scraper verify                                        # check the results against the requirements, write the report
 python -m scraper sample                                        # copy 20 sample images to ../scraper-results/sample-images/
 python -m scraper archive                                       # pack all images into ../scraper-results/product-images.tar.gz
@@ -93,6 +94,7 @@ Other commands write these files into the same folder:
 |---|---|---|
 | `images/` | `images`: one JPEG per source image, and `local_path` in `products.jsonl` | No (`.gitignore`); published as the archive |
 | `image_problems.json` | `images`: source images that cannot be used | Yes |
+| `families.json` | `families`: the family block of each product page (see [Families](#families)) | Yes, also copied to `shop/modules/ciociafamily/data/` |
 | `verification-report.md` | `verify`: one line per check | Yes |
 | `sample-images/` | `sample`: 20 images, one per randomly chosen product | Yes |
 | `product-images.tar.gz` | `archive`: all images in one file | No (`.gitignore`); attached to the GitHub Release |
@@ -161,6 +163,19 @@ robots.txt, downloads the pages of the categories that have saved subcategories 
 writes `position` into `categories.json`, without the sitemap and without products. Use it when only the order is
 needed, so that products added to the source shop since the last crawl are not picked up. Running it again
 downloads nothing and changes nothing.
+### Families
+
+A product page on the source shows its family above the description (module `ndx-family`): one or more rows, each
+with a title ("Mydło", "Pojemność", 3 rows have none) and one option per sibling, a photo tile with a short label
+("100% oliwa") or a text button ("200 ml"). `products.jsonl` keeps only the sibling URLs in `family`.
+
+`python -m scraper families` reads the pages of the products that have a `family` from the cache (never the network)
+and writes `families.json`: product ID -> list of rows `{title, kind: "image"|"text", options: [{source_id, label}]}`,
+one product per line, validated as `ProductFamily` in the schema. The current product's option has the page's own
+ID. If any page is missing from the cache (`cache/` is not in git, so on a clean clone all of them are) or any block
+fails validation, nothing is written and the command exits with 1, so the committed files stay intact. The file
+is also copied into the shop module `ciociafamily` (the shop image cannot read `scraper-results/`); a unit test
+checks that both copies are the same. On the real data: 1210 products, 1434 rows.
 
 ## Images
 

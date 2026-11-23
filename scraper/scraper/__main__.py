@@ -9,6 +9,7 @@ import requests
 
 from . import config
 from .crawl import Crawler, PageCache, backfill_from_cache
+from .families import build_families
 from .http_client import HttpClient, SkippedURL, check_delay
 from .images import ImageDownloader
 from .logging_config import setup_logging
@@ -111,6 +112,9 @@ def main(argv: list[str] | None = None) -> int:
     backfill.add_argument(
         "--cache", type=Path, default=config.CACHE_DIR, metavar="DIR", help="page cache to read (default: cache/)"
     )
+    commands.add_parser(
+        "families", help="write the family blocks (titles and tile labels) to families.json from the page cache"
+    )
     commands.add_parser("verify", help="check the results against the requirements and write verification-report.md")
     sample = commands.add_parser(
         "sample", help=f"copy {config.SAMPLE_COUNT} sample images to {config.SAMPLE_IMAGES_DIR.name}/ (committed)"
@@ -144,6 +148,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_verify()
     if args.command == "backfill":
         return backfill_from_cache(config.PRODUCTS_FILE, PageCache(args.cache))
+    if args.command == "families":
+        return build_families(cache=PageCache(config.CACHE_DIR))
     if args.command == "sample":
         return make_samples(seed=args.seed)
     if args.command == "archive":

@@ -173,6 +173,26 @@ docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/cioc
 ```
 
 Design notes and limitations: [ADR 0011](docs/adr/0011-omnibus-price-history-module.md).
+
+### Product families (variant tiles)
+
+As on the source, a product page shows its family between the buying column and the description: rows such as
+"Mydło" (photo tiles with a short label) or "Pojemność" (text buttons), one tile per sibling product, the current one
+framed in brown. Our module [`shop/modules/ciociafamily`](shop/modules/ciociafamily) draws them:
+
+- the rows come from `data/families.json` in the module, a copy of `scraper-results/families.json` written by
+  `python -m scraper families` (the shop image is built from `shop/` only, so it cannot read `scraper-results/`);
+- a sibling is found by `reference`, which the importer sets to the source product ID. A source product that is now a
+  combination of another product (`deploy/importer/variants.json`) links to that combination;
+- `classes/CiociaFamilyTiles.php` decides what is shown: siblings missing from the shop and variants of the page's own
+  product are left out, and a row with fewer than 2 tiles is not shown.
+
+The child theme calls the hook in `templates/catalog/product.tpl`; the look is `.ciocia-family` in `custom.css`.
+`configure-shop.php` installs the module. Test of the tile rules (also run in CI):
+
+```sh
+docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociafamily/tests/FamilyTilesTest.php
+```
 ### Backup and restore
 
 `deploy/backup.sh` saves the running shop into one archive, and `deploy/restore.sh` puts it back, also
@@ -504,6 +524,7 @@ do not silence it. CI reports lines marked `gitleaks:allow` anyway, and the limi
 | Compose file | `docker compose config --quiet` with `deploy/.env.example` | Unknown keys, undefined services or volumes, invalid ports, missing variables. Compose only warns about an unknown variable and leaves it empty, so the step fails on any output |
 | PHP syntax | `php -l` from `php:8.1.34-cli` on every `*.php` under `shop/` | Syntax errors |
 | Omnibus rule | Plain PHP test from `php:8.1.34-cli`: `shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php` | Wrong lowest price from the 30 days before a promotion |
+| Family tiles | Plain PHP test from `php:8.1.34-cli`: `shop/modules/ciociafamily/tests/FamilyTilesTest.php` | Wrong tiles in a product's family rows |
 | JavaScript | [ESLint](https://eslint.org/) 10.13.0, recommended rules, browser globals ([`eslint.config.mjs`](eslint.config.mjs)) | Undefined variables, unused variables, unreachable code |
 
 hadolint, shellcheck and PHP run from pinned Docker images, so nothing has to be installed for them. ESLint is pinned
@@ -585,6 +606,7 @@ npm ci
 | Compose file (prints nothing when valid) | `docker compose -f deploy/compose.yaml --env-file deploy/.env.example config --quiet` |
 | PHP syntax | `git ls-files -z 'shop/*.php' \| xargs -0 -r -n1 docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php -l` |
 | Omnibus rule test | `docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php` |
+| Family tiles test | `docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociafamily/tests/FamilyTilesTest.php` |
 | JavaScript | `npx eslint` |
 | Smoke test of the running shop (ports from `HTTP_PORT` and `HTTPS_PORT`, default 8080 and 8443) | `sh .github/scripts/smoke-test.sh` |
 
