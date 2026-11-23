@@ -19,6 +19,7 @@ as "Superseded by NNNN".
 - [0011. Omnibus price from our own module with a price history in the database](0011-omnibus-price-history-module.md)
 - [0012. What a backup contains, and what the settings export is](0012-backup-contents-and-settings-export.md)
 - [0013. Promotion end date kept outside the specific price](0013-promotion-end-date-outside-the-specific-price.md)
+- [0014. Brand pages: scraped text, FAQ storage and import into manufacturers](0014-brand-pages.md)
 
 ## Template
 
