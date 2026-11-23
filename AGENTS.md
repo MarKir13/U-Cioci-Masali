@@ -183,8 +183,10 @@ Documentation is in English, except `docs/AI_LOG.md`.
   source products are joined into one product, found by the source ID of the first value, and are not imported
   on their own. A full run deletes what is not in the data. Through the API, an update (PUT) empties every field it
   leaves out, so send the complete record; a new category (POST) goes last among its siblings whatever `position`
-  it is sent, while an update stores the position as sent, so the importer sets the source order with an update
-  right after creating a category; two product saves at the same time deadlock in PrestaShop's search index,
+  it is sent, yet the POST answer still shows the position sent (the webservice renders its in-memory object), while
+  an update stores the position as sent, so the importer always updates a new category right after creating it,
+  without comparing; a fix checked only on a shop that already has the categories misses this, so try catalogue
+  changes on a clean install (`down -v`, `up -d --build`, one `init`) too; two product saves at the same time deadlock in PrestaShop's search index,
   so the importer saves products one at a time; and the HTML cleaner needs `var/cache/prod/purifier`, which
   `sync-code.sh` recreates. The importer leaves `<video>` players out of descriptions (their files 404 in our shop),
   but keeps the images that 92 descriptions load from the source shop, and one YouTube video: the acceptance crawl
