@@ -56,6 +56,69 @@
       "title": "Category",
       "type": "object"
     },
+    "FamilyAxis": {
+      "additionalProperties": false,
+      "description": "One row of a family block, such as \"Mydło\" (photo tiles) or \"Pojemność\" (text buttons).",
+      "properties": {
+        "title": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "kind": {
+          "enum": [
+            "image",
+            "text"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/FamilyOption"
+          },
+          "minItems": 1,
+          "title": "Options",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "options"
+      ],
+      "title": "FamilyAxis",
+      "type": "object"
+    },
+    "FamilyOption": {
+      "additionalProperties": false,
+      "description": "One tile or button of a family block: the source id of the product it stands for and the short label on it.",
+      "properties": {
+        "source_id": {
+          "exclusiveMinimum": 0,
+          "title": "Source Id",
+          "type": "integer"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "label"
+      ],
+      "title": "FamilyOption",
+      "type": "object"
+    },
     "Image": {
       "additionalProperties": false,
       "description": "A product image. `local_path` is filled in once the file has been downloaded.",
@@ -295,6 +358,31 @@
         "images"
       ],
       "title": "Product",
+      "type": "object"
+    },
+    "ProductFamily": {
+      "additionalProperties": false,
+      "description": "The family block of one product page (`families.json` stores `axes` under the product id).",
+      "properties": {
+        "product_id": {
+          "exclusiveMinimum": 0,
+          "title": "Product Id",
+          "type": "integer"
+        },
+        "axes": {
+          "items": {
+            "$ref": "#/$defs/FamilyAxis"
+          },
+          "minItems": 1,
+          "title": "Axes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "product_id",
+        "axes"
+      ],
+      "title": "ProductFamily",
       "type": "object"
     },
     "RawWeight": {

@@ -269,6 +269,7 @@ should stay clean.
       `eslint.config.mjs`. Add `tests/` once the Playwright suite exists
 - [ ] `php -l` (Docker image `php:8.1.34-cli`) on PHP files in `shop/` (modules, setup scripts, settings)
 - [ ] Omnibus rule test (`shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php`, plain PHP in `php:8.1.34-cli`)
+- [ ] Family tiles test (`shop/modules/ciociafamily/tests/FamilyTilesTest.php`, plain PHP in `php:8.1.34-cli`)
 - [ ] Fix or silence the current findings: silence only single lines, with the reason above them
 - [ ] Add `infra-lint` to the `needs` of `ci-gate`
 - [ ] ADR on the CI checks and merge policy

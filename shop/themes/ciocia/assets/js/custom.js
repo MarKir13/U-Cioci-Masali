@@ -1521,6 +1521,10 @@ document.addEventListener('click', function (event) {
     if (template && template.content) trust = template.content.firstElementChild;
   }
 
+  // The product's family tiles (module ciociafamily) come right after the buying column, and above the description
+  var family = top.nextElementSibling;
+  if (family && family.classList.contains('ciocia-family')) top = family;
+
   var row = document.createElement('div');
   row.className = 'ciocia-product-info';
   top.insertAdjacentElement('afterend', row);

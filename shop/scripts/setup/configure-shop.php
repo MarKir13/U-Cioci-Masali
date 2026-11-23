@@ -43,6 +43,7 @@ configureCatalog($settings['catalog']);
 
 configureOmnibus();
 configureHomeSections();
+configureProductFamilies();
 configureTranslations();
 
 Tools::clearSmartyCache();
@@ -443,6 +444,25 @@ function configureHomeSections()
     }
     $home->enable();
     echo "Home page: module ciociahome enabled.\n";
+}
+
+/**
+ * Product families (module ciociafamily, shop/modules/ciociafamily, issue #114): the rows of sibling tiles above
+ * the description. The theme's catalog/product.tpl calls the module's own hook displayCiociaProductFamily, which
+ * the module's install() registers. Not through enableHookedModule(): on a fresh install PrestaShop's cached hook IDs
+ * do not know the hook install() has just created, so registering it again fails on a duplicate key.
+ */
+function configureProductFamilies()
+{
+    $family = Module::getInstanceByName('ciociafamily');
+    if (!$family) {
+        throw new RuntimeException('Module ciociafamily not found in modules/ (shop/modules/ciociafamily)');
+    }
+    if (!Module::isInstalled('ciociafamily') && !$family->install()) {
+        throw new RuntimeException('Could not install module ciociafamily');
+    }
+    $family->enable();
+    echo "Product families: module ciociafamily enabled.\n";
 }
 
 /**
