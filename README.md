@@ -355,6 +355,21 @@ The top menu shows the categories listed under `catalog` in
 [`shop/config/shop-settings.php`](shop/config/shop-settings.php). Design notes:
 [ADR 0008](docs/adr/0008-product-import-through-the-webservice-api.md).
 
+The order of subcategories comes from three places, because the source shop itself shows them in different orders
+on a category page, in its phone menu and in its desktop menu:
+
+| Where | Order | To change it |
+|---|---|---|
+| Row of subcategories on a category page, from 576 px | `position` in the shop: the order of the source's category page ([Category order](scraper/README.md#category-order)) | `position` in `scraper-results/categories.json`, then the importer |
+| The same row up to 575 px, and the category drawer up to 575 px | the source's phone menu, a list of names | `window.ciociaPhoneOrder` in `shop/themes/ciocia/assets/js/custom.js` |
+| Desktop menu panel: the left list (Kosmetyki, Żywność, Zdrowie, Różności), also the drawer at 576–767 px | the source's desktop menu, a list of names | `_order` in `shop/themes/ciocia/modules/ps_mainmenu/ps_mainmenu.tpl` |
+| Desktop menu panel: the lists on the right | alphabetical, "Dla Mężczyzn" last, as on the source | `custom.js`, the sort after "As on the source, the children in the right side" |
+
+A name that the lists do not have keeps the `position` order (in the template) or goes last (in `custom.js`). Today
+the phone lists give the same order as `position`, apart from "Herbaty Yogi Tea", which the list names "Yogi Tea"
+(the menu shows it so): on its category page at 575 px or less it is shown last. A shop imported before positions
+existed gets the `position` order when init or the importer is run again.
+
 Seven products have variants (sizes or weights, D3). The source shop sells each size as a separate product; the
 importer joins them into one product with combinations, as listed in
 [`deploy/importer/variants.json`](deploy/importer/variants.json). To add a variant, add a line to that file and run

@@ -77,6 +77,7 @@ Run from the repository root unless noted.
 | Data init, right after `up -d`: downloads the images if missing, waits for the shop, imports (`--subset`: 54 products, as in CI) | `docker compose -f deploy/compose.yaml --profile init run --rm --build init` |
 | Only the import, with the images already in `scraper-results/images/` (`--limit N` for a quick run) | `docker compose -f deploy/compose.yaml --profile init run --rm --build importer` |
 | Download the images from the source shop (init's fallback; only when a person asks, rule 7) | `docker compose -f deploy/compose.yaml --profile init run --rm --build scraper images` |
+| Set only the category order in the saved results from the source shop's parent pages, without the sitemap or products (only when a person asks, rule 7; from `scraper/`) | `python -m scraper positions` |
 | Scraper unit tests (from `scraper/`) | `python -m pytest` |
 | Importer unit tests (from `deploy/importer/`) | `python -m pytest` |
 | Scraper lint | `ruff check .` and `ruff format --check .` |
@@ -184,13 +185,20 @@ Documentation is in English, except `docs/AI_LOG.md`.
   the back office. Products with variants (combinations) come from `deploy/importer/variants.json` (ADR 0009): its
   source products are joined into one product, found by the source ID of the first value, and are not imported
   on their own. A full run deletes what is not in the data. Through the API, an update (PUT) empties every field it
-  leaves out, so send the complete record; two product saves at the same time deadlock in PrestaShop's search index,
+  leaves out, so send the complete record; a new category (POST) goes last among its siblings whatever `position`
+  it is sent, yet the POST answer still shows the position sent (the webservice renders its in-memory object), while
+  an update stores the position as sent, so the importer always updates a new category right after creating it,
+  without comparing; a fix checked only on a shop that already has the categories misses this, so try catalogue
+  changes on a clean install (`down -v`, `up -d --build`, one `init`) too; two product saves at the same time deadlock in PrestaShop's search index,
   so the importer saves products one at a time; and the HTML cleaner needs `var/cache/prod/purifier`, which
   `sync-code.sh` recreates. The importer leaves `<video>` players out of descriptions (their files 404 in our shop),
   but keeps the images that 92 descriptions load from the source shop, and one YouTube video: the acceptance crawl
   blocks those and counts them apart (`DESCRIPTION_MEDIA` in `tests/support/acceptance.js`). The top menu follows `catalog.menu_categories` in `shop/config/shop-settings.php` through
   the module `ciociamenu`, which also clears the page cache after catalogue changes: PrestaShop's own cache hooks
-  fire only in the back office, not for API writes.
+  fire only in the back office, not for API writes. Category `position` orders only the row of subcategories on a
+  category page from 576 px: the menus and the phone views use fixed lists of names in `ps_mainmenu.tpl` and
+  `custom.js` (`ciociaPhoneOrder`), as the source re-sorts its menus in the browser. Check an order change on screen,
+  not in the HTML (table in README, "Loading the data into the shop").
 - Brand texts (manufacturer description, short description, meta tags and FAQ) come from
   `scraper-results/brands.json`, not from the back office (ADR 0014): the importer overwrites them. The manufacturer's
   meta title holds the source page's H1, because the theme prints it as the heading. `brands.json` must not contain

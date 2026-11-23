@@ -74,6 +74,21 @@ def _non_empty(categories: list[Category], products: list[Product]) -> set[int]:
     return filled
 
 
+def _position_problems(by_id: dict[int, Category], children: dict[int | None, list[int]]) -> list[str]:
+    """Categories without a position, and groups of siblings whose positions are not exactly 1, 2, ..., n."""
+    problems: list[str] = []
+    for parent_id, ids in children.items():
+        missing = [category_id for category_id in ids if by_id[category_id].position is None]
+        if missing:
+            problems += [f"{category_id}: no position" for category_id in missing]
+            continue
+        positions = sorted(by_id[category_id].position for category_id in ids)
+        if positions != list(range(1, len(ids) + 1)):
+            parent = "top level" if parent_id is None else f"children of {parent_id}"
+            problems.append(f"{parent}: {positions}")
+    return problems
+
+
 def check_records(categories: list[Category], products: list[Product], errors: list[str]) -> list[Check]:
     duplicate_ids = [pid for pid, n in Counter(p.id for p in products).items() if n > 1]
     duplicate_urls = [url for url, n in Counter(str(p.url) for p in products).items() if n > 1]
@@ -104,6 +119,7 @@ def check_categories(categories: list[Category], products: list[Product]) -> lis
     missing_parent = [c.id for c in categories if c.parent_id is not None and c.parent_id not in by_id]
     unknown_in_products = sorted({cid for p in products for cid in p.category_ids if cid not in by_id})
     empty = [f"{c.id} {c.name}" for c in categories if c.id not in filled]
+    bad_positions = _position_problems(by_id, children)
     roots_ok = [
         by_id[root_id].name
         for root_id in children[None]
@@ -123,6 +139,11 @@ def check_categories(categories: list[Category], products: list[Product]) -> lis
             f"missing parents: {_some(missing_parent)}; unknown in products: {_some(unknown_in_products)}"
             if missing_parent or unknown_in_products
             else "ok",
+        ),
+        Check(
+            "Every category has a position, 1 to n among its siblings",
+            not bad_positions,
+            f"{len(bad_positions)} problems: {_some(bad_positions)}" if bad_positions else "ok",
         ),
     ]
 

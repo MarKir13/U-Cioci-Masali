@@ -4,7 +4,8 @@ Why the data comes from where it does: docs/adr/0004-crawl-sources-and-category-
 
 Results in scraper-results/:
 - categories.json: every category, rewritten after each new one;
-- listings.json: product URLs found on each category listing, and the next page to walk;
+- listings.json: product URLs found on each category listing, the next page to walk, and the order of the
+  category's subcategories (which sets their `position` in categories.json);
 - products.jsonl: one product per line, appended as soon as it is parsed;
 - rejected.json: products left out on purpose, with the reason (a full run only).
 
@@ -37,6 +38,7 @@ from .parsers import (
     parse_sitemap,
     parse_sitemap_index,
     product_urls,
+    subcategory_ids,
 )
 
 log = logging.getLogger(__name__)
@@ -120,6 +122,32 @@ class Listing:
 
     products: list[str] = field(default_factory=list)
     next_page: str | None = None
+    # Ids of the subcategories in the order the category page links them. None: the page has not been read for
+    # them yet (a listing saved before they were scraped), which is not the same as a page without any.
+    subcategories: list[int] | None = None
+
+
+def category_positions(categories: dict[int, dict], listings: dict[int, Listing]) -> dict[int, int]:
+    """Place of every category among its siblings, from 1, as the parent's page lists them.
+
+    Numbered among the saved categories only, so a removed empty category leaves no gap. Top-level categories
+    have no parent page, and a subcategory its parent's page does not link comes after the linked ones:
+    both are ordered by id.
+    """
+    siblings: dict[int | None, list[int]] = {}
+    for category_id, category in categories.items():
+        siblings.setdefault(category["parent_id"], []).append(category_id)
+
+    positions: dict[int, int] = {}
+    for parent_id, ids in siblings.items():
+        listing = listings.get(parent_id)
+        shown = listing.subcategories if listing and listing.subcategories else []
+        place_on_page = {category_id: place for place, category_id in enumerate(shown)}
+        # Not on the page: after all the linked ones (len(shown)), then by id
+        ids.sort(key=lambda category_id: (place_on_page.get(category_id, len(shown)), category_id))
+        for position, category_id in enumerate(ids, start=1):
+            positions[category_id] = position
+    return positions
 
 
 def load_listings(path: Path) -> dict[int, Listing]:
@@ -255,6 +283,28 @@ class Crawler:
             log.warning("Interrupted. Everything saved so far is kept; run the same command to resume.")
             return 130
 
+    def run_positions(self) -> int:
+        """Only set the category positions in the saved results: no sitemap, no products (`positions` command).
+
+        Downloads just the pages of categories with subcategories whose order is not saved yet, so results from
+        before positions were scraped get them without picking up products that are new in the source shop.
+        """
+        try:
+            self.client.load_robots()
+        except requests.RequestException as exc:
+            log.error("Could not read robots.txt, stopping: %s", exc)
+            return 1
+        categories = {category["id"]: category for category in load_json(self.categories_file, [])}
+        if not categories:
+            log.error("No saved categories in %s: run the crawl first", self.categories_file)
+            return 1
+        try:
+            self.assign_positions(categories, load_listings(self.listings_file))
+        except KeyboardInterrupt:
+            log.warning("Interrupted. The orders read so far are saved; run the same command to resume.")
+            return 130
+        return 0
+
     def _run(self) -> int:
         # robots.txt is loaded once, before any loop. If that fails the run stops here: the per-URL error
         # handling below would otherwise try to download it again for every single URL.
@@ -283,6 +333,8 @@ class Crawler:
 
         if self.limit is None:
             self.remove_empty_categories(categories, products)
+            # After the removal, so the positions have no gaps. A test run (--limit) has only part of the tree.
+            self.assign_positions(categories, listings)
             save_json(self.rejected_file, sorted(self.rejected.values(), key=lambda entry: entry["id"]))
         self.report(categories, listings, products)
         return 0
@@ -332,7 +384,11 @@ class Crawler:
                 continue
             try:
                 category = parse_category(url, html)
-                listing = Listing(products=product_urls(url, html), next_page=next_page_url(url, html))
+                listing = Listing(
+                    products=product_urls(url, html),
+                    next_page=next_page_url(url, html),
+                    subcategories=subcategory_ids(html),
+                )
             except ValueError as exc:
                 log.error("Could not parse category %s: %s", url, exc)
                 category = None
@@ -535,6 +591,39 @@ class Crawler:
             del categories[category_id]
         if empty:
             save_json(self.categories_file, list(categories.values()))
+
+    def assign_positions(self, categories: dict[int, dict], listings: dict[int, Listing]) -> None:
+        """Set `position` of every saved category from the order on its parent's page (see category_positions)."""
+        self.read_missing_subcategories(categories, listings)
+        positions = category_positions(categories, listings)
+        changed = [
+            category_id
+            for category_id, position in positions.items()
+            if categories[category_id].get("position") != position
+        ]
+        for category_id in changed:
+            categories[category_id]["position"] = positions[category_id]
+        if changed:
+            save_json(self.categories_file, list(categories.values()))
+        log.info("Category positions: %d set or changed, %d unchanged", len(changed), len(positions) - len(changed))
+
+    def read_missing_subcategories(self, categories: dict[int, dict], listings: dict[int, Listing]) -> None:
+        """Fills in the subcategory order of listings saved before it was scraped, from the page (the cache has it).
+
+        Only categories with saved subcategories need their page: the others have no children to order.
+        A page that cannot be read is left for the next run; until then its subcategories are ordered by id.
+        """
+        parents = {category["parent_id"] for category in categories.values()}
+        for category_id, category in categories.items():
+            listing = listings.get(category_id)
+            if category_id not in parents or listing is None or listing.subcategories is not None:
+                continue
+            html = self.fetch(category["url"])
+            if html is None:
+                log.warning("Subcategory order of category %d is unknown until the next run", category_id)
+                continue
+            listing.subcategories = subcategory_ids(html)
+            save_listings(self.listings_file, listings)
 
     def report(self, categories: dict[int, dict], listings: dict[int, Listing], products: dict[int, dict]) -> None:
         """Warn about categories that would be empty in our shop, and about unknown category ids."""

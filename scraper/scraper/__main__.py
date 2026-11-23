@@ -93,6 +93,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     crawl.add_argument("--no-cache", action="store_true", help="do not read or write saved pages in scraper/cache/")
 
+    # Positions subcommand
+    commands.add_parser(
+        "positions",
+        help="only set the order of the saved categories, from the pages of those with subcategories "
+        "(no sitemap, no products)",
+    )
+
     # Brands subcommand
     brands = commands.add_parser("brands", help="download the brand pages into scraper-results/brands.json (resumable)")
     brands.add_argument("--limit", type=positive_int, metavar="N", help="test run: at most N new brand pages")
@@ -159,6 +166,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "crawl":
         cache = None if args.no_cache else PageCache(config.CACHE_DIR)
         return Crawler(client, cache=cache, limit=args.limit).run()
+    if args.command == "positions":
+        return Crawler(client, cache=PageCache(config.CACHE_DIR)).run_positions()
     if args.command == "brands":
         cache = None if args.no_cache else PageCache(config.CACHE_DIR)
         return BrandCrawler(client, cache=cache, limit=args.limit).run()

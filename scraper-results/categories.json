@@ -4,1119 +4,1279 @@
     "name": "Kosmetyki",
     "url": "https://www.magiczne-indie.pl/8-kosmetyki",
     "parent_id": null,
-    "description": "<p>Tylko u nas kupisz naturalne henny do farbowania włosów w szerokim wyborze kolorów i w najlepszej cenie na rynku. Płyny, sole i akcesoria kąpielowe, preparaty do pielęgnacji stóp, doskonałe szampony, odżywki. Dajemy naszym Klientom do wyboru specjalnie wybrany wachlarz artykułów kosmetycznych prosto z Indii. Mydła, bogate kremy do twarzy, maseczki roślinno-mineralne, balsamy i orientalne olejki do ciała i włosów z najbardziej skutecznych ziół i od sprawdzonych producentów. Kosmetyki orientalne oparte na ziołach ajurwedyjskich zadbają o każdą skórę i włosy, sprawiając, że zachwycą Was swoim naturalnym pięknem i blaskiem.</p>"
+    "description": "<p>Tylko u nas kupisz naturalne henny do farbowania włosów w szerokim wyborze kolorów i w najlepszej cenie na rynku. Płyny, sole i akcesoria kąpielowe, preparaty do pielęgnacji stóp, doskonałe szampony, odżywki. Dajemy naszym Klientom do wyboru specjalnie wybrany wachlarz artykułów kosmetycznych prosto z Indii. Mydła, bogate kremy do twarzy, maseczki roślinno-mineralne, balsamy i orientalne olejki do ciała i włosów z najbardziej skutecznych ziół i od sprawdzonych producentów. Kosmetyki orientalne oparte na ziołach ajurwedyjskich zadbają o każdą skórę i włosy, sprawiając, że zachwycą Was swoim naturalnym pięknem i blaskiem.</p>",
+    "position": 1
   },
   {
     "id": 36,
     "name": "Higiena i akcesoria",
     "url": "https://www.magiczne-indie.pl/36-higiena-i-akcesoria",
     "parent_id": 8,
-    "description": null
+    "description": null,
+    "position": 7
   },
   {
     "id": 37,
     "name": "Do ciała",
     "url": "https://www.magiczne-indie.pl/37-do-ciala",
     "parent_id": 8,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 38,
     "name": "Do włosów",
     "url": "https://www.magiczne-indie.pl/38-kosmetyki-do-wlosow",
     "parent_id": 8,
-    "description": null
+    "description": null,
+    "position": 6
   },
   {
     "id": 39,
     "name": "Dabur",
     "url": "https://www.magiczne-indie.pl/39-kosmetyki-dabur",
     "parent_id": null,
-    "description": "<p>W naszej ofercie znajdziesz naturalne produkty Dabur. Mamy ich ponad czterdzieści. Kosmetyki oparte o ajurwedyjską wiedzę a jednocześnie przyjazne współczesnym konsumentkom. Kolorowy, wesoły design i słodkie zapachy. Kilka serii unikalnych produktów do włosów. Bogata gama odżywek, szamponów i olejków. Nawilżające oraz przeciwłupieżowe szampony, odżywki, maski oraz olejki do jasnych i ciemnych włosów. Kokosowe olejki. Fantastyczne kremy i żele do stylizacji włosów. Dabur to także indyjskie pasty do zębów (z goździkiem, neem, tulsi). Nie czekaj – wypróbuj Dabura już teraz!</p>\n<p>Jesteśmy także oficjalnym głównym importerem produktów Dabur w Polsce, sprzedaż hurtowa pod adresem: <a href=\"http://www.lawana.pl\">www.lawana.pl</a></p>"
+    "description": "<p>W naszej ofercie znajdziesz naturalne produkty Dabur. Mamy ich ponad czterdzieści. Kosmetyki oparte o ajurwedyjską wiedzę a jednocześnie przyjazne współczesnym konsumentkom. Kolorowy, wesoły design i słodkie zapachy. Kilka serii unikalnych produktów do włosów. Bogata gama odżywek, szamponów i olejków. Nawilżające oraz przeciwłupieżowe szampony, odżywki, maski oraz olejki do jasnych i ciemnych włosów. Kokosowe olejki. Fantastyczne kremy i żele do stylizacji włosów. Dabur to także indyjskie pasty do zębów (z goździkiem, neem, tulsi). Nie czekaj – wypróbuj Dabura już teraz!</p>\n<p>Jesteśmy także oficjalnym głównym importerem produktów Dabur w Polsce, sprzedaż hurtowa pod adresem: <a href=\"http://www.lawana.pl\">www.lawana.pl</a></p>",
+    "position": 2
   },
   {
     "id": 45,
     "name": "Do twarzy",
     "url": "https://www.magiczne-indie.pl/45-kosmetyki-do-twarzy",
     "parent_id": 8,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 46,
     "name": "Do kąpieli",
     "url": "https://www.magiczne-indie.pl/46-kosmetyki-do-kapieli",
     "parent_id": 36,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 48,
     "name": "Maści",
     "url": "https://www.magiczne-indie.pl/48-masci",
     "parent_id": 37,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 50,
     "name": "Nowości",
     "url": "https://www.magiczne-indie.pl/50-nowosci",
     "parent_id": null,
-    "description": "Dokładamy wszelkich starań, by wciąż rozwijać i uatrakcyjniać ofertę naszego sklepu wychodząc naprzeciw Waszym oczekiwaniom. Priorytetem jest dla nas zadowolenie Klientów dlatego chętnie korzystamy z sugestii i wskazówek poszerzając asortyment. Chcemy, by zakupy w Magicznych Indiach były dla Was radością i abyście mogli doświadczyć przyjemności korzystania z ajurwedyjskiej wiedzy i doświadczenia w zaciszu swojego domu!"
+    "description": "Dokładamy wszelkich starań, by wciąż rozwijać i uatrakcyjniać ofertę naszego sklepu wychodząc naprzeciw Waszym oczekiwaniom. Priorytetem jest dla nas zadowolenie Klientów dlatego chętnie korzystamy z sugestii i wskazówek poszerzając asortyment. Chcemy, by zakupy w Magicznych Indiach były dla Was radością i abyście mogli doświadczyć przyjemności korzystania z ajurwedyjskiej wiedzy i doświadczenia w zaciszu swojego domu!",
+    "position": 3
   },
   {
     "id": 52,
     "name": "Henny i farby do włosów",
     "url": "https://www.magiczne-indie.pl/52-henny-i-farby-do-wlosow",
     "parent_id": 38,
-    "description": "<p>Znajdziesz tutaj w 100% naturalne farby (henny) ziołowe do włosów marki Soil &amp; Earth, Song of India i Hesh a oprócz tego permamentne, trwałe farby marki Vatika Dabur na bazie ziół bez amoniaku.</p>"
+    "description": "<p>Znajdziesz tutaj w 100% naturalne farby (henny) ziołowe do włosów marki Soil &amp; Earth, Song of India i Hesh a oprócz tego permamentne, trwałe farby marki Vatika Dabur na bazie ziół bez amoniaku.</p>",
+    "position": 1
   },
   {
     "id": 54,
     "name": "Olejki aromaterapeutyczne",
     "url": "https://www.magiczne-indie.pl/54-olejki-aromaterapeutyczne",
     "parent_id": 233,
-    "description": null
+    "description": null,
+    "position": 8
   },
   {
     "id": 55,
     "name": "Suplementy",
     "url": "https://www.magiczne-indie.pl/55-suplementy",
     "parent_id": 80,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 56,
     "name": "Mydła, mydełka",
     "url": "https://www.magiczne-indie.pl/56-mydla-mydelka",
     "parent_id": 46,
-    "description": "<!-- ndx-seo-2026-08 -->\n<h2>Mydła i mydełka naturalne</h2>\n<p>Główna kategoria mydeł w naszym sklepie — kostki ajurwedyjskie, glicerynowe i ziołowe, w większości produkowane w Indiach według tradycyjnych receptur.</p>\n<h3>Co wybrać</h3>\n<ul>\n<li><strong>Ajurwedyjskie ziołowe</strong> (Chandrika, Medimix) — wyraźny zapach ziół, do skóry tłustej i problematycznej.</li>\n<li><strong>Glicerynowe i perfumowane</strong> (Song of India) — delikatniejsze, częściej kupowane na prezent.</li>\n<li><strong>Aleppo i oliwkowe</strong> (Najel) — krótki skład, dobre dla skóry wrażliwej i do mycia włosów.</li>\n</ul>\n<h3>Jak przechowywać</h3>\n<p>Kostka naturalnego mydła zużywa się szybciej, jeśli stoi w wodzie. Trzymaj ją na mydelniczce z odpływem — wytrzyma nawet dwa razy dłużej.</p>\n<p>Szukasz mydełek zapachowych do pielęgnacji ciała? Zobacz węższą kategorię mydełek w dziale kosmetyków do ciała.</p>"
+    "description": "<!-- ndx-seo-2026-08 -->\n<h2>Mydła i mydełka naturalne</h2>\n<p>Główna kategoria mydeł w naszym sklepie — kostki ajurwedyjskie, glicerynowe i ziołowe, w większości produkowane w Indiach według tradycyjnych receptur.</p>\n<h3>Co wybrać</h3>\n<ul>\n<li><strong>Ajurwedyjskie ziołowe</strong> (Chandrika, Medimix) — wyraźny zapach ziół, do skóry tłustej i problematycznej.</li>\n<li><strong>Glicerynowe i perfumowane</strong> (Song of India) — delikatniejsze, częściej kupowane na prezent.</li>\n<li><strong>Aleppo i oliwkowe</strong> (Najel) — krótki skład, dobre dla skóry wrażliwej i do mycia włosów.</li>\n</ul>\n<h3>Jak przechowywać</h3>\n<p>Kostka naturalnego mydła zużywa się szybciej, jeśli stoi w wodzie. Trzymaj ją na mydelniczce z odpływem — wytrzyma nawet dwa razy dłużej.</p>\n<p>Szukasz mydełek zapachowych do pielęgnacji ciała? Zobacz węższą kategorię mydełek w dziale kosmetyków do ciała.</p>",
+    "position": 2
   },
   {
     "id": 57,
     "name": "Pasty do zębów",
     "url": "https://www.magiczne-indie.pl/57-pasty-do-zebow",
     "parent_id": 36,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 58,
     "name": "Szampony",
     "url": "https://www.magiczne-indie.pl/58-szampony-do-wlosow",
     "parent_id": 38,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 59,
     "name": "Odżywki",
     "url": "https://www.magiczne-indie.pl/59-odzywki-do-wlosow",
     "parent_id": 38,
-    "description": null
+    "description": null,
+    "position": 4
   },
   {
     "id": 60,
     "name": "Do skóry podrażnionej i z łupieżem",
     "url": "https://www.magiczne-indie.pl/60-do-skory-podraznionej-i-z-lupiezem",
     "parent_id": 58,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 61,
     "name": "Odżywcze i Proteinowe",
     "url": "https://www.magiczne-indie.pl/61-odzywcze-i-proteinowe",
     "parent_id": 58,
-    "description": null
+    "description": null,
+    "position": 4
   },
   {
     "id": 62,
     "name": "Przeciw wypadaniu włosów",
     "url": "https://www.magiczne-indie.pl/62-przeciw-wypadaniu-wlosow",
     "parent_id": 58,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 64,
     "name": "Balsamy i masła",
     "url": "https://www.magiczne-indie.pl/64-balsamy-i-masla",
     "parent_id": 37,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 65,
     "name": "Do masażu",
     "url": "https://www.magiczne-indie.pl/65-kosmetyki-do-masazu",
     "parent_id": 37,
-    "description": null
+    "description": null,
+    "position": 8
   },
   {
     "id": 67,
     "name": "Maseczki",
     "url": "https://www.magiczne-indie.pl/67-maseczki-do-twarzy",
     "parent_id": 45,
-    "description": null
+    "description": null,
+    "position": 4
   },
   {
     "id": 69,
     "name": "Sesa",
     "url": "https://www.magiczne-indie.pl/69-sesa",
     "parent_id": null,
-    "description": "<p>SESA to specjaliści od pięknych włosów. Olejki Sesa to wyjątkowa skuteczność i spektakularne efekty działaniana włosy. Pełna gama zapachowa: klasyczny, ziołowy, egzotyczny a także olejek do włosów dla mężczyzn. Nowy Master Mind i olejek przeciwłupieżowy. Kuracje na wypadanie włosów, odżywki i szampony. Mamy także ziołowe farby do włosów Sesa. Polecamy także znakomite mydło do włosów Sesy uzupełniające klasyczne zabiegi pielęgnacyjne. Sesa - i problem z głowy…!</p>"
+    "description": "<p>SESA to specjaliści od pięknych włosów. Olejki Sesa to wyjątkowa skuteczność i spektakularne efekty działaniana włosy. Pełna gama zapachowa: klasyczny, ziołowy, egzotyczny a także olejek do włosów dla mężczyzn. Nowy Master Mind i olejek przeciwłupieżowy. Kuracje na wypadanie włosów, odżywki i szampony. Mamy także ziołowe farby do włosów Sesa. Polecamy także znakomite mydło do włosów Sesy uzupełniające klasyczne zabiegi pielęgnacyjne. Sesa - i problem z głowy…!</p>",
+    "position": 4
   },
   {
     "id": 70,
     "name": "Herbaty Indyjskie",
     "url": "https://www.magiczne-indie.pl/70-herbaty-indyjskie-yogi-tea-samahan",
     "parent_id": 193,
-    "description": "<p>Herbaty indyjskie Yogi Tea, Samahan, Organic India, Cosmoveda, Hari Tea, Shoti Maa, </p>"
+    "description": "<p>Herbaty indyjskie Yogi Tea, Samahan, Organic India, Cosmoveda, Hari Tea, Shoti Maa, </p>",
+    "position": 2
   },
   {
     "id": 71,
     "name": "Herbaty Sypane",
     "url": "https://www.magiczne-indie.pl/71-herbaty-sypane",
     "parent_id": 70,
-    "description": "<p>Herbaty Yogi Tea, Organic India, Hari Tea sypane</p>"
+    "description": "<p>Herbaty Yogi Tea, Organic India, Hari Tea sypane</p>",
+    "position": 7
   },
   {
     "id": 72,
     "name": "Herbaty Zielone",
     "url": "https://www.magiczne-indie.pl/72-herbaty-zielone",
     "parent_id": 70,
-    "description": null
+    "description": null,
+    "position": 8
   },
   {
     "id": 73,
     "name": "Herbaty dla kobiet",
     "url": "https://www.magiczne-indie.pl/73-herbaty-dla-kobiet",
     "parent_id": 70,
-    "description": null
+    "description": null,
+    "position": 9
   },
   {
     "id": 74,
     "name": "Herbaty Zdrowotne",
     "url": "https://www.magiczne-indie.pl/74-herbaty-zdrowotne",
     "parent_id": 70,
-    "description": null
+    "description": null,
+    "position": 10
   },
   {
     "id": 80,
     "name": "Zdrowie",
     "url": "https://www.magiczne-indie.pl/80-zdrowie",
     "parent_id": null,
-    "description": "<p>Ajurweda uczy dbania o zdrowie. Ciało i psychika tworzą jedną całość. Proponujemy certyfikowane przyprawy indyjskie i ajurwedyjskie zioła, sprawdzone herbaty funkcjonalne, pasty wzmacniające organizm, zdrowe oleje i masła klarowane, indyjskie przyprawy dla każdej kuchni, kokosowe specjały. Dla zdrowia warto także zamienić chemię gospodarczą na ekologiczne orzechy piorące. Korzystając z propozycji naszej drogerii orientalnej przekonasz się jak poprawi się Twoja jakość życia!</p>"
+    "description": "<p>Ajurweda uczy dbania o zdrowie. Ciało i psychika tworzą jedną całość. Proponujemy certyfikowane przyprawy indyjskie i ajurwedyjskie zioła, sprawdzone herbaty funkcjonalne, pasty wzmacniające organizm, zdrowe oleje i masła klarowane, indyjskie przyprawy dla każdej kuchni, kokosowe specjały. Dla zdrowia warto także zamienić chemię gospodarczą na ekologiczne orzechy piorące. Korzystając z propozycji naszej drogerii orientalnej przekonasz się jak poprawi się Twoja jakość życia!</p>",
+    "position": 5
   },
   {
     "id": 81,
     "name": "Herbaty Dla mężczyzn",
     "url": "https://www.magiczne-indie.pl/81-herbaty-dla-mezczyzn",
     "parent_id": 70,
-    "description": null
+    "description": null,
+    "position": 11
   },
   {
     "id": 82,
     "name": "Herbaty Dla Vata",
     "url": "https://www.magiczne-indie.pl/82-herbaty-dla-doshy-vata",
     "parent_id": 70,
-    "description": "Herbaty dla doshy Vata"
+    "description": "Herbaty dla doshy Vata",
+    "position": 12
   },
   {
     "id": 83,
     "name": "Herbaty Dla Pitta",
     "url": "https://www.magiczne-indie.pl/83-herbaty-dla-doshy-pitta",
     "parent_id": 70,
-    "description": "Herbaty dla doshy Pitta"
+    "description": "Herbaty dla doshy Pitta",
+    "position": 13
   },
   {
     "id": 84,
     "name": "Herbaty Dla Kapha",
     "url": "https://www.magiczne-indie.pl/84-herbaty-dla-doshy-kapha",
     "parent_id": 70,
-    "description": "Herbaty dla doshy Kapha"
+    "description": "Herbaty dla doshy Kapha",
+    "position": 14
   },
   {
     "id": 85,
     "name": "Przyprawy",
     "url": "https://www.magiczne-indie.pl/85-przyprawy-indyjskie",
     "parent_id": 193,
-    "description": "<p>Przyprawy kuchni indyjskiej</p>"
+    "description": "<p>Przyprawy kuchni indyjskiej</p>",
+    "position": 3
   },
   {
     "id": 92,
     "name": "Zioła Ajurwedyjskie",
     "url": "https://www.magiczne-indie.pl/92-ajurwedyjskie-ziola",
     "parent_id": 80,
-    "description": "Ajurwedyjskie zioła sproszkowane"
+    "description": "Ajurwedyjskie zioła sproszkowane",
+    "position": 2
   },
   {
     "id": 93,
     "name": "Szminki i pomadki",
     "url": "https://www.magiczne-indie.pl/93-szminki-i-pomadki",
     "parent_id": 45,
-    "description": null
+    "description": null,
+    "position": 6
   },
   {
     "id": 94,
     "name": "Kremy i serum",
     "url": "https://www.magiczne-indie.pl/94-kremy-i-serum",
     "parent_id": 45,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 95,
     "name": "Akcesoria do Jogi i Medytacji",
     "url": "https://www.magiczne-indie.pl/95-akcesoria-do-jogi-i-medytacji",
     "parent_id": 232,
-    "description": "<p>Wybrane artykuły dla miłośników i sympatyków jogi: maty do ćwiczeń jogi i torby ochronne na matę, olejki do masażu i pielęgnacji ciała, kosmetyki naturalne do twarzy, ciała i włosów, niezastąpiony olejek do nosa Anu Thailam, wspaniałe orientalne herbaty, ajurwedyjskie zioła i przyprawy kuchni indyjskiej, produkty dla poszczególnych dosh, olej kokosowy i inne oleje spożywcze, masła klarowane ghee, książki i czasopisma związane z jogą. Harmonia duszy i ciała od zaraz – zapraszamy do zakupów!</p>"
+    "description": "<p>Wybrane artykuły dla miłośników i sympatyków jogi: maty do ćwiczeń jogi i torby ochronne na matę, olejki do masażu i pielęgnacji ciała, kosmetyki naturalne do twarzy, ciała i włosów, niezastąpiony olejek do nosa Anu Thailam, wspaniałe orientalne herbaty, ajurwedyjskie zioła i przyprawy kuchni indyjskiej, produkty dla poszczególnych dosh, olej kokosowy i inne oleje spożywcze, masła klarowane ghee, książki i czasopisma związane z jogą. Harmonia duszy i ciała od zaraz – zapraszamy do zakupów!</p>",
+    "position": 5
   },
   {
     "id": 96,
     "name": "Woda różana",
     "url": "https://www.magiczne-indie.pl/96-woda-rozana",
     "parent_id": null,
-    "description": "Woda różana – naturalny, tonizujący i orzeźwiający płyn do pielęgnacji skóry. Sprawia, że odzyskuje ona naturalny, zdrowy wygląd. Sprawdza się zarówno jako tonik jak i składnik samodzielnie przygotowywanych kosmetyków. Skuteczne kosmetyki przy cerze naczynkowej. Róża nie bez powodu nosi dumne miano królowej kwiatów – jej pielęgnujące właściwości doceniano na dworach królewskich już kilkaset lat temu. Poczuj słodki zapach i daj swojej skórze naturalne piękno, na które zasługuje. Zamów już teraz on-line!"
+    "description": "Woda różana – naturalny, tonizujący i orzeźwiający płyn do pielęgnacji skóry. Sprawia, że odzyskuje ona naturalny, zdrowy wygląd. Sprawdza się zarówno jako tonik jak i składnik samodzielnie przygotowywanych kosmetyków. Skuteczne kosmetyki przy cerze naczynkowej. Róża nie bez powodu nosi dumne miano królowej kwiatów – jej pielęgnujące właściwości doceniano na dworach królewskich już kilkaset lat temu. Poczuj słodki zapach i daj swojej skórze naturalne piękno, na które zasługuje. Zamów już teraz on-line!",
+    "position": 6
   },
   {
     "id": 97,
     "name": "Amla",
     "url": "https://www.magiczne-indie.pl/97-amla",
     "parent_id": null,
-    "description": "Wejdź i zamów kosmetyki z amli – bogatej w witaminę C rośliny indyjskiej, która ma dobroczynny wpływ na włosy. Cebulki stają się mocne, a włosy lśniące i zdrowe. Seria kosmetyków z wykorzystaniem ajurwedyjskiej amli sprawi, że w pełni docenisz właściwości tej nieznanej w Europie a wyjątkowo silnie oddziałującej na włosy i skórę rośliny. Amla dodawana jest do szamponów, olejków i mydeł. Dostępna jest także  czysta amla w proszku do masek na włosy czy problemy skórne. Tylko u nas - przekonaj się a efekty Cię zaskoczą!"
+    "description": "Wejdź i zamów kosmetyki z amli – bogatej w witaminę C rośliny indyjskiej, która ma dobroczynny wpływ na włosy. Cebulki stają się mocne, a włosy lśniące i zdrowe. Seria kosmetyków z wykorzystaniem ajurwedyjskiej amli sprawi, że w pełni docenisz właściwości tej nieznanej w Europie a wyjątkowo silnie oddziałującej na włosy i skórę rośliny. Amla dodawana jest do szamponów, olejków i mydeł. Dostępna jest także  czysta amla w proszku do masek na włosy czy problemy skórne. Tylko u nas - przekonaj się a efekty Cię zaskoczą!",
+    "position": 7
   },
   {
     "id": 99,
     "name": "Pielęgnacja okolic oczu",
     "url": "https://www.magiczne-indie.pl/99-pielegnacja-okolic-oczu-",
     "parent_id": 8,
-    "description": null
+    "description": null,
+    "position": 4
   },
   {
     "id": 100,
     "name": "PUKKA",
     "url": "https://www.magiczne-indie.pl/100-pukka",
     "parent_id": 70,
-    "description": "<p><strong>PUKKA to dosłownie \"najwyższa doskonałość\", co w pełni pokrywa się z filozofią tej marki. </strong><br/><br/><strong>Do wytwarzania niezwykłych, aromatycznych herbat PUKKA używane są wyłącznie rośliny najlepszej jakości. Gwarantuje to specjalny ekologiczny certyfikat Soil Association. </strong><br/><br/><strong>Niezrównany smak i aromat dają oryginalne wrażenia, które doceniane były licznymi nagrodami, w tym Great Taste Awards. </strong><br/><br/><strong>Wybraliśmy DLA WAS herbaty, których jakość i unikalność sami cenimy!</strong></p>"
+    "description": "<p><strong>PUKKA to dosłownie \"najwyższa doskonałość\", co w pełni pokrywa się z filozofią tej marki. </strong><br/><br/><strong>Do wytwarzania niezwykłych, aromatycznych herbat PUKKA używane są wyłącznie rośliny najlepszej jakości. Gwarantuje to specjalny ekologiczny certyfikat Soil Association. </strong><br/><br/><strong>Niezrównany smak i aromat dają oryginalne wrażenia, które doceniane były licznymi nagrodami, w tym Great Taste Awards. </strong><br/><br/><strong>Wybraliśmy DLA WAS herbaty, których jakość i unikalność sami cenimy!</strong></p>",
+    "position": 4
   },
   {
     "id": 103,
     "name": "Żele i toniki do mycia twarzy",
     "url": "https://www.magiczne-indie.pl/103-zele-i-toniki-do-mycia-twarzy",
     "parent_id": 45,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 104,
     "name": "Olejki do włosów",
     "url": "https://www.magiczne-indie.pl/104-olejki-do-wlosow",
     "parent_id": 38,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 113,
     "name": "Oleje i Ghee",
     "url": "https://www.magiczne-indie.pl/113-oleje-i-ghee",
     "parent_id": 193,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 115,
     "name": "Olejki i wody kwiatowe",
     "url": "https://www.magiczne-indie.pl/115-olejki-i-wody-kwiatowe",
     "parent_id": 45,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 172,
     "name": "AJURWEDA: VATA, PITTA I KAPHA",
     "url": "https://www.magiczne-indie.pl/172-ajurweda-vata-pitta-i-kapha",
     "parent_id": null,
-    "description": "<address>Ajurweda wyróżnia<strong><em> trzy główne typy energetyki ludzi</em></strong>, które okresla się jako <strong>Vata, Pitta i Kapha,</strong> nazywane doszami. </address><address> </address><address><strong>Obrazują one energie, które mają wpływ zarówno na wygląd i kondycję fizyczną organizmu człowieka jak i predyspozycje psychiczne danej osoby.</strong> Chcąc wybrać odpowiednie przymiotniki okreslające dosze można powiedzieć, że pitta jest gorąca i nieustępliwa, vata chłodniejsza, zimna i wietrzna a kapha wilgotna i ciężka. </address><address> </address><address>Oczywiście rzadko można spotkać kogoś, kto będzie ściśle odzwierciedlał wszystkie cechy jednego typu. <strong>Każdy z nas posiada bowiem w sobie wszystkie trzy dosze. Idealnie, gdyby były one w równowadze, lecz zazwyczaj tak się nie dzieje</strong>. Jedna lub dwie przeważają determinując tym samym właściwości fizyczne i psychiczne danej osoby. Aby okreslić jaka dosza dominuje należy wykonać test pod opieką konsultanta ajurwedysjskiego. Jednakże w internecie i literaturze znaleźć można także charakterystyki poszczególnych dosz i okreslić mniej więcej jaki typ energii przeważa u danej osoby. </address><address> </address><address>Należy przy tym pamiętać, iż nie jest to kombinacja stała. Stosunek dosz do siebie może się zmieniać wraz z wiekiem, ale również pod wpływem zależnych od nas samych czynników takich jak spożywane pokarmy i napoje, styl życia. Także pora roku, pogoda mają wpływ na (nie) równowagę dosz.</address><address> </address><address><strong> Należy dążyć do jak najlepszego zrównoważenia trzech energii, lecz nie jest to łatwe.</strong> Nadmiar lub niedobór którejkolwiek z nich znajduje zawsze odbicie w stanie zdrowotnym człowieka, może być przyczyną skłonności do zapadania na pewne choroby, siły odczuwania emocji, wyglądu ciała, włosów, skóry, łatwości przybierania na wadze, trudności w zgubieniu nadmiaru kilogramów, radzeniu sobie ze stresem, zdolności poznawczych, pamięci i sposobu rozumowania nawet stosunku do dóbr materialnych. </address><address>Gdy rozpoznamy jaka dosza jest w nadmiarze <strong>można ją wspomóc zarówno zmianami w sposobie odżywiania, aktywności fizycznej, stosowaniem odpowiednich ajurwedyjskich olejków i ziół do pielęgnacji ciała jak również poprzez regularne picie herbaty lub przyjmowanie ziół odpowiedniej dla danej doszy.</strong></address><address><strong> </strong></address><address><strong>Ludzi z przewagą VATA charakteryzuje:</strong></address><address><strong> </strong></address><address>- drobna budowa kości i szczupłą sylwetka</address><address>- duża wrażliwość na zimno, często marzną im zwłaszcza stopy i dłonie (złe ukwienie kończyn)</address><address>- mają dużo energii, poruszają się i mówią szybko i dużo, lubią gestykulować</address><address>- często reagują i zachowują się impulsywnie</address><address>- bywają nerwowi, mają kłopoty z podjęciem decyzji, pełni obaw</address><address>- nie mają dobrej pamięci, często „zapominalscy”</address><address>- zmienni jak chorągiewki na wietrze, brakuje im silnej woli i sprecyzowanych planów, działają raczej pod wpływem impulsu</address><address>- mogą być bardzo pracowici, lecz mają trudność z dobrą organizacją pracy, chwytają wiele spraw naraz, nie kończąc innych</address><address>- praca często pochłania ich tak bardzo, że na tym tle mogą mieć kłopoty ze snem oraz odczuwać ciągłe napięcie.</address><address> </address><address>Aby złagodzić nadmiar energii vata <strong>poleca się przede wszystkim regularny tryb życia z uwzględnieniem miejsca na odpoczynek</strong>. Dobrym miejscem do relaksu będzie nasłoneczniona ławka w spokojnym miejscu w parku, ciepłe łóżko lub zaciszna plaża w upalny dzień.</address><address><strong> </strong></address><address><strong>Odpoczynek vaty nie powinien natomiast polegać na oglądaniu telewizji, grach komputerowych czy surfowaniu po internecie </strong>ponieważ aktywności te podniosą jeszce bardziej już podwyższony poziom energii vata.</address><address> </address><address>Miejsce pracy osób z nadmiarem vata należy w przemyślany sposób zorganizować, tak, by wszystko miało swoje miejsce. Również<strong> czas pracy powinien być dostosowany do ilości obowiązków, nie należy zlecać „vatom” zbyt wielu rzeczy naraz, bo mogą się w tym chaosie pogubić.</strong></address><address> </address><address>Po zakończeniu jednego zadania dopiero należy przystąpić do kolejnego. Niedopuszczalna jest praca w godzinach nocnych.</address><address> </address><address>W pokarmach vata powinna <strong>unikać surowych warzyw i owoców a także wszelkich wychładzających potraw (lody, chodniki) i napojów (gazowane napoje orzeźwiające, energetyczne) oraz palenia papierosów.</strong></address><address>Może za to spożywać delikatne gotowane zupy, warzywa czy mięsa oraz ciepłe kompoty owocowe, gotowane kasze i ryż z przyprawami.</address><address><strong> </strong></address><address><strong>Kluczem do zbudowania równowagi będzie dla vaty znalezienie miejsca na spokojny wypoczynek i ograniczenie nadmiernego zaangażowania we wszystkie aspekty życia.</strong></address>\n<div> </div>\n<address><strong> </strong></address><address><strong>Charakterystyka osób o przewadze PITTA:</strong></address><address> </address><address>-mają średnią budowę ciała</address><address>-nie przepadają za okresem letnim i wysokimi temperaturami -łatwo i obficie się pocą</address><address>-skóra bywa zaczerwieniona, piegowata, ma skłonnośi do przetłuszczania się</address><address>-chętnie przewodzą w grupie, lubią mieć władzę i z niej korzystać</address><address>-mają dobre pomysły, zazwyczaj realne do zrealizowania w praktyce, są dobrymi organizatorami, pragmatyczni</address><address>-potrafią dobrze przemawiać, inni chętnie podążają za nimi, dobrze argumentują w dyskusjach</address><address>-lubią być najlepsi, mieć najlepsze, często luksusowe dobra materialne, czytać wybitne dzieła, mieć ubrania z firmowymi metkami</address><address>-mają silną wolę i z uporem dążą do celu, nie zrażają się łatwo</address><address>-nie tolerują poglądów innych, zwłaszcza słabo uzasadnionych -w odpowiedzi na sprzeciw są rozdrażnieni, porywzy, mówią to co myślą bez ogródek</address><address>-nie mają oporów w krytykowaniu jeśli nie zgadzają się z jakimś pomysłem</address><address><strong> </strong></address><address><strong>Gorącą naturę pitty można nieco schłodzić</strong> poprzez spożywanie pokarmów i napojów o temperaturze pokojowej (nie gorących), <strong>dbałość o dużą podaż płynów do picia a także zapewnienie czasu na odpoczynek.</strong></address><address><strong> </strong></address><address><strong>Posiłki powinny być świeżo przygotowane, łagodne i delikatne w smaku</strong>, bez dużego dodatku soli i pikantnych, rozgrzewających przypraw. Ich niewielkie ilości dozwolone są zimą. Należy także zwrócić uwagę na ograniczenie dodatku tłuszczu do posiłków, zwłaszcza zwierzęcego – powinno go być jak najmniej.</address><address> </address><address>Pitta ma jadać mniejsze ilości lecz kilka razy dziennie. Nie należy dopuszczać do odczucia przepełnienia żołądka.</address><address><strong> </strong></address><address><strong>Wszystkie używki pobudzające ciało jak kawa, papierosy, alkohol, narkotyki są dla pitty niedozwolone</strong>. W okresie letnim nie zaleca się przebywania w pełnym słońcu na gorącej plaży a raczej relaks w hamaku w zacienionym miejscu. Ze względu na skłonną do przebarwień skórę pitty powinny także dbać o jej ochronę przed promieniowaniem UVA i UVB.</address><address> </address><address> </address><address><strong>Ludzi z dominującą doszą KAPHA charakteryzuje:</strong></address><address> </address><address>- mocna i stabilna budowa ciała - tendencja do łatwego przybierania na wadze</address><address>- nie przepadają za wilgotną, deszczową aurą</address><address>- ładna, sprężysta i wolno starzejąca się skóra</address><address>- łagodność, spokój i zrównoważenie ale jednocześnie stanowczość i niechęć do zmian</address><address>- przywiązanie do nawyków, zwyczajów, miejsc i ludzi</address><address>- mają dobrą pamięć, są rozważni i dokładni, pracują w swoim tempie (wolniej), ale rzadko popełniają błędy</address><address>- są wytrwali, potrafią współpracować z innymi, powoli, bez pośpiechu lecz skutecznie i pewnie dążą do celu</address><address> </address><address>Kapha <strong>łatwo przybiera na wadze i dlatego z diety należałoby wykluczyć ciężkie, tłuste posiłki, potrawy duszone, z dużą ilością sosów oraz słodycze.</strong></address><address> </address><address><strong> Niewskazane są także produkty mleczne oraz nadmierna ilość jedzenia w ramach jednego posiłku. </strong></address><address>Poleca się <strong>lekkie potrawy, podawane w średniej temperaturze</strong>, najlepiej świeżo przygotowane i ciepłe.</address><address> </address><address>Dla osób z przewagą kapha <strong>nie jest korzystny także długi sen oraz brak aktywności</strong> dlatego należy wstawać wcześniej a w ciągu dnia wygospodarować kilka przerw na aktywność fizyczną. <strong>Wskazana jest każda postać ruchu – począwszy od zastąpienia jazdy autobusem przez szybki spacer</strong> a skończywszy na wyczynowej jeździe na nartach.</address><address> </address>"
+    "description": "<address>Ajurweda wyróżnia<strong><em> trzy główne typy energetyki ludzi</em></strong>, które okresla się jako <strong>Vata, Pitta i Kapha,</strong> nazywane doszami. </address><address> </address><address><strong>Obrazują one energie, które mają wpływ zarówno na wygląd i kondycję fizyczną organizmu człowieka jak i predyspozycje psychiczne danej osoby.</strong> Chcąc wybrać odpowiednie przymiotniki okreslające dosze można powiedzieć, że pitta jest gorąca i nieustępliwa, vata chłodniejsza, zimna i wietrzna a kapha wilgotna i ciężka. </address><address> </address><address>Oczywiście rzadko można spotkać kogoś, kto będzie ściśle odzwierciedlał wszystkie cechy jednego typu. <strong>Każdy z nas posiada bowiem w sobie wszystkie trzy dosze. Idealnie, gdyby były one w równowadze, lecz zazwyczaj tak się nie dzieje</strong>. Jedna lub dwie przeważają determinując tym samym właściwości fizyczne i psychiczne danej osoby. Aby okreslić jaka dosza dominuje należy wykonać test pod opieką konsultanta ajurwedysjskiego. Jednakże w internecie i literaturze znaleźć można także charakterystyki poszczególnych dosz i okreslić mniej więcej jaki typ energii przeważa u danej osoby. </address><address> </address><address>Należy przy tym pamiętać, iż nie jest to kombinacja stała. Stosunek dosz do siebie może się zmieniać wraz z wiekiem, ale również pod wpływem zależnych od nas samych czynników takich jak spożywane pokarmy i napoje, styl życia. Także pora roku, pogoda mają wpływ na (nie) równowagę dosz.</address><address> </address><address><strong> Należy dążyć do jak najlepszego zrównoważenia trzech energii, lecz nie jest to łatwe.</strong> Nadmiar lub niedobór którejkolwiek z nich znajduje zawsze odbicie w stanie zdrowotnym człowieka, może być przyczyną skłonności do zapadania na pewne choroby, siły odczuwania emocji, wyglądu ciała, włosów, skóry, łatwości przybierania na wadze, trudności w zgubieniu nadmiaru kilogramów, radzeniu sobie ze stresem, zdolności poznawczych, pamięci i sposobu rozumowania nawet stosunku do dóbr materialnych. </address><address>Gdy rozpoznamy jaka dosza jest w nadmiarze <strong>można ją wspomóc zarówno zmianami w sposobie odżywiania, aktywności fizycznej, stosowaniem odpowiednich ajurwedyjskich olejków i ziół do pielęgnacji ciała jak również poprzez regularne picie herbaty lub przyjmowanie ziół odpowiedniej dla danej doszy.</strong></address><address><strong> </strong></address><address><strong>Ludzi z przewagą VATA charakteryzuje:</strong></address><address><strong> </strong></address><address>- drobna budowa kości i szczupłą sylwetka</address><address>- duża wrażliwość na zimno, często marzną im zwłaszcza stopy i dłonie (złe ukwienie kończyn)</address><address>- mają dużo energii, poruszają się i mówią szybko i dużo, lubią gestykulować</address><address>- często reagują i zachowują się impulsywnie</address><address>- bywają nerwowi, mają kłopoty z podjęciem decyzji, pełni obaw</address><address>- nie mają dobrej pamięci, często „zapominalscy”</address><address>- zmienni jak chorągiewki na wietrze, brakuje im silnej woli i sprecyzowanych planów, działają raczej pod wpływem impulsu</address><address>- mogą być bardzo pracowici, lecz mają trudność z dobrą organizacją pracy, chwytają wiele spraw naraz, nie kończąc innych</address><address>- praca często pochłania ich tak bardzo, że na tym tle mogą mieć kłopoty ze snem oraz odczuwać ciągłe napięcie.</address><address> </address><address>Aby złagodzić nadmiar energii vata <strong>poleca się przede wszystkim regularny tryb życia z uwzględnieniem miejsca na odpoczynek</strong>. Dobrym miejscem do relaksu będzie nasłoneczniona ławka w spokojnym miejscu w parku, ciepłe łóżko lub zaciszna plaża w upalny dzień.</address><address><strong> </strong></address><address><strong>Odpoczynek vaty nie powinien natomiast polegać na oglądaniu telewizji, grach komputerowych czy surfowaniu po internecie </strong>ponieważ aktywności te podniosą jeszce bardziej już podwyższony poziom energii vata.</address><address> </address><address>Miejsce pracy osób z nadmiarem vata należy w przemyślany sposób zorganizować, tak, by wszystko miało swoje miejsce. Również<strong> czas pracy powinien być dostosowany do ilości obowiązków, nie należy zlecać „vatom” zbyt wielu rzeczy naraz, bo mogą się w tym chaosie pogubić.</strong></address><address> </address><address>Po zakończeniu jednego zadania dopiero należy przystąpić do kolejnego. Niedopuszczalna jest praca w godzinach nocnych.</address><address> </address><address>W pokarmach vata powinna <strong>unikać surowych warzyw i owoców a także wszelkich wychładzających potraw (lody, chodniki) i napojów (gazowane napoje orzeźwiające, energetyczne) oraz palenia papierosów.</strong></address><address>Może za to spożywać delikatne gotowane zupy, warzywa czy mięsa oraz ciepłe kompoty owocowe, gotowane kasze i ryż z przyprawami.</address><address><strong> </strong></address><address><strong>Kluczem do zbudowania równowagi będzie dla vaty znalezienie miejsca na spokojny wypoczynek i ograniczenie nadmiernego zaangażowania we wszystkie aspekty życia.</strong></address>\n<div> </div>\n<address><strong> </strong></address><address><strong>Charakterystyka osób o przewadze PITTA:</strong></address><address> </address><address>-mają średnią budowę ciała</address><address>-nie przepadają za okresem letnim i wysokimi temperaturami -łatwo i obficie się pocą</address><address>-skóra bywa zaczerwieniona, piegowata, ma skłonnośi do przetłuszczania się</address><address>-chętnie przewodzą w grupie, lubią mieć władzę i z niej korzystać</address><address>-mają dobre pomysły, zazwyczaj realne do zrealizowania w praktyce, są dobrymi organizatorami, pragmatyczni</address><address>-potrafią dobrze przemawiać, inni chętnie podążają za nimi, dobrze argumentują w dyskusjach</address><address>-lubią być najlepsi, mieć najlepsze, często luksusowe dobra materialne, czytać wybitne dzieła, mieć ubrania z firmowymi metkami</address><address>-mają silną wolę i z uporem dążą do celu, nie zrażają się łatwo</address><address>-nie tolerują poglądów innych, zwłaszcza słabo uzasadnionych -w odpowiedzi na sprzeciw są rozdrażnieni, porywzy, mówią to co myślą bez ogródek</address><address>-nie mają oporów w krytykowaniu jeśli nie zgadzają się z jakimś pomysłem</address><address><strong> </strong></address><address><strong>Gorącą naturę pitty można nieco schłodzić</strong> poprzez spożywanie pokarmów i napojów o temperaturze pokojowej (nie gorących), <strong>dbałość o dużą podaż płynów do picia a także zapewnienie czasu na odpoczynek.</strong></address><address><strong> </strong></address><address><strong>Posiłki powinny być świeżo przygotowane, łagodne i delikatne w smaku</strong>, bez dużego dodatku soli i pikantnych, rozgrzewających przypraw. Ich niewielkie ilości dozwolone są zimą. Należy także zwrócić uwagę na ograniczenie dodatku tłuszczu do posiłków, zwłaszcza zwierzęcego – powinno go być jak najmniej.</address><address> </address><address>Pitta ma jadać mniejsze ilości lecz kilka razy dziennie. Nie należy dopuszczać do odczucia przepełnienia żołądka.</address><address><strong> </strong></address><address><strong>Wszystkie używki pobudzające ciało jak kawa, papierosy, alkohol, narkotyki są dla pitty niedozwolone</strong>. W okresie letnim nie zaleca się przebywania w pełnym słońcu na gorącej plaży a raczej relaks w hamaku w zacienionym miejscu. Ze względu na skłonną do przebarwień skórę pitty powinny także dbać o jej ochronę przed promieniowaniem UVA i UVB.</address><address> </address><address> </address><address><strong>Ludzi z dominującą doszą KAPHA charakteryzuje:</strong></address><address> </address><address>- mocna i stabilna budowa ciała - tendencja do łatwego przybierania na wadze</address><address>- nie przepadają za wilgotną, deszczową aurą</address><address>- ładna, sprężysta i wolno starzejąca się skóra</address><address>- łagodność, spokój i zrównoważenie ale jednocześnie stanowczość i niechęć do zmian</address><address>- przywiązanie do nawyków, zwyczajów, miejsc i ludzi</address><address>- mają dobrą pamięć, są rozważni i dokładni, pracują w swoim tempie (wolniej), ale rzadko popełniają błędy</address><address>- są wytrwali, potrafią współpracować z innymi, powoli, bez pośpiechu lecz skutecznie i pewnie dążą do celu</address><address> </address><address>Kapha <strong>łatwo przybiera na wadze i dlatego z diety należałoby wykluczyć ciężkie, tłuste posiłki, potrawy duszone, z dużą ilością sosów oraz słodycze.</strong></address><address> </address><address><strong> Niewskazane są także produkty mleczne oraz nadmierna ilość jedzenia w ramach jednego posiłku. </strong></address><address>Poleca się <strong>lekkie potrawy, podawane w średniej temperaturze</strong>, najlepiej świeżo przygotowane i ciepłe.</address><address> </address><address>Dla osób z przewagą kapha <strong>nie jest korzystny także długi sen oraz brak aktywności</strong> dlatego należy wstawać wcześniej a w ciągu dnia wygospodarować kilka przerw na aktywność fizyczną. <strong>Wskazana jest każda postać ruchu – począwszy od zastąpienia jazdy autobusem przez szybki spacer</strong> a skończywszy na wyczynowej jeździe na nartach.</address><address> </address>",
+    "position": 8
   },
   {
     "id": 174,
     "name": "Suplementy Organic India",
     "url": "https://www.magiczne-indie.pl/174-suplementy-organic-india",
     "parent_id": 55,
-    "description": null
+    "description": null,
+    "position": 4
   },
   {
     "id": 177,
     "name": "Soil and Earth",
     "url": "https://www.magiczne-indie.pl/177-soil-and-earth",
     "parent_id": null,
-    "description": "<p>Jeśli odczuwasz zmęczenie, a Twoja skóra traci blask, elastyczność i zdrowy wygląd, z pomocą przyjdą Ci kosmetyki naturalne Soil &amp; Earth, które zostały stworzone z myślą o tych, którym pochodzenie, skład oraz wpływ na środowisko preparatów kosmetycznych nie jest obojętne.</p>\n<p>Kosmetyki SOIL AND EARTH są w 100% <strong>naturalne, nie zawierają parabenów ani ftalanów, nie dodano do nich żadnych barwników czy syntetycznych zapachów. Nie były również testowane na zwierzętach </strong>a zarówno zawartość jak i<strong> opakowanie sa przyjazne dla środowiska.</strong><br/><br/>Charakterystyczne dla produktów SOIL AND EARTH jest ciekawe, <strong>orientalne wzornictwo</strong> opakowań a także dbałość o staranne wykończenie oraz prawdziwie indyjskie bogactwo kolorów, które pochodzą z naturalnych barwników.</p>\n<p>Wyjątkowo<strong> zmysłowe i starannie dobrane kompozycje zapachowe</strong> zostały stworzone, by zaspokoić nawet najbardziej wymagających Klientów.</p>\n<p>Typowe <strong>indyjskie aromaty</strong> takie jak róża, sandałowiec, neroli, neem, szafran czy kurkuma są tu podane w łagodnej formie kojących zmysły wonnych olejków, mydeł oraz żeli pod prysznic.</p>\n<p>Wszystkie kosmetyki produkowane są w Indiach. <br/><br/>Kosmetyki Soil &amp; Earth sprawią, że znowu poczujesz się dobrze we własnej skórze!</p>"
+    "description": "<p>Jeśli odczuwasz zmęczenie, a Twoja skóra traci blask, elastyczność i zdrowy wygląd, z pomocą przyjdą Ci kosmetyki naturalne Soil &amp; Earth, które zostały stworzone z myślą o tych, którym pochodzenie, skład oraz wpływ na środowisko preparatów kosmetycznych nie jest obojętne.</p>\n<p>Kosmetyki SOIL AND EARTH są w 100% <strong>naturalne, nie zawierają parabenów ani ftalanów, nie dodano do nich żadnych barwników czy syntetycznych zapachów. Nie były również testowane na zwierzętach </strong>a zarówno zawartość jak i<strong> opakowanie sa przyjazne dla środowiska.</strong><br/><br/>Charakterystyczne dla produktów SOIL AND EARTH jest ciekawe, <strong>orientalne wzornictwo</strong> opakowań a także dbałość o staranne wykończenie oraz prawdziwie indyjskie bogactwo kolorów, które pochodzą z naturalnych barwników.</p>\n<p>Wyjątkowo<strong> zmysłowe i starannie dobrane kompozycje zapachowe</strong> zostały stworzone, by zaspokoić nawet najbardziej wymagających Klientów.</p>\n<p>Typowe <strong>indyjskie aromaty</strong> takie jak róża, sandałowiec, neroli, neem, szafran czy kurkuma są tu podane w łagodnej formie kojących zmysły wonnych olejków, mydeł oraz żeli pod prysznic.</p>\n<p>Wszystkie kosmetyki produkowane są w Indiach. <br/><br/>Kosmetyki Soil &amp; Earth sprawią, że znowu poczujesz się dobrze we własnej skórze!</p>",
+    "position": 9
   },
   {
     "id": 179,
     "name": "Olejki do ciała",
     "url": "https://www.magiczne-indie.pl/179-olejki-do-ciala",
     "parent_id": 37,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 180,
     "name": "Żele do mycia ciała",
     "url": "https://www.magiczne-indie.pl/180-zele-do-mycia-ciala",
     "parent_id": 46,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 181,
     "name": "Organic India",
     "url": "https://www.magiczne-indie.pl/181-organic-india",
     "parent_id": 70,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 182,
     "name": "Włosy przetłuszczające się",
     "url": "https://www.magiczne-indie.pl/182-wlosy-przetluszczajace-sie",
     "parent_id": 58,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 183,
     "name": "Gąbki i myjki",
     "url": "https://www.magiczne-indie.pl/183-gabki-i-myjki",
     "parent_id": 46,
-    "description": null
+    "description": null,
+    "position": 4
   },
   {
     "id": 185,
     "name": "Shoti Maa",
     "url": "https://www.magiczne-indie.pl/185-shoti-maa",
     "parent_id": 70,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 186,
     "name": "Ałuny potasowe i dezodoranty",
     "url": "https://www.magiczne-indie.pl/186-aluny-potasowe-i-dezodoranty",
     "parent_id": 36,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 189,
     "name": "Sole i minerały do kąpieli",
     "url": "https://www.magiczne-indie.pl/189-sole-i-mineraly-do-kapieli",
     "parent_id": 46,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 191,
     "name": "NUMI Organic Tea",
     "url": "https://www.magiczne-indie.pl/191-numi-organic-tea",
     "parent_id": 70,
-    "description": "<p>Organiczne herbaty sporządzone w zgodzie z duchem Ayurvedy</p>\n<p>Numi Tea - to celebracja sztuki powstawania i komponowania prawdziwej czystej herbaty!<br/>Wybierz tą markę Fair Trade jeśli ważne dla Ciebie są: dobre samopoczucie ciała, umysłu i duszy.  Organiczne herbaty klasy Premium połączone z owocami, kwiatami, ziołami i przyprawami - bez żadnych dodatków.</p>"
+    "description": "<p>Organiczne herbaty sporządzone w zgodzie z duchem Ayurvedy</p>\n<p>Numi Tea - to celebracja sztuki powstawania i komponowania prawdziwej czystej herbaty!<br/>Wybierz tą markę Fair Trade jeśli ważne dla Ciebie są: dobre samopoczucie ciała, umysłu i duszy.  Organiczne herbaty klasy Premium połączone z owocami, kwiatami, ziołami i przyprawami - bez żadnych dodatków.</p>",
+    "position": 2
   },
   {
     "id": 192,
     "name": "Herbaty Yogi Tea",
     "url": "https://www.magiczne-indie.pl/192-yogi-tea",
     "parent_id": 70,
-    "description": "<!-- ndx-seo-2026-08 -->\n<h2>Herbaty Yogi Tea — pełna oferta</h2>\n<p>Zebraliśmy tu wszystkie dostępne herbaty Yogi Tea. To ajurwedyjskie mieszanki przypraw i ziół w jakości bio — w saszetkach oraz, w wybranych wariantach, jako herbata sypana.</p>\n<h3>Od czego zacząć</h3>\n<p><strong>Classic Chai</strong> to punkt wyjścia: korzenna mieszanka z cynamonem, kardamonem i imbirem, najlepsza z mlekiem. <strong>Detox</strong> i <strong>Throat Comfort</strong> wybierane są funkcjonalnie — pierwsza na okresy oczyszczające, druga przy podrażnionym gardle. Zimą dochodzi sezonowa <strong>Christmas</strong>, dostępna zwykle od października do stycznia.</p>\n<h3>Saszetki czy sypana</h3>\n<p>Saszetki są wygodniejsze w biurze i dają powtarzalną moc naparu. Wersja sypana pozwala regulować proporcje i lepiej sprawdza się przy gotowaniu chai na mleku.</p>\n<h3>Jak parzyć</h3>\n<p>Zalej wrzątkiem i parz pod przykryciem 5–7 minut — przyprawy potrzebują więcej czasu niż liście czarnej herbaty. Chai na mleku gotuj 3–5 minut, następnie odcedź.</p>\n<p>Szukasz innych herbat z Indii? Sprawdź pozostałe herbaty indyjskie oraz Samahan.</p>"
+    "description": "<!-- ndx-seo-2026-08 -->\n<h2>Herbaty Yogi Tea — pełna oferta</h2>\n<p>Zebraliśmy tu wszystkie dostępne herbaty Yogi Tea. To ajurwedyjskie mieszanki przypraw i ziół w jakości bio — w saszetkach oraz, w wybranych wariantach, jako herbata sypana.</p>\n<h3>Od czego zacząć</h3>\n<p><strong>Classic Chai</strong> to punkt wyjścia: korzenna mieszanka z cynamonem, kardamonem i imbirem, najlepsza z mlekiem. <strong>Detox</strong> i <strong>Throat Comfort</strong> wybierane są funkcjonalnie — pierwsza na okresy oczyszczające, druga przy podrażnionym gardle. Zimą dochodzi sezonowa <strong>Christmas</strong>, dostępna zwykle od października do stycznia.</p>\n<h3>Saszetki czy sypana</h3>\n<p>Saszetki są wygodniejsze w biurze i dają powtarzalną moc naparu. Wersja sypana pozwala regulować proporcje i lepiej sprawdza się przy gotowaniu chai na mleku.</p>\n<h3>Jak parzyć</h3>\n<p>Zalej wrzątkiem i parz pod przykryciem 5–7 minut — przyprawy potrzebują więcej czasu niż liście czarnej herbaty. Chai na mleku gotuj 3–5 minut, następnie odcedź.</p>\n<p>Szukasz innych herbat z Indii? Sprawdź pozostałe herbaty indyjskie oraz Samahan.</p>",
+    "position": 6
   },
   {
     "id": 193,
     "name": "Żywność",
     "url": "https://www.magiczne-indie.pl/193-zywnosc",
     "parent_id": null,
-    "description": "<p>Wszystko, co stworzy pyszną, aromatyczną indyjską kuchnię w Twoim własnym domu bez wyjścia do restauracji! Oferujemy także ekologiczne produkty żywnościowe pochodzące z innych stron świata - jadalne odżywcze wodorosty czy meksykańskie nachos.</p>\n<p>U nas znajdziesz również eko produkty bezglutenowe i wegańskie.</p>\n<p>W ofercie: wspaniałe orientalne herbaty, ajurwedyjskie zioła i przyprawy kuchni indyjskiej, produkty dla poszczególnych dosh, olej kokosowy i inne oleje spożywcze, masła klarowane ghee, ekologiczne kasze i dal indyjskie.</p>"
+    "description": "<p>Wszystko, co stworzy pyszną, aromatyczną indyjską kuchnię w Twoim własnym domu bez wyjścia do restauracji! Oferujemy także ekologiczne produkty żywnościowe pochodzące z innych stron świata - jadalne odżywcze wodorosty czy meksykańskie nachos.</p>\n<p>U nas znajdziesz również eko produkty bezglutenowe i wegańskie.</p>\n<p>W ofercie: wspaniałe orientalne herbaty, ajurwedyjskie zioła i przyprawy kuchni indyjskiej, produkty dla poszczególnych dosh, olej kokosowy i inne oleje spożywcze, masła klarowane ghee, ekologiczne kasze i dal indyjskie.</p>",
+    "position": 10
   },
   {
     "id": 197,
     "name": "Kadzidła indyjskie, tybetańskie i japońskie",
     "url": "https://www.magiczne-indie.pl/197-kadzidla-indyjskie-tybetanskie-i-japonskie",
     "parent_id": 233,
-    "description": "<!-- ndx-seo-2026-08 -->\n<h2>Kadzidła — indyjskie, tybetańskie i japońskie</h2>\n<p>To główna kategoria kadzideł w naszym sklepie: patyczki, stożki, żywice, proszki i sznurki tybetańskie. Znajdziesz tu zarówno klasyki masowe, jak i kadzidła klasztorne o krótkiej liście składników.</p>\n<h3>Czym się różnią</h3>\n<ul>\n<li><strong>Indyjskie</strong> — najczęściej patyczki na bambusowym patyku, zamaczane w paście zapachowej. Intensywne, słodkie, dobrze wypełniają duże pomieszczenie. Najbardziej znana marka to <strong>Satya</strong> z Nag Champą.</li>\n<li><strong>Tybetańskie i nepalskie</strong> — bez bambusowego rdzenia, ugniatane z ziół i drewna. Zapach jest ziemisty i wytrawny, dym łagodniejszy.</li>\n<li><strong>Japońskie</strong> — cienkie, bezdymne, o bardzo czystym zapachu; przeznaczone do małych wnętrz i pracy przy biurku.</li>\n<li><strong>Żywice</strong> (kadzidło właściwe, frankincense, mirra) — spalane na węglu drzewnym lub podgrzewaczu, najmocniejsze z całej grupy.</li>\n</ul>\n<h3>Jak wybrać na start</h3>\n<p>Do dużego salonu weź patyczki indyjskie. Do sypialni lub biura — japońskie albo tybetańskie. Do praktyki i rytuałów — żywice na podgrzewaczu. Pamiętaj o podstawce dopasowanej do formy kadzidła i o wietrzeniu pomieszczenia.</p>\n<p>Największy wybór jednej marki znajdziesz w ofercie kadzideł Satya; jeśli szukasz konkretnie patyczków, przejdź do podkategorii kadzideł w patyczkach.</p>"
+    "description": "<!-- ndx-seo-2026-08 -->\n<h2>Kadzidła — indyjskie, tybetańskie i japońskie</h2>\n<p>To główna kategoria kadzideł w naszym sklepie: patyczki, stożki, żywice, proszki i sznurki tybetańskie. Znajdziesz tu zarówno klasyki masowe, jak i kadzidła klasztorne o krótkiej liście składników.</p>\n<h3>Czym się różnią</h3>\n<ul>\n<li><strong>Indyjskie</strong> — najczęściej patyczki na bambusowym patyku, zamaczane w paście zapachowej. Intensywne, słodkie, dobrze wypełniają duże pomieszczenie. Najbardziej znana marka to <strong>Satya</strong> z Nag Champą.</li>\n<li><strong>Tybetańskie i nepalskie</strong> — bez bambusowego rdzenia, ugniatane z ziół i drewna. Zapach jest ziemisty i wytrawny, dym łagodniejszy.</li>\n<li><strong>Japońskie</strong> — cienkie, bezdymne, o bardzo czystym zapachu; przeznaczone do małych wnętrz i pracy przy biurku.</li>\n<li><strong>Żywice</strong> (kadzidło właściwe, frankincense, mirra) — spalane na węglu drzewnym lub podgrzewaczu, najmocniejsze z całej grupy.</li>\n</ul>\n<h3>Jak wybrać na start</h3>\n<p>Do dużego salonu weź patyczki indyjskie. Do sypialni lub biura — japońskie albo tybetańskie. Do praktyki i rytuałów — żywice na podgrzewaczu. Pamiętaj o podstawce dopasowanej do formy kadzidła i o wietrzeniu pomieszczenia.</p>\n<p>Największy wybór jednej marki znajdziesz w ofercie kadzideł Satya; jeśli szukasz konkretnie patyczków, przejdź do podkategorii kadzideł w patyczkach.</p>",
+    "position": 4
   },
   {
     "id": 198,
     "name": "Perfumy w Olejku roll-on 5ml i 10ml",
     "url": "https://www.magiczne-indie.pl/198-perfumy-w-olejku-roll-on-5ml-i-10ml",
     "parent_id": 395,
-    "description": "<p>Szeroki wybór olejków indyjskich dla Niej (Wiciokrzew, Konwalia, Lilia, Aphrodesia) i dla Niego (Oud, Sandalwood, Vetiver, Black Magic, Neroli).</p>\n<p>Szeroki wybór pojemności i praktyczne opakowania z nakrętką typu roll-on pozwalają na łatwe dozowanie. Małą buteleczkę zakręcane szczelnie złotym koreczkiem. wypełnioną naturalnymi skoncentrowanymi perfumami w olejku możesz zabrać ze sobą wszędzie - do pracy i w podróż. Stanowią idealny prezent dla bliskich.</p>\n<p>Wybierz Swój ulubiony zapach i nie rozstawaj się z nim nigdy!</p>\n<p></p>"
+    "description": "<p>Szeroki wybór olejków indyjskich dla Niej (Wiciokrzew, Konwalia, Lilia, Aphrodesia) i dla Niego (Oud, Sandalwood, Vetiver, Black Magic, Neroli).</p>\n<p>Szeroki wybór pojemności i praktyczne opakowania z nakrętką typu roll-on pozwalają na łatwe dozowanie. Małą buteleczkę zakręcane szczelnie złotym koreczkiem. wypełnioną naturalnymi skoncentrowanymi perfumami w olejku możesz zabrać ze sobą wszędzie - do pracy i w podróż. Stanowią idealny prezent dla bliskich.</p>\n<p>Wybierz Swój ulubiony zapach i nie rozstawaj się z nim nigdy!</p>\n<p></p>",
+    "position": 1
   },
   {
     "id": 202,
     "name": "Kajale",
     "url": "https://www.magiczne-indie.pl/202-kajale",
     "parent_id": 99,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 209,
     "name": "Olejki do nosa",
     "url": "https://www.magiczne-indie.pl/209-olejki-do-nosa",
     "parent_id": 45,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 211,
     "name": "Do stóp",
     "url": "https://www.magiczne-indie.pl/211-do-stop",
     "parent_id": 37,
-    "description": null
+    "description": null,
+    "position": 7
   },
   {
     "id": 213,
     "name": "Grzebienie do włosów",
     "url": "https://www.magiczne-indie.pl/213-grzebienie-do-wlosow",
     "parent_id": 36,
-    "description": null
+    "description": null,
+    "position": 4
   },
   {
     "id": 216,
     "name": "Superfoods",
     "url": "https://www.magiczne-indie.pl/216-superfoods",
     "parent_id": 193,
-    "description": "<p>Nieprzetworzone, w 100% naturalne, cenne składniki odżywiające ze wszystkich stron świata o potężnym działaniu antyoksydacyjnym, zwalczającym wolne rodniki, bogactwo witamin, minerałów i składników bioaktywnych wspierających utrzymanie zdrowia człowieka w warunkach cywilizacyjnych sprzyjających rozwojowi wielu chorób.</p>"
+    "description": "<p>Nieprzetworzone, w 100% naturalne, cenne składniki odżywiające ze wszystkich stron świata o potężnym działaniu antyoksydacyjnym, zwalczającym wolne rodniki, bogactwo witamin, minerałów i składników bioaktywnych wspierających utrzymanie zdrowia człowieka w warunkach cywilizacyjnych sprzyjających rozwojowi wielu chorób.</p>",
+    "position": 4
   },
   {
     "id": 223,
     "name": "Napoje",
     "url": "https://www.magiczne-indie.pl/223-napoje",
     "parent_id": 193,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 232,
     "name": "Różności",
     "url": "https://www.magiczne-indie.pl/232-roznosci",
     "parent_id": null,
-    "description": "<p>Wybrane artykuły dla sympatyków ajurwedy, jogi i medytacji. Wszystko co wprawi Was w dobry nastrój, stan relaksu, spokoju czy też witalności i wyzwolenia życiowej energii. Zadbaj o siebie i o swoje otoczenie, które wpłynie pozytywnie na harmonię duszy i ciała.</p>\n<p></p>\n<p>O Twoją mentalną równowagę zadbają naturalne kadzidła wspomagające codzienny rytuał wyciszenia, świece i dyfuzory zapachowe, indyjskie naturalne perfumy w olejku lub w balsamie - cudowna woń, która nie opuści Ciebie w pracy, w domu i na zakupach, czyli wszędzie tam gdzie jesteś, olejki esencjonalne do aromaterapii, lampy i świeczniki z soli himalajskiej pozytywnie wpływające na powietrze w domu, płyty CD odpowiednie do medytacji i czy odprężające przed snem, książki i czasopisma związane z jogą i nauką ajurwedy. </p>\n<p></p>\n<p>Już wkrótce pojawi się szeroki wybór instrumentów - mis i gongów tybetańskich!</p>\n<p></p>"
+    "description": "<p>Wybrane artykuły dla sympatyków ajurwedy, jogi i medytacji. Wszystko co wprawi Was w dobry nastrój, stan relaksu, spokoju czy też witalności i wyzwolenia życiowej energii. Zadbaj o siebie i o swoje otoczenie, które wpłynie pozytywnie na harmonię duszy i ciała.</p>\n<p></p>\n<p>O Twoją mentalną równowagę zadbają naturalne kadzidła wspomagające codzienny rytuał wyciszenia, świece i dyfuzory zapachowe, indyjskie naturalne perfumy w olejku lub w balsamie - cudowna woń, która nie opuści Ciebie w pracy, w domu i na zakupach, czyli wszędzie tam gdzie jesteś, olejki esencjonalne do aromaterapii, lampy i świeczniki z soli himalajskiej pozytywnie wpływające na powietrze w domu, płyty CD odpowiednie do medytacji i czy odprężające przed snem, książki i czasopisma związane z jogą i nauką ajurwedy. </p>\n<p></p>\n<p>Już wkrótce pojawi się szeroki wybór instrumentów - mis i gongów tybetańskich!</p>\n<p></p>",
+    "position": 11
   },
   {
     "id": 233,
     "name": "Aromaterapia i Masaż",
     "url": "https://www.magiczne-indie.pl/233-aromaterapia-i-masaz",
     "parent_id": null,
-    "description": null
+    "description": null,
+    "position": 12
   },
   {
     "id": 234,
     "name": "Świece zapachowe i świeczniki",
     "url": "https://www.magiczne-indie.pl/234-swiece-zapachowe-i-swieczniki",
     "parent_id": 233,
-    "description": null
+    "description": null,
+    "position": 10
   },
   {
     "id": 240,
     "name": "Perfumy w balsamie (w drewnie lub kamieniu)",
     "url": "https://www.magiczne-indie.pl/240-perfumy-w-balsamie-w-drewnie-lub-kamieniu",
     "parent_id": 395,
-    "description": "<p><strong>Pozostawiamy Tobie wybór doskonałych orietalnych zapachów z Indii - ale decyzja w jakiej formie mają się znależć to istotna kwestia praktyczności, estetyki i dopasowania.</strong></p>\n<ul><li>Jeśli wybierasz się w podróż - wybieraj lekkie i zakręcane perfumy w drewnie różanym.</li>\n</ul><ul><li>Jeśli mają zdobić Twoją półkę łazienkową, toaletkę lub garderobę, wybierz perfumy w kamieniu, dzięki którym nakładanie jest niezwykle proste - wystarczy podnieść kamienną pokrywkę słoiczka, aby uwolnił się gustowny zapach.</li>\n</ul>"
+    "description": "<p><strong>Pozostawiamy Tobie wybór doskonałych orietalnych zapachów z Indii - ale decyzja w jakiej formie mają się znależć to istotna kwestia praktyczności, estetyki i dopasowania.</strong></p>\n<ul><li>Jeśli wybierasz się w podróż - wybieraj lekkie i zakręcane perfumy w drewnie różanym.</li>\n</ul><ul><li>Jeśli mają zdobić Twoją półkę łazienkową, toaletkę lub garderobę, wybierz perfumy w kamieniu, dzięki którym nakładanie jest niezwykle proste - wystarczy podnieść kamienną pokrywkę słoiczka, aby uwolnił się gustowny zapach.</li>\n</ul>",
+    "position": 3
   },
   {
     "id": 241,
     "name": "Odporność",
     "url": "https://www.magiczne-indie.pl/241-odpornosc",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 242,
     "name": "Dla Kobiet",
     "url": "https://www.magiczne-indie.pl/242-dla-kobiet",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 243,
     "name": "Dla mężczyzn",
     "url": "https://www.magiczne-indie.pl/243-dla-mezczyzn",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 4
   },
   {
     "id": 244,
     "name": "Pamięć i koncentracja",
     "url": "https://www.magiczne-indie.pl/244-pamiec-i-koncentracja",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 11
   },
   {
     "id": 245,
     "name": "Odchudzanie",
     "url": "https://www.magiczne-indie.pl/245-odchudzanie",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 246,
     "name": "Dobre Trawienie",
     "url": "https://www.magiczne-indie.pl/246-dobre-trawienie",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 6
   },
   {
     "id": 247,
     "name": "Witalność i Energia",
     "url": "https://www.magiczne-indie.pl/247-witalnosc-i-energia",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 8
   },
   {
     "id": 248,
     "name": "Oczyszczanie",
     "url": "https://www.magiczne-indie.pl/248-oczyszczanie",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 249,
     "name": "Stres",
     "url": "https://www.magiczne-indie.pl/249-stres",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 10
   },
   {
     "id": 250,
     "name": "Przeziębienie",
     "url": "https://www.magiczne-indie.pl/250-przeziebienie",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 12
   },
   {
     "id": 251,
     "name": "Stawy, mięśnie",
     "url": "https://www.magiczne-indie.pl/251-stawy-miesnie",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 13
   },
   {
     "id": 252,
     "name": "Zdrowie Psychiczne",
     "url": "https://www.magiczne-indie.pl/252-zdrowie-psychiczne",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 7
   },
   {
     "id": 253,
     "name": "Nerki i Układ moczowy",
     "url": "https://www.magiczne-indie.pl/253-nerki-i-uklad-moczowy",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 15
   },
   {
     "id": 254,
     "name": "Ochrona Wątroby",
     "url": "https://www.magiczne-indie.pl/254-ochrona-watroby",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 16
   },
   {
     "id": 255,
     "name": "Środki czystości",
     "url": "https://www.magiczne-indie.pl/255-srodki-czystosci",
     "parent_id": 232,
-    "description": "<h4 style=\"text-align:center;\">Masz dość drażniącej chemii w Twoim domu? </h4>\n<h4 style=\"text-align:center;\">Postaw na naturę i zaczerpnij inspiracji z otaczającego Cię świata. Ekologiczne środki do sprzątania, prania i mycia pozwolą Ci zachować czystość w domu.</h4>\n<h4 style=\"text-align:center;\">Czysty dom bez szkód dla środowiska naturalnego. </h4>"
+    "description": "<h4 style=\"text-align:center;\">Masz dość drażniącej chemii w Twoim domu? </h4>\n<h4 style=\"text-align:center;\">Postaw na naturę i zaczerpnij inspiracji z otaczającego Cię świata. Ekologiczne środki do sprzątania, prania i mycia pozwolą Ci zachować czystość w domu.</h4>\n<h4 style=\"text-align:center;\">Czysty dom bez szkód dla środowiska naturalnego. </h4>",
+    "position": 7
   },
   {
     "id": 277,
     "name": "Maski do włosów",
     "url": "https://www.magiczne-indie.pl/277-maski-do-wlosow",
     "parent_id": 38,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 290,
     "name": "Perfumy dla mężczyzn",
     "url": "https://www.magiczne-indie.pl/290-perfumy-dla-mezczyzn",
     "parent_id": 233,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 295,
     "name": "Cosmoveda - z Tulsi, Moringą i innymi ziołami indyjskimi",
     "url": "https://www.magiczne-indie.pl/295-cosmoveda-z-tulsi-moringa-i-innymi-ziolami-indyjskimi",
     "parent_id": 70,
-    "description": "<p>Organiczne herbaty sporządzone w zgodzie z duchem Ayurvedy</p>"
+    "description": "<p>Organiczne herbaty sporządzone w zgodzie z duchem Ayurvedy</p>",
+    "position": 1
   },
   {
     "id": 313,
     "name": "Włosy cienkie i suche",
     "url": "https://www.magiczne-indie.pl/313-wlosy-cienkie-i-suche",
     "parent_id": 58,
-    "description": null
+    "description": null,
+    "position": 8
   },
   {
     "id": 314,
     "name": "Włosy farbowane lub zniszczone",
     "url": "https://www.magiczne-indie.pl/314-wlosy-farbowane-lub-zniszczone",
     "parent_id": 58,
-    "description": null
+    "description": null,
+    "position": 6
   },
   {
     "id": 319,
     "name": "Misy tybetańskie, gongi, dzwonki i cymbałki",
     "url": "https://www.magiczne-indie.pl/319-misy-tybetanskie-gongi-dzwonki-i-cymbalki",
     "parent_id": 232,
-    "description": "<!-- ndx-seo-faq -->\n<div class=\"ndx-seo-faq\">\n<h2>Misy tybetańskie — jak wybrać?</h2>\n<h3>Na co pomagają misy tybetańskie?</h3>\n<p>Misy śpiewające wykorzystuje się do medytacji, relaksacji i masażu dźwiękiem. Dźwięk i wibracje pomagają wyciszyć umysł — efekt zależy od praktyki i osobistych preferencji.</p>\n<h3>Jak wybrać rozmiar misy?</h3>\n<p>Mniejsze misy (ok. 10–16 cm) są łatwiejsze w domowej medytacji; większe i cięższe dają głębszy, dłuższy dźwięk. Sprawdź gramaturę i średnicę w kartach produktów poniżej.</p>\n<h3>Czym różnią się misy nepalskie od tybetańskich?</h3>\n<p>W ofercie znajdziesz misy z Nepalu i tradycji tybetańskiej — różnią się stopem, zdobieniem i brzmieniem. Wybierz model, którego dźwięk najbardziej Ci odpowiada.</p>\n</div>"
+    "description": "<!-- ndx-seo-faq -->\n<div class=\"ndx-seo-faq\">\n<h2>Misy tybetańskie — jak wybrać?</h2>\n<h3>Na co pomagają misy tybetańskie?</h3>\n<p>Misy śpiewające wykorzystuje się do medytacji, relaksacji i masażu dźwiękiem. Dźwięk i wibracje pomagają wyciszyć umysł — efekt zależy od praktyki i osobistych preferencji.</p>\n<h3>Jak wybrać rozmiar misy?</h3>\n<p>Mniejsze misy (ok. 10–16 cm) są łatwiejsze w domowej medytacji; większe i cięższe dają głębszy, dłuższy dźwięk. Sprawdź gramaturę i średnicę w kartach produktów poniżej.</p>\n<h3>Czym różnią się misy nepalskie od tybetańskich?</h3>\n<p>W ofercie znajdziesz misy z Nepalu i tradycji tybetańskiej — różnią się stopem, zdobieniem i brzmieniem. Wybierz model, którego dźwięk najbardziej Ci odpowiada.</p>\n</div>",
+    "position": 6
   },
   {
     "id": 321,
     "name": "Serce i układ krążenia",
     "url": "https://www.magiczne-indie.pl/321-serce-i-uklad-krazenia",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 17
   },
   {
     "id": 322,
     "name": "Cholesterol",
     "url": "https://www.magiczne-indie.pl/322-cholesterol",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 18
   },
   {
     "id": 323,
     "name": "Układ oddechowy",
     "url": "https://www.magiczne-indie.pl/323-uklad-oddechowy",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 19
   },
   {
     "id": 324,
     "name": "Kominki do olejków zapachowych",
     "url": "https://www.magiczne-indie.pl/324-kominki-do-olejkow-zapachowych",
     "parent_id": 233,
-    "description": null
+    "description": null,
+    "position": 9
   },
   {
     "id": 325,
     "name": "Odświeżacze powietrza",
     "url": "https://www.magiczne-indie.pl/325-odswiezacze-powietrza",
     "parent_id": 233,
-    "description": null
+    "description": null,
+    "position": 12
   },
   {
     "id": 333,
     "name": "Olejki do masażu i kąpieli",
     "url": "https://www.magiczne-indie.pl/333-olejki-do-masazu-i-kapieli",
     "parent_id": 233,
-    "description": "<p>Staro-indyjska receptura i unikalna tradycja zgrzewanych woskiem buteleczek do aromaterapii.</p>"
+    "description": "<p>Staro-indyjska receptura i unikalna tradycja zgrzewanych woskiem buteleczek do aromaterapii.</p>",
+    "position": 11
   },
   {
     "id": 335,
     "name": "Suplementy Himalaya Herbals, Himalaya Herbs",
     "url": "https://www.magiczne-indie.pl/335-suplementy-himalaya-herbals-himalaya-herbs",
     "parent_id": 55,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 346,
     "name": "Maści",
     "url": "https://www.magiczne-indie.pl/346-masci",
     "parent_id": 80,
-    "description": null
+    "description": null,
+    "position": 4
   },
   {
     "id": 347,
     "name": "Kremy do rąk",
     "url": "https://www.magiczne-indie.pl/347-kremy-do-rak",
     "parent_id": 37,
-    "description": null
+    "description": null,
+    "position": 6
   },
   {
     "id": 351,
     "name": "Suplementy Cosmoveda",
     "url": "https://www.magiczne-indie.pl/351-suplementy-cosmoveda",
     "parent_id": 55,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 352,
     "name": "Bezsenność",
     "url": "https://www.magiczne-indie.pl/352-bezsennosc",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 9
   },
   {
     "id": 353,
     "name": "Cukrzyca",
     "url": "https://www.magiczne-indie.pl/353-cukrzyca",
     "parent_id": 92,
-    "description": null
+    "description": null,
+    "position": 14
   },
   {
     "id": 356,
     "name": "Mydełka",
     "url": "https://www.magiczne-indie.pl/356-mydelka",
     "parent_id": 37,
-    "description": "<!-- ndx-seo-2026-08 -->\n<h2>Mydełka zapachowe do ciała</h2>\n<p>Węższy wybór mydełek pielęgnacyjnych i prezentowych — głównie kostki glicerynowe i perfumowane, pakowane pojedynczo lub w zestawy.</p>\n<p>Jeśli szukasz pełnej oferty mydeł, w tym ajurwedyjskich ziołowych, mydeł Aleppo i większych kostek do kąpieli, przejdź do <strong>głównej kategorii mydeł i mydełek naturalnych</strong> — tam znajdziesz wszystkie dostępne marki.</p>"
+    "description": "<!-- ndx-seo-2026-08 -->\n<h2>Mydełka zapachowe do ciała</h2>\n<p>Węższy wybór mydełek pielęgnacyjnych i prezentowych — głównie kostki glicerynowe i perfumowane, pakowane pojedynczo lub w zestawy.</p>\n<p>Jeśli szukasz pełnej oferty mydeł, w tym ajurwedyjskich ziołowych, mydeł Aleppo i większych kostek do kąpieli, przejdź do <strong>głównej kategorii mydeł i mydełek naturalnych</strong> — tam znajdziesz wszystkie dostępne marki.</p>",
+    "position": 4
   },
   {
     "id": 357,
     "name": "Mydła w kostce",
     "url": "https://www.magiczne-indie.pl/357-mydla-w-kostce",
     "parent_id": 356,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 358,
     "name": "Mydła płynne",
     "url": "https://www.magiczne-indie.pl/358-mydla-plynne",
     "parent_id": 356,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 359,
     "name": "Dla Mężczyzn",
     "url": "https://www.magiczne-indie.pl/359-dla-mezczyzn",
     "parent_id": 8,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 360,
     "name": "Kosmetyki BIO",
     "url": "https://www.magiczne-indie.pl/360-kosmetyki-bio",
     "parent_id": 8,
-    "description": "<p><span>Jedynie kosmetyki posiadające certyfikaty ekologiczności. Jeśli cenisz naturalność i stronisz od substancji sztucznych zawartych w kosmetykach, to ta kategoria jest dla Ciebie!</span></p>"
+    "description": "<p><span>Jedynie kosmetyki posiadające certyfikaty ekologiczności. Jeśli cenisz naturalność i stronisz od substancji sztucznych zawartych w kosmetykach, to ta kategoria jest dla Ciebie!</span></p>",
+    "position": 1
   },
   {
     "id": 362,
     "name": "Zwiększające objętość",
     "url": "https://www.magiczne-indie.pl/362-zwiekszajace-objetosc",
     "parent_id": 58,
-    "description": null
+    "description": null,
+    "position": 7
   },
   {
     "id": 366,
     "name": "Eliksiry Ziołowe",
     "url": "https://www.magiczne-indie.pl/366-eliksiry-ziolowe",
     "parent_id": 80,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 369,
     "name": "Suplementy BIO Inne",
     "url": "https://www.magiczne-indie.pl/369-suplementy-bio-inne",
     "parent_id": 55,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 371,
     "name": "Podstawki i kadzielnice",
     "url": "https://www.magiczne-indie.pl/371-podstawki-i-kadzielnice",
     "parent_id": 233,
-    "description": null
+    "description": null,
+    "position": 7
   },
   {
     "id": 377,
     "name": "Akcesoria",
     "url": "https://www.magiczne-indie.pl/377-akcesoria",
     "parent_id": 80,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 385,
     "name": "Suplementy Maharishi",
     "url": "https://www.magiczne-indie.pl/385-suplementy-maharishi",
     "parent_id": 55,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 393,
     "name": "Figurki i ozdoby",
     "url": "https://www.magiczne-indie.pl/393-figurki-i-ozdoby",
     "parent_id": 232,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 394,
     "name": "Akcesoria do kadzideł",
     "url": "https://www.magiczne-indie.pl/394-akcesoria-do-kadzidel",
     "parent_id": 233,
-    "description": null
+    "description": null,
+    "position": 6
   },
   {
     "id": 395,
     "name": "Perfumy Indyjskie",
     "url": "https://www.magiczne-indie.pl/395-perfumy-indyjskie",
     "parent_id": 233,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 397,
     "name": "Kadzidła sypkie, żywice, drewienka palo santo",
     "url": "https://www.magiczne-indie.pl/397-kadzidla-sypkie-zywice-drewienka-palo-santo",
     "parent_id": 233,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 399,
     "name": "Miedziane naczynia do wody",
     "url": "https://www.magiczne-indie.pl/399-miedziane-naczynia-do-wody",
     "parent_id": 232,
-    "description": "<!-- ndx-seo-2026-08 -->\n<h2>Miedziane naczynia do wody — dzbanki i butelki</h2>\n<p>W ajurwedzie woda przechowywana w miedzi (<em>tamra jal</em>) uchodzi za wodę „naładowaną”. Niezależnie od tradycji miedź ma udokumentowane działanie przeciwbakteryjne na powierzchni, dlatego dzbanki i butelki z tego materiału wróciły do użytku w kuchniach.</p>\n<h3>Dzbanek czy butelka</h3>\n<p><strong>Dzbanek</strong> (najczęściej 2 l) stoi w kuchni — nalewasz wieczorem, pijesz rano. <strong>Butelka</strong> (600–1000 ml) jest przenośna, do pracy i na rower. Jeśli chcesz jedno naczynie na start, wybierz dzbanek 2 l — wystarcza na dobową porcję dla dwóch osób.</p>\n<h3>Jak używać i czyścić</h3>\n<p>Wodę zostawiaj w miedzi 6–8 godzin, najlepiej na noc; nie przechowuj w niej soków, mleka ani napojów kwaśnych. Naczynie myj bez detergentów i druciaków — wystarczy sok z cytryny z solą albo pasta z octu i mąki. Patyna to normalne zjawisko, a nie wada.</p>\n<h3>Na co patrzeć przy zakupie</h3>\n<p>Sprawdź, czy naczynie jest z <strong>litej miedzi</strong>, a nie stali powlekanej, oraz jak wykonane są szwy i uchwyt. Interesują Cię modele w konkretnej pojemności? Filtruj po 2 l dla dzbanków i 900 ml dla butelek.</p>\n<!-- ndx-seo-2026-09-cups -->\n<h3>Dzbanki, butelki, kubki</h3>\n<p>Ofertę podzieliliśmy: <a href=\"https://www.magiczne-indie.pl/462-dzbanki-miedziane\">Dzbanki miedziane</a> zostają w kuchni, <a href=\"https://www.magiczne-indie.pl/463-butelki-miedziane\">Butelki miedziane</a> jeżdżą w torbie, a <a href=\"https://www.magiczne-indie.pl/464-kubki-i-szklanki-miedziane\">Kubki i szklanki miedziane</a> służą do picia przy stole albo w biurze.</p>"
+    "description": "<!-- ndx-seo-2026-08 -->\n<h2>Miedziane naczynia do wody — dzbanki i butelki</h2>\n<p>W ajurwedzie woda przechowywana w miedzi (<em>tamra jal</em>) uchodzi za wodę „naładowaną”. Niezależnie od tradycji miedź ma udokumentowane działanie przeciwbakteryjne na powierzchni, dlatego dzbanki i butelki z tego materiału wróciły do użytku w kuchniach.</p>\n<h3>Dzbanek czy butelka</h3>\n<p><strong>Dzbanek</strong> (najczęściej 2 l) stoi w kuchni — nalewasz wieczorem, pijesz rano. <strong>Butelka</strong> (600–1000 ml) jest przenośna, do pracy i na rower. Jeśli chcesz jedno naczynie na start, wybierz dzbanek 2 l — wystarcza na dobową porcję dla dwóch osób.</p>\n<h3>Jak używać i czyścić</h3>\n<p>Wodę zostawiaj w miedzi 6–8 godzin, najlepiej na noc; nie przechowuj w niej soków, mleka ani napojów kwaśnych. Naczynie myj bez detergentów i druciaków — wystarczy sok z cytryny z solą albo pasta z octu i mąki. Patyna to normalne zjawisko, a nie wada.</p>\n<h3>Na co patrzeć przy zakupie</h3>\n<p>Sprawdź, czy naczynie jest z <strong>litej miedzi</strong>, a nie stali powlekanej, oraz jak wykonane są szwy i uchwyt. Interesują Cię modele w konkretnej pojemności? Filtruj po 2 l dla dzbanków i 900 ml dla butelek.</p>\n<!-- ndx-seo-2026-09-cups -->\n<h3>Dzbanki, butelki, kubki</h3>\n<p>Ofertę podzieliliśmy: <a href=\"https://www.magiczne-indie.pl/462-dzbanki-miedziane\">Dzbanki miedziane</a> zostają w kuchni, <a href=\"https://www.magiczne-indie.pl/463-butelki-miedziane\">Butelki miedziane</a> jeżdżą w torbie, a <a href=\"https://www.magiczne-indie.pl/464-kubki-i-szklanki-miedziane\">Kubki i szklanki miedziane</a> służą do picia przy stole albo w biurze.</p>",
+    "position": 1
   },
   {
     "id": 401,
     "name": "Kadzidła w pęczku do smużenia - biała szałwia",
     "url": "https://www.magiczne-indie.pl/401-kadzidla-w-peczku-do-smuzenia-biala-szalwia",
     "parent_id": 233,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 402,
     "name": "Kadzidła w patyczkach",
     "url": "https://www.magiczne-indie.pl/402-kadzidla-w-patyczkach",
     "parent_id": 197,
-    "description": "<!-- ndx-seo-2026-08 -->\n<h2>Kadzidła w patyczkach</h2>\n<p>Najpopularniejsza forma kadzideł — gotowa do zapalenia, bez węgla i podgrzewacza. Patyczek pali się zwykle 30–45 minut i wystarcza na przewietrzone pomieszczenie o powierzchni kilkunastu metrów.</p>\n<h3>Marki i zapachy</h3>\n<p>Trzon oferty to <strong>Satya</strong> (Nag Champa, Super Hit, Palo Santo) oraz <strong>HEM</strong> z bardzo szeroką paletą zapachów owocowych i kwiatowych. Osobną grupą są patyczki tybetańskie — bez bambusowego rdzenia, o ziemistym, wytrawnym dymie.</p>\n<h3>Podstawka to nie dodatek</h3>\n<p>Żar odpada od patyczka, dlatego podstawka jest elementem bezpieczeństwa, nie dekoracją. Do patyczków używaj drewnianej łódki lub ceramicznego talerzyka; nigdy nie zostawiaj palącego się kadzidła bez nadzoru.</p>\n<p>Inne formy — stożki, żywice, proszki — znajdziesz w kategorii nadrzędnej kadzideł.</p>"
+    "description": "<!-- ndx-seo-2026-08 -->\n<h2>Kadzidła w patyczkach</h2>\n<p>Najpopularniejsza forma kadzideł — gotowa do zapalenia, bez węgla i podgrzewacza. Patyczek pali się zwykle 30–45 minut i wystarcza na przewietrzone pomieszczenie o powierzchni kilkunastu metrów.</p>\n<h3>Marki i zapachy</h3>\n<p>Trzon oferty to <strong>Satya</strong> (Nag Champa, Super Hit, Palo Santo) oraz <strong>HEM</strong> z bardzo szeroką paletą zapachów owocowych i kwiatowych. Osobną grupą są patyczki tybetańskie — bez bambusowego rdzenia, o ziemistym, wytrawnym dymie.</p>\n<h3>Podstawka to nie dodatek</h3>\n<p>Żar odpada od patyczka, dlatego podstawka jest elementem bezpieczeństwa, nie dekoracją. Do patyczków używaj drewnianej łódki lub ceramicznego talerzyka; nigdy nie zostawiaj palącego się kadzidła bez nadzoru.</p>\n<p>Inne formy — stożki, żywice, proszki — znajdziesz w kategorii nadrzędnej kadzideł.</p>",
+    "position": 1
   },
   {
     "id": 403,
     "name": "Kadzidła w stożkach",
     "url": "https://www.magiczne-indie.pl/403-kadzidla-w-stozkach",
     "parent_id": 197,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 404,
     "name": "Kadzidła w tabletkach",
     "url": "https://www.magiczne-indie.pl/404-kadzidla-w-tabletkach",
     "parent_id": 197,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 405,
     "name": "Biżuteria i kamienie szlachetne",
     "url": "https://www.magiczne-indie.pl/405-bizuteria-i-kamienie-szlachetne",
     "parent_id": 232,
-    "description": null
+    "description": null,
+    "position": 4
   },
   {
     "id": 408,
     "name": "Kajale z Indii",
     "url": "https://www.magiczne-indie.pl/408-kajale-z-indii",
     "parent_id": 202,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 409,
     "name": "Mehandi",
     "url": "https://www.magiczne-indie.pl/409-mehandi",
     "parent_id": 37,
-    "description": null
+    "description": null,
+    "position": 9
   },
   {
     "id": 410,
     "name": "Olejki zapachowe",
     "url": "https://www.magiczne-indie.pl/410-olejki-zapachowe",
     "parent_id": 54,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 411,
     "name": "Olejki eteryczne",
     "url": "https://www.magiczne-indie.pl/411-olejki-eteryczne",
     "parent_id": 54,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 413,
     "name": "Odpromienniki i wahadełka",
     "url": "https://www.magiczne-indie.pl/413-odpromienniki-i-wahadelka",
     "parent_id": 232,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 414,
     "name": "Akcesoria - pałki i puduszki do mis",
     "url": "https://www.magiczne-indie.pl/414-akcesoria-palki-i-puduszki-do-mis",
     "parent_id": 319,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 418,
     "name": "Butelki do wody",
     "url": "https://www.magiczne-indie.pl/418-butelki-do-wody",
     "parent_id": 95,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 419,
     "name": "Male do medytacji",
     "url": "https://www.magiczne-indie.pl/419-male-do-medytacji",
     "parent_id": 95,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 425,
     "name": "Oczyszczanie jamy ustnej",
     "url": "https://www.magiczne-indie.pl/425-oczyszczanie-jamy-ustnej",
     "parent_id": 36,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 426,
     "name": "Olejki zapachowe do ciała w sprayu",
     "url": "https://www.magiczne-indie.pl/426-olejki-zapachowe-do-ciala-w-sprayu",
     "parent_id": 37,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 427,
     "name": "Perfumy w sprayu",
     "url": "https://www.magiczne-indie.pl/427-perfumy-w-sprayu",
     "parent_id": 395,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 428,
     "name": "Kadzidła w saszetkach 50g i 100g - Song of India",
     "url": "https://www.magiczne-indie.pl/428-kadzidla-w-saszetkach-50g-i-100g-song-of-india",
     "parent_id": 397,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 430,
     "name": "Palo Santo",
     "url": "https://www.magiczne-indie.pl/430-palo-santo",
     "parent_id": 397,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 432,
     "name": "Kadzidła sypkie w pojemnikach",
     "url": "https://www.magiczne-indie.pl/432-kadzidla-sypkie-w-pojemnikach",
     "parent_id": 397,
-    "description": null
+    "description": null,
+    "position": 4
   },
   {
     "id": 434,
     "name": "Biała Szałwia",
     "url": "https://www.magiczne-indie.pl/434-biala-szalwia",
     "parent_id": 397,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 435,
     "name": "Kadzidła w pęczkach i kulach",
     "url": "https://www.magiczne-indie.pl/435-kadzidla-w-peczkach-i-kulach",
     "parent_id": 397,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 437,
     "name": "Soil & Earth",
     "url": "https://www.magiczne-indie.pl/437-soil-earth",
     "parent_id": 52,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 438,
     "name": "Bransoletki i pierścionki",
     "url": "https://www.magiczne-indie.pl/438-bransoletki-i-pierscionki",
     "parent_id": 405,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 439,
     "name": "Kolczyki",
     "url": "https://www.magiczne-indie.pl/439-kolczyki",
     "parent_id": 405,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 440,
     "name": "Naszyjniki i Mala",
     "url": "https://www.magiczne-indie.pl/440-naszyjniki-i-mala",
     "parent_id": 405,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 441,
     "name": "Zawieszki i amulety",
     "url": "https://www.magiczne-indie.pl/441-zawieszki-i-amulety",
     "parent_id": 405,
-    "description": null
+    "description": null,
+    "position": 4
   },
   {
     "id": 442,
     "name": "Pozostałe",
     "url": "https://www.magiczne-indie.pl/442-pozostale",
     "parent_id": 405,
-    "description": null
+    "description": null,
+    "position": 5
   },
   {
     "id": 443,
     "name": "Akcesoria do herbaty",
     "url": "https://www.magiczne-indie.pl/443-akcesoria-do-herbaty",
     "parent_id": 232,
-    "description": null
+    "description": null,
+    "position": 8
   },
   {
     "id": 444,
     "name": "Misy Nepalskie",
     "url": "https://www.magiczne-indie.pl/444-misy-nepalskie",
     "parent_id": 319,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 449,
     "name": "Cymbałki i dzwonki",
     "url": "https://www.magiczne-indie.pl/449-cymbalki-i-dzwonki",
     "parent_id": 319,
-    "description": null
+    "description": null,
+    "position": 3
   },
   {
     "id": 450,
     "name": "Henny w rożku",
     "url": "https://www.magiczne-indie.pl/450-henny-w-rozku",
     "parent_id": 409,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 452,
     "name": "Henny w proszku",
     "url": "https://www.magiczne-indie.pl/452-henny-w-proszku",
     "parent_id": 409,
-    "description": null
+    "description": null,
+    "position": 2
   },
   {
     "id": 455,
     "name": "Dla zwierząt",
     "url": "https://www.magiczne-indie.pl/455-dla-zwierzat",
     "parent_id": 232,
-    "description": null
+    "description": null,
+    "position": 9
   },
   {
     "id": 457,
     "name": "Fontanny wodne",
     "url": "https://www.magiczne-indie.pl/457-fontanny-wodne",
     "parent_id": 232,
-    "description": null
+    "description": null,
+    "position": 10
   },
   {
     "id": 458,
     "name": "NA PREZENT",
     "url": "https://www.magiczne-indie.pl/458-na-wyjatkowy-prezent",
     "parent_id": null,
-    "description": null
+    "description": null,
+    "position": 13
   },
   {
     "id": 459,
     "name": "Wygładzające i regenerujące",
     "url": "https://www.magiczne-indie.pl/459-wygladzajace-i-regenerujace",
     "parent_id": 58,
-    "description": null
+    "description": null,
+    "position": 1
   },
   {
     "id": 462,
     "name": "Dzbanki miedziane",
     "url": "https://www.magiczne-indie.pl/462-dzbanki-miedziane",
     "parent_id": 399,
-    "description": "<h2>Dzbanki miedziane do wody</h2>\n<p>Dzbanek to podstawowe naczynie w ajurwedyjskim zwyczaju przechowywania wody w miedzi. Nalewasz wieczorem, zostawiasz na 6–8 godzin i pijesz rano.</p>\n<h3>Jaka pojemność</h3>\n<p><strong>2 litry</strong> to najczęściej wybierany rozmiar — dobowa porcja dla dwóch osób. <strong>1,5 l</strong> pasuje na węższą półkę lodówki, <strong>1 l</strong> wystarcza dla jednej osoby lub do gabinetu.</p>\n<h3>Na co zwrócić uwagę</h3>\n<p>Modele z <strong>mosiężnym knotem</strong> mają solidniejsze zamknięcie i lepiej znoszą codzienne użycie. Wykończenie gładkie łatwiej czyścić, tłoczone mniej pokazuje odciski i patynę. Wszystkie nasze dzbanki są z litej miedzi.</p>\n<h3>Czyszczenie</h3>\n<p>Bez detergentów i druciaków — sok z cytryny z solą albo pasta z octu i mąki. Nie przechowuj w miedzi soków, mleka ani napojów kwaśnych.</p>"
+    "description": "<h2>Dzbanki miedziane do wody</h2>\n<p>Dzbanek to podstawowe naczynie w ajurwedyjskim zwyczaju przechowywania wody w miedzi. Nalewasz wieczorem, zostawiasz na 6–8 godzin i pijesz rano.</p>\n<h3>Jaka pojemność</h3>\n<p><strong>2 litry</strong> to najczęściej wybierany rozmiar — dobowa porcja dla dwóch osób. <strong>1,5 l</strong> pasuje na węższą półkę lodówki, <strong>1 l</strong> wystarcza dla jednej osoby lub do gabinetu.</p>\n<h3>Na co zwrócić uwagę</h3>\n<p>Modele z <strong>mosiężnym knotem</strong> mają solidniejsze zamknięcie i lepiej znoszą codzienne użycie. Wykończenie gładkie łatwiej czyścić, tłoczone mniej pokazuje odciski i patynę. Wszystkie nasze dzbanki są z litej miedzi.</p>\n<h3>Czyszczenie</h3>\n<p>Bez detergentów i druciaków — sok z cytryny z solą albo pasta z octu i mąki. Nie przechowuj w miedzi soków, mleka ani napojów kwaśnych.</p>",
+    "position": 1
   },
   {
     "id": 463,
     "name": "Butelki miedziane",
     "url": "https://www.magiczne-indie.pl/463-butelki-miedziane",
     "parent_id": 399,
-    "description": "<h2>Butelki miedziane na wodę</h2>\n<p>Przenośna wersja miedzianego naczynia — do pracy, na rower i na siłownię. Butelka nadaje się do noszenia w plecaku, o ile jest szczelna, dlatego warto sprawdzić typ zamknięcia.</p>\n<h3>Pojemności</h3>\n<p><strong>650–700 ml</strong> mieści się w większości uchwytów rowerowych i kieszeni plecaka. <strong>950 ml</strong> to wersja na cały dzień pracy — wygodniejsza, jeśli nie chcesz dolewać wody.</p>\n<h3>Z łączeniem czy bez</h3>\n<p>Butelki <strong>bez łączeń</strong> (joint free) są wytłaczane z jednego kawałka blachy — nie mają szwu, który mógłby przeciekać. To wersja polecana, jeśli butelka ma jeździć w torbie.</p>\n<h3>Użytkowanie</h3>\n<p>Nalewaj wyłącznie wodę, nigdy napojów kwaśnych ani gazowanych. Myj bez detergentów, a raz w tygodniu przetrzyj wnętrze cytryną z solą. Patyna na zewnątrz jest naturalna.</p>"
+    "description": "<h2>Butelki miedziane na wodę</h2>\n<p>Przenośna wersja miedzianego naczynia — do pracy, na rower i na siłownię. Butelka nadaje się do noszenia w plecaku, o ile jest szczelna, dlatego warto sprawdzić typ zamknięcia.</p>\n<h3>Pojemności</h3>\n<p><strong>650–700 ml</strong> mieści się w większości uchwytów rowerowych i kieszeni plecaka. <strong>950 ml</strong> to wersja na cały dzień pracy — wygodniejsza, jeśli nie chcesz dolewać wody.</p>\n<h3>Z łączeniem czy bez</h3>\n<p>Butelki <strong>bez łączeń</strong> (joint free) są wytłaczane z jednego kawałka blachy — nie mają szwu, który mógłby przeciekać. To wersja polecana, jeśli butelka ma jeździć w torbie.</p>\n<h3>Użytkowanie</h3>\n<p>Nalewaj wyłącznie wodę, nigdy napojów kwaśnych ani gazowanych. Myj bez detergentów, a raz w tygodniu przetrzyj wnętrze cytryną z solą. Patyna na zewnątrz jest naturalna.</p>",
+    "position": 2
   },
   {
     "id": 464,
     "name": "Kubki i szklanki miedziane",
     "url": "https://www.magiczne-indie.pl/464-kubki-i-szklanki-miedziane",
     "parent_id": 399,
-    "description": "<!-- ndx-seo-2026-09-cups -->\n<h2>Kubek miedziany - jak wybrać</h2>\n<p>Kubek albo szklanka z litej miedzi służy do picia wody, którą wcześniej trzymałeś w dzbanku, albo jako samodzielne naczynie na biurku. Różnią się pojemnością i tym, czy mają uchwyt - miedź jest ta sama.</p>\n<h3>250, 350 czy 500 ml</h3>\n<p><strong>250 ml</strong> to klasyczna szklanka do wody, bez ucha, najczęściej kupowana w parze z dzbankiem. <strong>350 ml</strong> to miedziany kubek na jedną porcję przy komputerze. <strong>500 ml</strong> z uchwytem wystarcza na dłużej i pewniej przenosi się pełny.</p>\n<h3>Uchwyt czy szklanka</h3>\n<p>Szklanka 250 ml jest lżejsza i zajmuje mniej miejsca na tacy. Kubek z uchwytem C (500 ml) trzyma się pewniej, gdy naczynie jest pełne - miedź szybko przejmuje temperaturę dłoni.</p>\n<h3>Tłoczenie, wytłoczenie, grawer</h3>\n<p>Wykończenie zmienia tylko wygląd. Tłoczony i wytłaczany kubek mniej pokazuje odciski; grawerowany kwiatowy jest częstym prezentem. Wszystkie modele w tej kategorii są z litej miedzi, nie ze stali powlekanej.</p>\n<h3>Pielęgnacja</h3>\n<p>Myj ręcznie, bez zmywarki i detergentów. Do patyny wystarczy cytryna z solą. Nie wlewaj soków, mleka ani napojów kwaśnych - kubek jest do wody.</p>\n<p>Wróć do <a href=\"https://www.magiczne-indie.pl/399-miedziane-naczynia-do-wody\">Miedziane naczynia do wody</a> albo przeczytaj, <a href=\"https://www.magiczne-indie.pl/content/54-dzbanek-miedziany-wlasciwosci-czyszczenie\">jak długo trzymać wodę w miedzi i jak czyścić naczynie</a>.</p>"
+    "description": "<!-- ndx-seo-2026-09-cups -->\n<h2>Kubek miedziany - jak wybrać</h2>\n<p>Kubek albo szklanka z litej miedzi służy do picia wody, którą wcześniej trzymałeś w dzbanku, albo jako samodzielne naczynie na biurku. Różnią się pojemnością i tym, czy mają uchwyt - miedź jest ta sama.</p>\n<h3>250, 350 czy 500 ml</h3>\n<p><strong>250 ml</strong> to klasyczna szklanka do wody, bez ucha, najczęściej kupowana w parze z dzbankiem. <strong>350 ml</strong> to miedziany kubek na jedną porcję przy komputerze. <strong>500 ml</strong> z uchwytem wystarcza na dłużej i pewniej przenosi się pełny.</p>\n<h3>Uchwyt czy szklanka</h3>\n<p>Szklanka 250 ml jest lżejsza i zajmuje mniej miejsca na tacy. Kubek z uchwytem C (500 ml) trzyma się pewniej, gdy naczynie jest pełne - miedź szybko przejmuje temperaturę dłoni.</p>\n<h3>Tłoczenie, wytłoczenie, grawer</h3>\n<p>Wykończenie zmienia tylko wygląd. Tłoczony i wytłaczany kubek mniej pokazuje odciski; grawerowany kwiatowy jest częstym prezentem. Wszystkie modele w tej kategorii są z litej miedzi, nie ze stali powlekanej.</p>\n<h3>Pielęgnacja</h3>\n<p>Myj ręcznie, bez zmywarki i detergentów. Do patyny wystarczy cytryna z solą. Nie wlewaj soków, mleka ani napojów kwaśnych - kubek jest do wody.</p>\n<p>Wróć do <a href=\"https://www.magiczne-indie.pl/399-miedziane-naczynia-do-wody\">Miedziane naczynia do wody</a> albo przeczytaj, <a href=\"https://www.magiczne-indie.pl/content/54-dzbanek-miedziany-wlasciwosci-czyszczenie\">jak długo trzymać wodę w miedzi i jak czyścić naczynie</a>.</p>",
+    "position": 3
   }
 ]

@@ -3,6 +3,9 @@
 It stores what the importer writes and returns it the way the real API reads it back: every value as text,
 multilingual fields as plain text (one language), associations as lists of {"id": "..."}. It also copies the
 few things PrestaShop does on its own that the importer relies on:
+- a new category goes last among its siblings, whatever position it is sent (Category::add), but the answer
+  to the POST still shows the position sent (the webservice renders the object it kept in memory); an update
+  stores the position as sent;
 - a new product or combination gets a stock row with quantity 0;
 - a product's own stock row is the sum of its combinations' rows (StockAvailable::postSave);
 - a combination with default_on becomes the product's default combination (Product::updateDefaultAttribute),
@@ -86,6 +89,16 @@ class FakeApi:
         elif resource == "combinations":
             self._new_stock_row(int(fields["id_product"]), record_id)
             self._after_combination(record)
+        elif resource == "categories":
+            sent = record.get("position")
+            siblings = [
+                int(other.get("position") or 0)
+                for other in self.all("categories")
+                if other["id_parent"] == record["id_parent"] and other["id"] != record["id"]
+            ]
+            record["position"] = str(max(siblings) + 1 if siblings else 0)
+            # PrestaShop answers with the object it kept in memory, which still has the position sent
+            return {**record, "position": sent} if sent is not None else dict(record)
         return dict(record)
 
     def update(self, resource: str, record_id: int, fields: dict) -> None:

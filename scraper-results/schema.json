@@ -148,6 +148,19 @@
           ],
           "default": null,
           "title": "Description"
+        },
+        "position": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Position"
         }
       },
       "required": [

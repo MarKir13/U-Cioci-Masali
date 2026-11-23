@@ -3,7 +3,7 @@
 Every step compares what the data says with what the shop already has (read once by read_shop), and
 creates, updates or leaves each record alone. That is what makes a second run safe: it finds everything
 and changes nothing. The keys used to find existing records are explained in ADR 0008:
-- category: its name and its parent in the shop (its description is updated too);
+- category: its name and its parent in the shop (its description and position are updated too);
 - manufacturer: its name;
 - product: `reference` = the product ID in the source shop (for a product with variants: of its default variant);
 - attribute group and value: the name (a value within its group);
@@ -59,7 +59,9 @@ class Shop:
 
 def read_shop(api: ShopApi) -> Shop:
     roots = api.list("categories", display="[id]", filters={"is_root_category": 1})
-    categories = api.list("categories", display="[id,id_parent,name,link_rewrite,active,level_depth,description]")
+    categories = api.list(
+        "categories", display="[id,id_parent,name,link_rewrite,active,level_depth,description,position]"
+    )
     products = api.list("products", display="full")
     # The rows of products (combination 0) and of their combinations
     stock_rows = api.list("stock_availables", display="full")
@@ -153,11 +155,26 @@ def import_categories(api: ShopApi, shop: Shop, categories: list[dict], report: 
             # The text under the category name, as on the source (the theme shows it on the first page)
             "description": Lang(mapping.without_source_links(category.get("description") or "")),
         }
+        if category.get("position") is not None:
+            # Order among its siblings, as on the source. The data counts from 1, PrestaShop from 0.
+            fields["position"] = category["position"] - 1
         existing = shop.categories.get((parent, category["name"]))
         try:
-            shop_ids[category["id"]] = save("categories", api, existing, fields, report)
+            record = save_record("categories", api, existing, fields, report)
         except ApiError as error:
             report.reject("categories", category["id"], error.message)
+            continue
+        # Kept before the update below: the category is in the shop now, so if only the update fails, its
+        # subcategories and products still find it, and just its order is wrong until the next run.
+        shop_ids[category["id"]] = int(record["id"])
+        if existing is None and "position" in fields:
+            # PrestaShop puts a new category last among its siblings whatever position it is sent
+            # (Category::add), and its answer still shows the position sent, so it cannot be compared.
+            # An update stores the position as sent.
+            try:
+                api.update("categories", int(record["id"]), fields)
+            except ApiError as error:
+                report.reject("categories", category["id"], f"created, but its position was not set: {error.message}")
     return shop_ids
 
 

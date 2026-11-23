@@ -15,12 +15,13 @@ def write_jpeg(path, size=(900, 600)):
     Image.new("RGB", size, "white").save(path, format="JPEG", quality=50)
 
 
-def category(category_id, parent_id=None):
+def category(category_id, parent_id=None, position=None):
     return {
         "id": category_id,
         "name": f"Kategoria {category_id}",
         "url": f"https://shop.test/{category_id}-k",
         "parent_id": parent_id,
+        "position": position,
     }
 
 
@@ -48,9 +49,9 @@ def results(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "MIN_PRODUCTS_WITH_TWO_IMAGES", 2)
     categories, products = [], []
     for root in (1, 2, 3, 4):
-        categories.append(category(root))
-        for sub in (root * 10 + 1, root * 10 + 2):
-            categories.append(category(sub, root))
+        categories.append(category(root, position=root))
+        for position, sub in enumerate((root * 10 + 1, root * 10 + 2), start=1):
+            categories.append(category(sub, root, position))
             products.append(product(sub, [sub, root], images=2 if sub in (11, 12) else 1))
     (tmp_path / "categories.json").write_text(json.dumps(categories), encoding="utf-8")
     (tmp_path / "products.jsonl").write_text("".join(json.dumps(p) + "\n" for p in products), encoding="utf-8")
@@ -123,9 +124,42 @@ def test_image_nobody_uses_fails(results):
 
 def test_empty_category_fails(results):
     categories = json.loads((results / "categories.json").read_text(encoding="utf-8"))
-    categories.append(category(5, 1))
+    categories.append(category(5, 1, position=3))
     (results / "categories.json").write_text(json.dumps(categories), encoding="utf-8")
-    assert "No empty categories" in failed(results)
+    assert failed(results) == ["No empty categories"]
+
+
+def change_positions(results_dir, positions: dict) -> None:
+    """Sets `position` of the given categories in the results (None removes it)."""
+    path = results_dir / "categories.json"
+    categories = json.loads(path.read_text(encoding="utf-8"))
+    for record in categories:
+        if record["id"] in positions:
+            record["position"] = positions[record["id"]]
+    path.write_text(json.dumps(categories), encoding="utf-8")
+
+
+POSITION_CHECK = "Every category has a position, 1 to n among its siblings"
+
+
+@pytest.mark.parametrize(
+    "positions",
+    [
+        {21: None},  # not set: a run from before positions were scraped
+        {21: 2},  # two subcategories of 2 in the same place
+        {22: 3},  # a gap: 1 and 3
+        {1: 5},  # top level: 5, 2, 3, 4
+    ],
+)
+def test_missing_or_wrong_positions_fail(results, positions):
+    change_positions(results, positions)
+    assert failed(results) == [POSITION_CHECK]
+
+
+def test_position_problems_name_the_category_or_its_parent(results):
+    change_positions(results, {21: None, 31: 2})
+    check = next(check for check in verify.verify(results) if check.name == POSITION_CHECK)
+    assert check.detail == "2 problems: 21: no position, children of 3: [2, 2]"
 
 
 def test_fewer_than_four_categories_with_two_filled_subcategories_fail(results):
