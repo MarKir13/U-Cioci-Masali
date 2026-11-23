@@ -1,6 +1,6 @@
 """How the steps decide between create, update and leave alone (no shop needed)."""
 
-from importer.api import Lang
+from importer.api import ApiError, Lang
 from importer.report import Report
 from importer.steps import (
     Shop,
@@ -287,3 +287,34 @@ def test_a_category_without_a_position_stays_where_the_shop_put_it():
     import_categories(api, read_shop(api), tree, Report())
     assert shop_positions(api) == {"Kosmetyki": "0", "Higiena i akcesoria": "0", "Do ciała": "1", "Kosmetyki BIO": "2"}
     assert ("PUT", "categories") not in api.writes
+
+
+def test_a_failed_position_update_costs_only_the_order_of_that_category():
+    """The shop refuses the update right after creating Kosmetyki: Kosmetyki is in the shop all the same, so its
+    subcategories are imported under it. The category is reported as rejected, and the next run fixes its order."""
+    api = FakeApi()
+    update = api.update
+
+    def refuse_kosmetyki(resource: str, record_id: int, fields: dict) -> None:
+        if resource == "categories" and str(fields["name"]) == "Kosmetyki":
+            raise ApiError(500, "Internal Server Error")
+        update(resource, record_id, fields)
+
+    api.update = refuse_kosmetyki
+    report = Report()
+    shop_ids = import_categories(api, read_shop(api), kosmetyki_tree(), report)
+
+    assert sorted(shop_ids) == [8, 36, 37, 360]
+    assert {c["name"] for c in api.all("categories") if c["id_parent"] == str(shop_ids[8])} == {
+        "Higiena i akcesoria",
+        "Do ciała",
+        "Kosmetyki BIO",
+    }
+    assert report.counts["categories"] == {"created": 4, "rejected": 1}
+
+    # Kosmetyki was stored last among the top-level categories (here: first, at 0), where it also belongs, so the
+    # next run, with the shop working again, finds every category as it should be
+    api.update = update
+    report = Report()
+    import_categories(api, read_shop(api), kosmetyki_tree(), report)
+    assert report.counts["categories"] == {"unchanged": 4}

@@ -95,7 +95,9 @@ counts from 0. An update through the API stores it exactly as sent, but a new ca
 siblings, whatever position it is sent (`Category::add`), and the answer to the POST still shows the position sent,
 so it cannot tell where the category went. So right after creating a category the importer always updates it with
 the same fields: one extra PUT per new category, about 12 s for 160 on a clean install. The report counts it as
-created only. A category in the shop with another position
+created only. If that update fails, the category is reported as rejected, but it is in the shop, so its
+subcategories and products still go under it; only its order is wrong until the next run. A category in the shop
+with another position
 is updated like any other changed field, and a second run changes nothing. Data scraped before positions existed has
 no `position`, so the importer sends none and the shop keeps its own order.
 
