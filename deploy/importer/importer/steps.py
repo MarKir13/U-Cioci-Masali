@@ -46,6 +46,8 @@ class Shop:
     all_products: list[dict]  # every product, also those without a reference (the delete step needs them all)
     stock: dict[tuple[int, int], dict]  # (product ID, combination ID or 0) -> its stock row
     specific_prices: dict[tuple[int, int], list[dict]]  # (product ID, combination ID or 0) -> its specific prices
+    # (product ID, combination ID or 0) -> the end date of its promotion, kept apart from the specific price (#111)
+    promo_ends: dict[tuple[int, int], dict] = field(default_factory=dict)
     # Products with variants (variants.json, ADR 0009)
     combinations: dict[int, list[dict]] = field(default_factory=dict)  # product ID -> its combinations
     option_groups: dict[str, dict] = field(default_factory=dict)  # name -> attribute group
@@ -72,6 +74,7 @@ def read_shop(api: ShopApi) -> Shop:
     for combination in api.list("combinations", display="full"):
         combinations.setdefault(int(combination["id_product"]), []).append(combination)
     option_groups = api.list("product_options", display="[id,name]")
+    promo_ends = read_promo_ends(api)
     option_values = api.list("product_option_values", display="[id,id_attribute_group,name]")
 
     return Shop(
@@ -83,10 +86,24 @@ def read_shop(api: ShopApi) -> Shop:
         all_products=products,
         stock={_product_and_combination(s): s for s in stock_rows},
         specific_prices=specific_prices,
+        promo_ends={_product_and_combination(e): e for e in promo_ends},
         combinations=combinations,
         option_groups={text(g["name"]): g for g in option_groups},
         option_values={(int(v["id_attribute_group"]), text(v["name"])): v for v in option_values},
     )
+
+
+def read_promo_ends(api: ShopApi) -> list[dict]:
+    """The promotion end dates (#111). The resource comes from our module ciociaomnibus, so a shop set up before
+    it existed has no such resource, table or permission until the setup scripts run again."""
+    try:
+        return api.list("ciocia_promo_ends", display="full")
+    except ApiError as error:
+        raise ApiError(
+            error.status,
+            f"{error.message} (resource ciocia_promo_ends of module ciociaomnibus: on a shop set up before #111, "
+            "run shop/scripts/post-install/30-configure-shop.sh and then 40-webservice.sh, see AGENTS.md)",
+        ) from error
 
 
 def _product_and_combination(record: dict) -> tuple[int, int]:
@@ -253,7 +270,7 @@ def import_product(
         report,
         force=had_variants,
     )
-    set_promotion(api, shop.specific_prices.get((product_id, 0), []), product, product_id, 0, report)
+    set_promotion(api, shop, product, product_id, 0, report)
     return product_id
 
 
@@ -383,9 +400,11 @@ def promotion_fields(product: dict, product_id: int, combination_id: int = 0) ->
 
 
 def set_promotion(
-    api: ShopApi, existing: list[dict], product: dict, product_id: int, combination_id: int, report: Report
+    api: ShopApi, shop: Shop, product: dict, product_id: int, combination_id: int, report: Report
 ) -> None:
-    """One specific price per discounted product (or combination); none for the others."""
+    """One specific price per discounted product (or combination); none for the others. The same for its end date."""
+    set_promo_end(api, shop.promo_ends.get((product_id, combination_id)), product, product_id, combination_id, report)
+    existing = shop.specific_prices.get((product_id, combination_id), [])
     try:
         if not product["has_discount"]:
             for price in existing:
@@ -400,6 +419,28 @@ def set_promotion(
             report.count("specific_prices", "deleted")
     except ApiError as error:
         report.reject("specific_prices", product["id"], error.message)
+
+
+def set_promo_end(
+    api: ShopApi, existing: dict | None, product: dict, product_id: int, combination_id: int, report: Report
+) -> None:
+    """The end date of the source's promotion, shown on product cards: "Cena przed: 26,50 zł · do 14.11.2026" (#111).
+
+    It goes to our module's table (ciociaomnibus, resource ciocia_promo_ends), not to "to" of the specific price:
+    the source's promotions end within days, and PrestaShop would stop applying ours on that date (D3 needs 20+).
+    A product without a discount or without an end date has no row.
+    """
+    end = mapping.promo_end_date(product.get("promo_end")) if product["has_discount"] else None
+    try:
+        if end is None:
+            if existing is not None:
+                api.delete("ciocia_promo_ends", int(existing["id"]))
+                report.count("ciocia_promo_ends", "deleted")
+            return
+        fields = {"id_product": product_id, "id_product_attribute": combination_id, "date_end": end}
+        save("ciocia_promo_ends", api, existing, fields, report)
+    except ApiError as error:
+        report.reject("ciocia_promo_ends", product["id"], error.message)
 
 
 def set_images(api: ShopApi, existing: dict, product: dict, product_id: int, data_dir: Path, report: Report) -> bool:
@@ -535,7 +576,7 @@ def import_variant_product(
         return
     product_id = int(saved["id"])
     # The product's own promotion from before it had variants: now each variant has its own
-    set_promotion(api, shop.specific_prices.get((product_id, 0), []), record, product_id, 0, report)
+    set_promotion(api, shop, record, product_id, 0, report)
 
     changed = set_images(api, existing or {}, record, product_id, data_dir, report)
     images = variant_image_ids(api, existing or {}, product, product_id, changed)
@@ -567,8 +608,7 @@ def import_variant_product(
     set_stock(api, product_row, product_id, 0, total, key, report)
 
     for variant, combination_id, _ in combinations:
-        existing_prices = shop.specific_prices.get((product_id, combination_id), [])
-        set_promotion(api, existing_prices, variant.product, product_id, combination_id, report)
+        set_promotion(api, shop, variant.product, product_id, combination_id, report)
 
 
 def variant_image_ids(

@@ -18,6 +18,7 @@ RESOURCES = [
     "products",
     "stock",
     "specific_prices",
+    "ciocia_promo_ends",
     "images",
     "product_options",
     "product_option_values",

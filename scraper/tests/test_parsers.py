@@ -3,6 +3,7 @@
 import html as html_lib
 import json
 import logging
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -10,6 +11,7 @@ import pytest
 
 from scraper.models import Category
 from scraper.parsers import (
+    backfill_values,
     children_by_parent,
     missing_parents,
     next_page_url,
@@ -18,8 +20,8 @@ from scraper.parsers import (
     parse_sitemap,
     parse_sitemap_index,
     product_urls,
+    promo_end_from,
     round_price,
-    short_description,
     subcategory_ids,
 )
 
@@ -526,7 +528,46 @@ def test_page_without_short_description_gives_null():
     assert product.description_short is None
 
 
-def test_short_description_reads_only_data_product():
-    assert short_description(PRODUCT_URL, product_html(description_short="<p>Krótki</p>")) == "<p>Krótki</p>"
+def test_backfill_values_read_only_data_product():
+    page = product_html(description_short="<p>Krótki</p>")
+    assert backfill_values(PRODUCT_URL, page) == {"description_short": "<p>Krótki</p>", "promo_end": None}
     with pytest.raises(ValueError, match="Missing data-product"):
-        short_description(PRODUCT_URL, "<div>no product</div>")
+        backfill_values(PRODUCT_URL, "<div>no product</div>")
+
+
+# ---------- The end of a promotion ----------
+
+
+def test_promotion_end_of_a_discounted_product():
+    """The saved page has a promotion that ends on 31.10.2026; the source's card shows it as "do 31.10.2026"."""
+    product = parse_product("https://www.magiczne-indie.pl/test-discount.html", read_fixture("product_discounted.html"))
+    assert product.promo_end == datetime(2026, 10, 31, 23, 59)
+    assert product.model_dump(mode="json")["promo_end"] == "2026-10-31T23:59:00"
+
+
+def test_product_without_a_discount_has_no_promotion_end():
+    """priceValidUntil of the JSON-LD block is on this page too, but it is not the end of a promotion."""
+    product = parse_product(PRODUCT_URL, read_fixture("product_one_image.html"))
+    assert product.has_discount is False
+    assert product.promo_end is None
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        {"has_discount": True, "specific_prices": {"to": "0000-00-00 00:00:00"}},  # a promotion without an end
+        {"has_discount": True, "specific_prices": {"to": ""}},
+        {"has_discount": True, "specific_prices": False},  # PrestaShop sends false when there is none
+        {"has_discount": True},
+        {"has_discount": False, "specific_prices": {"to": "2026-11-14 23:59:00"}},  # e.g. a quantity discount
+    ],
+)
+def test_no_promotion_end(data):
+    assert promo_end_from(data) is None
+
+
+def test_invalid_promotion_end_rejects_the_product():
+    problems = []
+    page = product_html(price_amount=8, has_discount=True, specific_prices={"to": "14.11.2026"})
+    assert parse_product(PRODUCT_URL, page, problems) is None
+    assert "promo_end" in problems[0]

@@ -52,6 +52,11 @@ def gross_price(net: str, vat_rate: float) -> str:
     return str(gross.quantize(GROSZ, rounding=ROUND_HALF_UP))
 
 
+def promo_end_date(promo_end: str | None) -> str | None:
+    """The scraped end of a promotion ("2026-11-14T23:59:00") as PrestaShop writes dates ("2026-11-14 23:59:00")."""
+    return promo_end.replace("T", " ") if promo_end else None
+
+
 def promotion_amount(regular_price: str, price: str) -> str:
     """The discount, gross, that takes the regular price down to the promotional one."""
     return str((Decimal(regular_price) - Decimal(price)).quantize(GROSZ))
