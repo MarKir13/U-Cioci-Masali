@@ -59,4 +59,22 @@ class CiociaPromoEnd extends ObjectModel
 
         return $date ? (string) $date : null;
     }
+
+    /**
+     * Deletes the end dates of a deleted product (all its rows), or of one deleted combination. Called by the
+     * module's object hooks, so it works for the importer and the back office alike. Plain SQL: deleting through
+     * ObjectModel would run the object hooks again. Does nothing when the table is missing (see dateFor()).
+     */
+    public static function deleteFor(int $idProduct, ?int $idProductAttribute = null): void
+    {
+        $where = '`id_product` = ' . $idProduct;
+        if ($idProductAttribute !== null) {
+            $where .= ' AND `id_product_attribute` = ' . $idProductAttribute;
+        }
+        try {
+            Db::getInstance()->delete('ciocia_promo_end', $where);
+        } catch (PrestaShopException $exception) {
+            // No table yet: nothing to delete
+        }
+    }
 }

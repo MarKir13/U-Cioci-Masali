@@ -222,7 +222,7 @@ Documentation is in English, except `docs/AI_LOG.md`.
   and PrestaShop would stop applying ours (D3). They live in the `ciociaomnibus` table `ciocia_promo_end`, written by
   the importer through the module's API resource `ciocia_promo_ends`. A shop installed before #111 needs
   `30-configure-shop.sh` and then `40-webservice.sh` re-run once (table, hook, key permission); until then the import
-  stops at the start and the cards show no date.
+  stops at the start and the cards show no date (ADR 0013).
 - A backup holds the database, `img/` and the banner slides, but not `app/config/parameters.php` or `.htaccess`
   (ADR 0012). After a restore the back office login is the one from the backup. A new kind of file that lives
   only in the `shop-data` volume and is not rebuilt from the image must be added to both `deploy/backup.sh` and

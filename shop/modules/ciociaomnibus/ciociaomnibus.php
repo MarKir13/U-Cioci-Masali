@@ -34,6 +34,9 @@ class CiociaOmnibus extends Module
         'actionObjectProductUpdateAfter',
         'actionObjectCombinationAddAfter',
         'actionObjectCombinationUpdateAfter',
+        // A deleted product or combination takes its promotion end date with it (ciocia_promo_end)
+        'actionObjectProductDeleteAfter',
+        'actionObjectCombinationDeleteAfter',
         'actionObjectSpecificPriceAddAfter',
         'actionObjectSpecificPriceUpdateAfter',
         'actionObjectSpecificPriceDeleteAfter',
@@ -131,6 +134,18 @@ class CiociaOmnibus extends Module
     public function hookActionObjectCombinationUpdateAfter(array $params): void
     {
         CiociaPriceHistory::recordProduct((int) $params['object']->id_product);
+    }
+
+    /** Without these the table would keep the end dates of deleted products and combinations (IDs are not reused). */
+    public function hookActionObjectProductDeleteAfter(array $params): void
+    {
+        CiociaPromoEnd::deleteFor((int) $params['object']->id);
+    }
+
+    public function hookActionObjectCombinationDeleteAfter(array $params): void
+    {
+        $combination = $params['object'];
+        CiociaPromoEnd::deleteFor((int) $combination->id_product, (int) $combination->id);
     }
 
     /** A promotion is a specific price. */
