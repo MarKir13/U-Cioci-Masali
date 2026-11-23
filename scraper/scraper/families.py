@@ -73,10 +73,10 @@ def build_families(
 ) -> int:
     """Writes `families.json` for the saved products that have a family, from their pages in the cache.
 
-    Never uses the network. If any page is missing from the cache, nothing is written (the files stay as they
-    are) and the exit code is 1. A block that fails validation is logged and left out, and the exit code is
-    then 1 as well. The file is also copied into the shop module (`shop_copy`), if its
-    folder exists: in the Compose service `scraper` only scraper-results/ is mounted, so copy it by hand there.
+    Never uses the network. If any page is missing from the cache or any block fails validation, each case is
+    logged, nothing is written (the files stay as they are) and the exit code is 1. The file is also copied into
+    the shop module (`shop_copy`), if its folder exists: in the Compose service `scraper` only scraper-results/
+    is mounted, so copy it by hand there.
     """
     cache = cache or PageCache(config.CACHE_DIR)
     stats = Counter()
@@ -98,22 +98,22 @@ def build_families(
             stats["failed"] += 1
             continue
         families[family.product_id] = family.axes
-    if stats["not in the cache"]:
-        # scraper/cache/ is gitignored: on a clean clone every page is missing, and writing would empty the data
-        log.error("%d pages not in the cache: %s left unchanged", stats["not in the cache"], out_file)
+    if stats["not in the cache"] or stats["failed"]:
+        # scraper/cache/ is gitignored: on a clean clone every page is missing, and writing would empty the data.
+        # A failed block would drop its product the same way, so neither case writes anything.
+        log.error(
+            "%d pages not in the cache, %d failed: %s left unchanged",
+            stats["not in the cache"],
+            stats["failed"],
+            out_file,
+        )
         return 1
     save_families(out_file, families)
-    log.info(
-        "Families: %d products saved to %s, %d not in the cache, %d failed",
-        len(families),
-        out_file,
-        stats["not in the cache"],
-        stats["failed"],
-    )
+    log.info("Families: %d products saved to %s", len(families), out_file)
     if shop_copy is not None:
         if shop_copy.parent.is_dir():
             shutil.copyfile(out_file, shop_copy)
             log.info("Copied to %s", shop_copy)
         else:
             log.warning("%s not found: copy %s there by hand", shop_copy.parent, out_file.name)
-    return 1 if stats["not in the cache"] or stats["failed"] else 0
+    return 0

@@ -102,6 +102,25 @@ def test_build_families_page_missing_from_cache(tmp_path, caplog):
     assert "left unchanged" in caplog.text
 
 
+def test_build_families_invalid_block_writes_nothing(tmp_path, caplog):
+    products = tmp_path / "products.jsonl"
+    save_lines(products, [{"id": 242, "url": URL, "family": ["https://www.magiczne-indie.pl/706-x.html"]}])
+    cache = PageCache(tmp_path / "cache")
+    cache.put(URL, fixture().replace("/243-olejek-amla", "/706-olejek-amla", 1))  # duplicate tile: fails validation
+    out = tmp_path / "families.json"
+    out.write_text('{\n"242": []\n}\n', encoding="utf-8")
+    shop_copy = tmp_path / "shop" / "families.json"
+    shop_copy.parent.mkdir()
+    shop_copy.write_text("old copy", encoding="utf-8")
+
+    # A parser change that breaks one block must not silently drop that product from the committed files
+    with caplog.at_level(logging.ERROR):
+        assert build_families(products, cache, out, shop_copy) == 1
+    assert out.read_text(encoding="utf-8") == '{\n"242": []\n}\n'
+    assert shop_copy.read_text(encoding="utf-8") == "old copy"
+    assert "left unchanged" in caplog.text
+
+
 def test_shop_module_has_the_same_families_file():
     """The shop image sees only shop/, so the module keeps a copy; `python -m scraper families` writes both."""
     assert config.SHOP_FAMILIES_FILE.read_bytes() == config.FAMILIES_FILE.read_bytes()
