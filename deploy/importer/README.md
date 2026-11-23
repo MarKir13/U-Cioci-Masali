@@ -78,7 +78,7 @@ valid JSON).
 | Category | its name and its parent category in the shop |
 | Manufacturer | the brand name |
 | Product | `reference` = the product's ID in the source shop |
-| Stock, promotion | the product, or the combination |
+| Stock, promotion, promotion end date | the product, or the combination |
 | Images | the number of images the product has in the shop: the same number as in the data means done |
 | Attribute group (`Pojemność`), value (`50 ml`) | the name; a value within its group |
 | Product with variants | `reference` = the source ID of its default variant (the first value in `variants.json`) |
@@ -110,6 +110,22 @@ product needs a description (ADR 0007). The importer sends such a text once, as 
 one empty, so the product page shows it above the button and has no description tab, as on the source
 (`mapping.descriptions`). A product without a short description gets an empty one. Data scraped before
 `description_short` existed has no such field, so all its products get an empty one and a second run changes nothing.
+
+## Promotion end dates
+
+The source's product cards show when a promotion ends: "Cena przed: 23,94 zł · do 14.11.2026" (`promo_end` in
+`products.jsonl`, issue #111). The importer does not write this date to the specific price's `to`. The source runs
+short promotions (most of the scraped ones end on 14.11.2026), and PrestaShop stops applying a specific price after
+its `to` date, so our promotions would all end within days and the shop would fall below the 20 promotions of D3.
+
+The date goes to a table of our module `ciociaomnibus` instead, through its own API resource `ciocia_promo_ends`
+(one record per product or combination, `mapping.promo_end_date`). The module shows it on product cards and on the
+product page; the promotion itself keeps no end, and the Omnibus price ignores the table. A product whose promotion
+has gone, or has no end any more, loses its record.
+
+A shop installed before this resource existed has no table, hook or key permission for it, and the import stops at
+the start with a message naming the fix: run `shop/scripts/post-install/30-configure-shop.sh` and then
+`40-webservice.sh` once (commands in AGENTS.md).
 
 ## Products with variants
 
