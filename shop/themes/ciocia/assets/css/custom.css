@@ -3543,6 +3543,13 @@ body#sitemap #wrapper .sitemap > [class*="col-"] {
   font-size: 0.625rem;
 }
 
+/* "· do 14.11.2026" after the price before the promotion (#111). As on the source (measured on its cards): the dot
+   is lighter (#bbb; the issue said #c1c1c1, the source uses #bbb), the date is styled as the price
+   (.omnibus-price-amount) */
+#wrapper .ciocia-card .omnibus-sep {
+  color: #bbb;
+}
+
 #wrapper .ciocia-card .omnibus-line--lowest .omnibus-price-amount {
   color: #777;
 }
@@ -4390,16 +4397,60 @@ body#cart .ciocia-line .bootstrap-touchspin input::-webkit-outer-spin-button {
   appearance: none;
 }
 
+/*
+ * Phones (360 px), as on the source: the image on the left, and in one column next to it the name, the delivery
+ * time, the price, the quantity "− 1 +", the line total and "Usuń", in that order. The body is dissolved
+ * (display: contents) so that "Usuń", which is part of it, can come after the quantity and the total; the
+ * spacing is margins, so that the grid has no row gaps.
+ */
 @media (max-width: 575.98px) {
   body#cart .ciocia-line {
-    grid-template-columns: 5rem minmax(0, 1fr);
+    grid-template-columns: 6.25rem minmax(0, 1fr);
+    gap: 0 1.25rem;
+  }
+
+  body#cart .ciocia-line__image {
+    grid-column: 1;
+    grid-row: 1 / span 12;
+  }
+
+  body#cart .ciocia-line__image img {
+    width: 5.4375rem;
+  }
+
+  body#cart .ciocia-line__body {
+    display: contents;
+  }
+
+  body#cart .ciocia-line__body > *,
+  body#cart .ciocia-line__actions {
+    grid-column: 2;
+  }
+
+  body#cart .ciocia-line__body > .product-line-info {
+    margin-top: 0.75rem;
   }
 
   body#cart .ciocia-line__actions {
-    flex-direction: row;
-    grid-column: 2;
-    align-items: center;
-    justify-content: space-between;
+    order: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  body#cart .ciocia-line__body > .cart-line-product-actions {
+    order: 2;
+    margin-top: 0.75rem;
+  }
+
+  body#cart .ciocia-line__remove {
+    margin-top: 0;
+  }
+
+  /* the card sits 16 px from the screen edge on the cart page of the source (12 px elsewhere) */
+  body#cart #wrapper > .container > .row {
+    margin-inline: 0.25rem;
   }
 }
 
@@ -8603,7 +8654,330 @@ body#product #main .ciocia-product-info > .blockreassurance_product {
   }
 }
 
+/*
+ * Phones (360 px): the product cards of the home page ("Nowości", "Polecane produkty") and of the blocks under
+ * the product page sit in one row that scrolls sideways, as on the source, instead of a 2-column grid going
+ * down. The next card peeks out to show that the row scrolls. Tablets (from 576 px) and desktop keep the grid.
+ */
+@media (max-width: 575px) {
+  #wrapper .ciocia-home-new .ciocia-products,
+  #wrapper .ciocia-home-featured .ciocia-products,
+  #wrapper .featured-products > .ciocia-products {
+    display: flex;
+    gap: 0.75rem;
+    margin-inline: -0.75rem;
+    padding: 0.25rem 0.75rem 1rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: 0.75rem;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #wrapper .ciocia-home-new .ciocia-products::-webkit-scrollbar,
+  #wrapper .ciocia-home-featured .ciocia-products::-webkit-scrollbar,
+  #wrapper .featured-products > .ciocia-products::-webkit-scrollbar {
+    display: none;
+  }
+
+  #wrapper .ciocia-home-new .ciocia-product,
+  #wrapper .ciocia-home-featured .ciocia-product,
+  #wrapper .featured-products > .ciocia-products .ciocia-product {
+    flex: 0 0 74%;
+    max-width: 17rem;
+    scroll-snap-align: start;
+  }
+
+  /* The button is the cart icon alone, as on the source; the text stays in the page for screen readers.
+   * (On the home page the rule further down shows the text at every width, so these selectors are stronger.) */
+  #wrapper .ciocia-home .ciocia-card .ciocia-card__button-text,
+  #wrapper .featured-products .ciocia-card .ciocia-card__button-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  #wrapper .ciocia-home .ciocia-card__cart .ciocia-card__button .material-icons,
+  #wrapper .featured-products .ciocia-card__cart .ciocia-card__button .material-icons {
+    font-size: 1.35rem;
+  }
+
+  /* The section header: a gap between the title block and "Zobacz wszystkie", so the small heading above the
+   * title wraps ("Dobry wybór na / początek") as on the source, instead of touching the link. */
+  #wrapper .ciocia-home-section__header {
+    gap: 1rem;
+  }
+
+  #wrapper .ciocia-home-section__header {
+    align-items: center;
+  }
+
+  #wrapper .ciocia-home-section__header > div {
+    min-width: 0;
+  }
+
+  /* Narrow enough that "Dobry wybór na początek" breaks after "na", as on the source */
+  #wrapper .ciocia-home-section__eyebrow {
+    max-width: 11rem;
+  }
+}
+
+/*
+ * Phones (360 px): the category drawer ("Kategorie" in the bottom bar and the menu button), as on the source.
+ * - It slides in from the left and the backdrop fades in, instead of appearing at once. custom.js shows the
+ *   drawer by setting display: flex (and removes the backdrop's hidden attribute), which starts the animation
+ *   each time. Closing stays instant.
+ * - The first three entries ("Na prezent", "Nowości", "Promocje") are cream cards with their own icon (a gift,
+ *   a star, a tag); the other entries keep the small diamond.
+ * - Entries with subcategories keep the diamond and the gap to the label (the rule for max-width 767 px made
+ *   their link inline-block, so the diamond stuck to the text).
+ */
+@keyframes ciocia-drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+@keyframes ciocia-backdrop-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* The drill-down back button (custom.js) exists at every width but is only used on phones: hidden by default. */
+#header #mobile_top_menu_wrapper .ciocia-drawer-back {
+  display: none;
+}
+
+@media (max-width: 575px) {
+  #header #mobile_top_menu_wrapper {
+    animation: ciocia-drawer-in 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  #header .ciocia-menu-backdrop:not([hidden]) {
+    animation: ciocia-backdrop-in 0.4s ease-out both;
+  }
+
+  /* The close button is a dark circle, as on the source (72 px, a faint edge, the X in the middle). */
+  /*
+   * A category opened inside the drawer (custom.js: .is-sub on the drawer, .is-drilled on the entry): the
+   * heading shows "‹ Wszystko" and the entry's name is the first card, then its subcategories.
+   */
+  #header #mobile_top_menu_wrapper.is-sub .ciocia-drawer-back {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 44px;
+    margin-left: -0.25rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #fffaf0;
+    font-size: 1.125rem;
+    font-weight: 400;
+  }
+
+  #header #mobile_top_menu_wrapper .ciocia-drawer-back .material-icons {
+    font-size: 1.5rem;
+    color: #fffaf0;
+  }
+
+  #header #mobile_top_menu_wrapper.is-sub .ciocia-drawer-heading > div {
+    display: none;
+  }
+
+  /* Every entry of the open path is .is-drilled: its siblings and its own row disappear, its children remain. */
+  #header #mobile_top_menu_wrapper.is-sub #_mobile_top_menu ul:has(> li.is-drilled) > li:not(.is-drilled) {
+    display: none;
+  }
+
+  #header #mobile_top_menu_wrapper.is-sub #_mobile_top_menu li.is-drilled {
+    display: block;
+    min-height: 0;
+    margin: 0;
+    overflow: visible;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  #header #mobile_top_menu_wrapper.is-sub #_mobile_top_menu li.is-drilled > a,
+  #header #mobile_top_menu_wrapper.is-sub #_mobile_top_menu li.is-drilled > .ciocia-submenu-toggle {
+    display: none;
+  }
+
+  #header #mobile_top_menu_wrapper.is-sub #_mobile_top_menu li.is-drilled > .ciocia-submenu {
+    padding: 0;
+  }
+
+  /* flex, so that custom.js can put the subcategories in the order of the source (style.order) */
+  #header #mobile_top_menu_wrapper.is-sub #_mobile_top_menu li.is-drilled > .ciocia-submenu ul {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Only the deepest open page shows its name card. */
+  #header #mobile_top_menu_wrapper.is-sub .ciocia-submenu:has(li.is-drilled) > .ciocia-sub-title {
+    display: none;
+  }
+
+  /* The panel of a category has its own cream surface (#fff9ef, the rule for dropdowns): in the drawer it
+   * left a lighter patch behind the cards, so it is transparent and the drawer's background shows. */
+  #header #mobile_top_menu_wrapper .top-menu .sub-menu.ciocia-submenu {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  #header #mobile_top_menu_wrapper .ciocia-sub-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 56px;
+    margin: 0 0 8.8px;
+    padding: 12.8px 16px 12.8px 12px;
+    border: 1px solid rgb(95 6 2 / 10%);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 3.2px 11.2px rgb(95 6 2 / 5%);
+    color: #5f0602;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  #header #mobile_top_menu_wrapper .ciocia-sub-title .material-icons {
+    font-size: 1.5rem;
+    color: #5f0602;
+  }
+
+  #header #mobile_top_menu_wrapper .ciocia-menu-close {
+    width: 4.5rem;
+    height: 4.5rem;
+    border: 1px solid rgb(0 0 0 / 22%);
+    border-radius: 50%;
+    background: rgb(0 0 0 / 28%);
+  }
+
+  #header #_mobile_top_menu .ciocia-has-submenu > a {
+    display: flex;
+    width: auto;
+  }
+
+  #header #_mobile_top_menu > .top-menu > li:nth-child(3) {
+    border-color: rgb(200 127 96 / 26%);
+    background: linear-gradient(135deg, #fff7e3, #f5e6bd);
+  }
+
+  /* "Na prezent" and "Promocje" print their icon in the link (ps_mainmenu.tpl); it replaces the diamond. */
+  #header #_mobile_top_menu a:has(.ciocia-menu-icon)::before {
+    display: none;
+  }
+
+  #header #mobile_top_menu_wrapper #_mobile_top_menu .ciocia-menu-icon {
+    display: inline-block;
+    flex: 0 0 auto;
+    font-size: 1.5rem;
+    color: #e0b665;
+  }
+}
+
+/*
+ * Phones (360 px), pages other than the home page (category, product, ...), as on the source:
+ * - the card sits 12 px from the screen edge (Classic's container adds 15 px);
+ * - the breadcrumb's current page and the separators are semibold;
+ * - on a category page the subcategories are one row that scrolls sideways, all of them (custom.js puts them in
+ *   the source's order); "Pokaż wszystkie (N)" unfolds them into rows.
+ */
+@media (max-width: 575px) {
+  body:not(#index):not(#checkout) #wrapper > .container {
+    padding-inline: 0.75rem;
+  }
+
+  #wrapper .breadcrumb li:last-child,
+  #wrapper .breadcrumb li::after {
+    font-weight: 600;
+  }
+
+  #wrapper .ciocia-subcategories:not(.is-expanded) .ciocia-subcategories__list {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scroll-snap-type: x proximity;
+  }
+
+  /* The source shows the scroll bar under the row: a thin grey thumb on an empty track. */
+  #wrapper .ciocia-subcategories:not(.is-expanded) .ciocia-subcategories__list::-webkit-scrollbar {
+    height: 0.375rem;
+  }
+
+  #wrapper .ciocia-subcategories:not(.is-expanded) .ciocia-subcategories__list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #wrapper .ciocia-subcategories:not(.is-expanded) .ciocia-subcategories__list::-webkit-scrollbar-thumb {
+    border-radius: 0.1875rem;
+    background: #c9c3b3;
+  }
+
+  /* Moved and then still: the bar is gone (it keeps its room, so nothing jumps). custom.js sets .is-idle. */
+  #wrapper .ciocia-subcategories:not(.is-expanded) .ciocia-subcategories__list.is-idle::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+
+  /* From the second page on the source's phone page has no name and no subcategories above the sorting. */
+  #wrapper .ciocia-listing__header--paged {
+    display: none;
+  }
+
+  #wrapper .ciocia-subcategories:not(.is-expanded) .ciocia-subcategories__item {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+
+  #wrapper .ciocia-subcategories__link {
+    white-space: nowrap;
+  }
+
+  #wrapper .ciocia-subcategories .ciocia-subcategories__list {
+    display: flex;
+  }
+
+  #wrapper .ciocia-subcategories--collapsible.is-ready:not(.is-expanded) .ciocia-subcategories__item:nth-child(n + 7) {
+    display: block;
+  }
+}
+
+/* Phones (360 px), registration as on the source: "Utwórz konto" is as wide as the form (Classic floats it right). */
+@media (max-width: 575px) {
+  body#registration #wrapper #customer-form .form-footer .form-control-submit {
+    display: block;
+    float: none !important;
+    width: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  #header #mobile_top_menu_wrapper,
+  #header .ciocia-menu-backdrop:not([hidden]) {
+    animation: none;
+  }
+
   #wrapper .ciocia-home-category,
   #wrapper .ciocia-home-brand {
     transition: none;

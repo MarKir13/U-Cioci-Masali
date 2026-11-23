@@ -13,6 +13,7 @@ import pytest
 from fake_shop import FakeApi
 
 from importer import mapping, steps, variants
+from importer.api import ApiError
 from importer.report import Report
 
 RESULTS = Path(__file__).resolve().parents[3] / "scraper-results"
@@ -378,3 +379,90 @@ def test_a_product_taken_out_of_the_file_loses_its_combinations():
     shop.import_plain(SMALL)
     assert shop.api.all("combinations") == []
     assert shop.stock(product_id) == mapping.stock_quantity(SMALL["id"])
+
+
+# --- The end date of a promotion (#111) ---
+
+DISCOUNTED = source_product(9601, "100ml", "21.07", "23.94", promo_end="2026-11-14T23:59:00")
+
+
+def test_the_end_date_goes_to_its_own_record_and_the_promotion_does_not_expire():
+    shop = Catalogue()
+    report = shop.import_plain(DISCOUNTED)
+    assert report.counts["ciocia_promo_ends"]["created"] == 1
+    [end] = shop.api.all("ciocia_promo_ends")
+    assert end == {
+        "id": end["id"],
+        "id_product": str(shop.product_id(DISCOUNTED)),
+        "id_product_attribute": "0",
+        "date_end": "2026-11-14 23:59:00",
+    }
+    # The specific price keeps no end, so PrestaShop applies it after 14.11 too (D3)
+    [promotion] = shop.api.all("specific_prices")
+    assert promotion["to"] == steps.NO_DATE
+
+
+def test_a_second_run_writes_no_end_date():
+    shop = Catalogue()
+    shop.import_plain(DISCOUNTED)
+    shop.api.writes.clear()
+    report = shop.import_plain(DISCOUNTED)
+    assert report.counts["ciocia_promo_ends"] == {"unchanged": 1}
+    assert ("POST", "ciocia_promo_ends") not in shop.api.writes
+    assert ("PUT", "ciocia_promo_ends") not in shop.api.writes
+    assert len(shop.api.all("ciocia_promo_ends")) == 1
+
+
+def test_a_new_end_date_updates_the_record():
+    shop = Catalogue()
+    shop.import_plain(DISCOUNTED)
+    report = shop.import_plain({**DISCOUNTED, "promo_end": "2026-11-30T23:59:00"})
+    assert report.counts["ciocia_promo_ends"] == {"updated": 1}
+    [end] = shop.api.all("ciocia_promo_ends")
+    assert end["date_end"] == "2026-11-30 23:59:00"
+
+
+@pytest.mark.parametrize(
+    "later",
+    [
+        {**DISCOUNTED, "promo_end": None},  # the promotion has no end any more
+        {**DISCOUNTED, "price": "23.94", "has_discount": False, "promo_end": None},  # no promotion any more
+    ],
+)
+def test_an_end_date_that_is_gone_is_deleted(later):
+    shop = Catalogue()
+    shop.import_plain(DISCOUNTED)
+    report = shop.import_plain(later)
+    assert report.counts["ciocia_promo_ends"] == {"deleted": 1}
+    assert shop.api.all("ciocia_promo_ends") == []
+
+
+def test_a_product_without_a_discount_gets_no_end_date():
+    shop = Catalogue()
+    report = shop.import_plain(SMALL)
+    assert report.counts["ciocia_promo_ends"] == {}
+    assert shop.api.all("ciocia_promo_ends") == []
+
+
+def test_a_discounted_variant_gets_the_end_date_of_its_combination():
+    extra = {**EXTRA, "promo_end": "2026-12-31T23:59:00"}
+    shop = Catalogue()
+    shop.import_variants(THREE_SIZES, products=[SMALL, LARGE, extra])
+    [end] = shop.api.all("ciocia_promo_ends")
+    assert end["id_product_attribute"] == shop.combinations()["8701"]["id"]
+    assert end["date_end"] == "2026-12-31 23:59:00"
+    # And the run after that changes nothing
+    shop.import_variants(THREE_SIZES, products=[SMALL, LARGE, extra])
+    assert shop.api.writes == []
+
+
+def test_a_shop_without_the_end_date_resource_says_which_scripts_to_run():
+    class OldShop(FakeApi):
+        def list(self, resource: str, display: str = "full", filters: dict | None = None) -> list[dict]:
+            if resource == "ciocia_promo_ends":
+                raise ApiError(401, "Resource of type ciocia_promo_ends is not allowed with this authentication key")
+            return super().list(resource, display, filters)
+
+    with pytest.raises(ApiError, match="30-configure-shop.sh and then 40-webservice.sh") as caught:
+        steps.read_shop(OldShop())
+    assert caught.value.status == 401

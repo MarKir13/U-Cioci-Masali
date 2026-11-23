@@ -414,11 +414,17 @@ function configureInvoices()
  */
 function configureOmnibus()
 {
-    if (!Module::isInstalled('ciociaomnibus') && !Module::getInstanceByName('ciociaomnibus')->install()) {
-        throw new RuntimeException('Could not install the ciociaomnibus module');
-    }
     // Loading the module also loads its classes, CiociaPriceHistory among them
-    Module::getInstanceByName('ciociaomnibus')->enable();
+    $omnibus = Module::getInstanceByName('ciociaomnibus');
+    if (!Module::isInstalled('ciociaomnibus')) {
+        if (!$omnibus->install()) {
+            throw new RuntimeException('Could not install the ciociaomnibus module');
+        }
+    } elseif (!$omnibus->updateSchema()) {
+        // A shop installed before a table or hook was added gets it here (the promotion end dates of #111)
+        throw new RuntimeException('Could not update the ciociaomnibus module');
+    }
+    $omnibus->enable();
     $added = CiociaPriceHistory::seed();
     echo "Omnibus price: module ciociaomnibus enabled, $added starting price rows added.\n";
 }

@@ -6,6 +6,8 @@
  * Category header as on the source (issue #75): the name, the description and the subcategories as a row
  * of rounded links. The description shows on the first page only, as in Classic; the name and the
  * subcategories on every page.
+ * Phones, as on the source: from the second page on the whole header (name and subcategories) is hidden
+ * (.ciocia-listing__header--paged, custom.css), only the sorting and the products stay.
  * Phones, as on the source: the description is cut to four lines with "Czytaj więcej", and only the
  * first six subcategories show, with "Pokaż wszystkie (N)" for the rest. custom.js runs both buttons and
  * marks each block with .is-ready; the CSS folds a block only then, so without JavaScript the description
@@ -13,7 +15,7 @@
  * PrestaShop renders this file again after sorting or changing the page (CategoryController,
  * rendered_products_header), so the buttons keep no state outside it.
  *}
-<div id="js-product-list-header" class="ciocia-listing__header">
+<div id="js-product-list-header" class="ciocia-listing__header{if $listing.pagination.items_shown_from != 1} ciocia-listing__header--paged{/if}">
   <h1 class="ciocia-listing__title">{$category.name}</h1>
 
   {if $listing.pagination.items_shown_from == 1 && $category.description}

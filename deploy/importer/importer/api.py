@@ -26,6 +26,8 @@ from .report import Timings
 # Name of one record in the XML body, for each resource
 SINGULAR = {
     "categories": "category",
+    # Our own resource: the end dates of promotions (module ciociaomnibus, #111)
+    "ciocia_promo_ends": "ciocia_promo_end",
     "combinations": "combination",
     "manufacturers": "manufacturer",
     "product_option_values": "product_option_value",

@@ -40,6 +40,9 @@ const PERMISSIONS = [
     // value leaves the file. Attribute groups (product_options) and their values (product_option_values) are
     // only created: the import finds them by name and never changes or deletes them.
     'combinations' => ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
+    // The end dates of the source's promotions (#111), our module's resource (ciociaomnibus, CiociaPromoEnd).
+    // Kept apart from specific_prices so the promotions do not expire; DELETE when a promotion has no end any more.
+    'ciocia_promo_ends' => ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
     'product_options' => ['GET', 'HEAD', 'POST'],
     'product_option_values' => ['GET', 'HEAD', 'POST'],
     // Read only: the tax rule group for a VAT rate is found through group -> rule -> tax (rate),

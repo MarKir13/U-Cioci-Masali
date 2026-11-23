@@ -5,7 +5,9 @@
  * PrestaShop 8.2.8 does not show this price by itself, so the module keeps its own price history:
  * - ciocia_price_history: the gross price a customer paid for a product (and combination) from a given moment,
  *   one row each time that price changes;
- * - ciocia_promo_start: when a promotion started, for promotions saved without a "from" date.
+ * - ciocia_promo_start: when a promotion started, for promotions saved without a "from" date;
+ * - ciocia_promo_end: the end date of the source's promotion, only shown on cards and the product page (#111,
+ *   classes/CiociaPromoEnd.php). The importer writes it through the Webservice API.
  *
  * The module also prints the unit price of the product page ("100g = 12.37 zł", type 'ciocia_unit_price'),
  * because both lines hang on the same hook of the price block.
@@ -18,6 +20,7 @@ if (!defined('_PS_VERSION_')) {
 
 require_once __DIR__ . '/classes/CiociaOmnibusRule.php';
 require_once __DIR__ . '/classes/CiociaPriceHistory.php';
+require_once __DIR__ . '/classes/CiociaPromoEnd.php';
 
 class CiociaOmnibus extends Module
 {
@@ -31,10 +34,15 @@ class CiociaOmnibus extends Module
         'actionObjectProductUpdateAfter',
         'actionObjectCombinationAddAfter',
         'actionObjectCombinationUpdateAfter',
+        // A deleted product or combination takes its promotion end date with it (ciocia_promo_end)
+        'actionObjectProductDeleteAfter',
+        'actionObjectCombinationDeleteAfter',
         'actionObjectSpecificPriceAddAfter',
         'actionObjectSpecificPriceUpdateAfter',
         'actionObjectSpecificPriceDeleteAfter',
         'displayProductPriceBlock',
+        // Adds our API resource ciocia_promo_ends (the promotion end dates written by the importer)
+        'addWebserviceResources',
     ];
 
     public function __construct()
@@ -65,6 +73,41 @@ class CiociaOmnibus extends Module
         return true;
     }
 
+    /**
+     * Adds what a newer version of the module needs to a shop where it is already installed: install() runs only
+     * once. Both steps do nothing when already done. Called by configure-shop.php on every run.
+     */
+    public function updateSchema(): bool
+    {
+        if (!$this->createTables()) {
+            return false;
+        }
+        // Seen on 8.2.8 right after install() in the same request: registerHook() on a hook the module already has
+        // failed with a duplicate key, so only the missing ones (configure-shop.php calls this only for a shop
+        // where the module was installed before)
+        foreach (self::HOOKS as $hook) {
+            if (!$this->isRegisteredInHook($hook) && !$this->registerHook($hook)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The resource ciocia_promo_ends of the Webservice API. Its permissions are in shop/scripts/setup/webservice.php,
+     * like those of PrestaShop's own resources.
+     */
+    public function hookAddWebserviceResources(): array
+    {
+        return [
+            'ciocia_promo_ends' => [
+                'description' => 'Promotion end dates shown on product cards (ciociaomnibus)',
+                'class' => 'CiociaPromoEnd',
+            ],
+        ];
+    }
+
     /** Also deletes the price history. A "Reset" in the back office does the same, as it uninstalls first. */
     public function uninstall()
     {
@@ -91,6 +134,18 @@ class CiociaOmnibus extends Module
     public function hookActionObjectCombinationUpdateAfter(array $params): void
     {
         CiociaPriceHistory::recordProduct((int) $params['object']->id_product);
+    }
+
+    /** Without these the table would keep the end dates of deleted products and combinations (IDs are not reused). */
+    public function hookActionObjectProductDeleteAfter(array $params): void
+    {
+        CiociaPromoEnd::deleteFor((int) $params['object']->id);
+    }
+
+    public function hookActionObjectCombinationDeleteAfter(array $params): void
+    {
+        $combination = $params['object'];
+        CiociaPromoEnd::deleteFor((int) $combination->id_product, (int) $combination->id);
     }
 
     /** A promotion is a specific price. */
@@ -164,6 +219,10 @@ class CiociaOmnibus extends Module
         }
         $until = '';
         $to = (string) ($product['specific_prices']['to'] ?? '');
+        if ($to === '' || strpos($to, '0000-00-00') === 0) {
+            // The importer leaves "to" empty so the promotion does not expire, and keeps the source's date apart
+            $to = (string) CiociaPromoEnd::dateFor($idProduct, $idProductAttribute);
+        }
         if ($to !== '' && strpos($to, '0000-00-00') !== 0 && ($time = strtotime($to)) !== false) {
             $until = date('d.m.Y', $time);
         }
@@ -254,6 +313,14 @@ class CiociaOmnibus extends Module
                 `date_start` DATETIME(6) NOT NULL,
                 PRIMARY KEY (`id_specific_price`)
             ) ENGINE=' . $engine . ' DEFAULT CHARSET=utf8mb4',
+            'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'ciocia_promo_end` (
+                `id_promo_end` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `id_product` INT UNSIGNED NOT NULL,
+                `id_product_attribute` INT UNSIGNED NOT NULL DEFAULT 0,
+                `date_end` DATETIME NOT NULL,
+                PRIMARY KEY (`id_promo_end`),
+                UNIQUE KEY `product` (`id_product`, `id_product_attribute`)
+            ) ENGINE=' . $engine . ' DEFAULT CHARSET=utf8mb4',
         ];
 
         foreach ($queries as $query) {
@@ -268,7 +335,8 @@ class CiociaOmnibus extends Module
     private function dropTables(): bool
     {
         return Db::getInstance()->execute(
-            'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'ciocia_price_history`, `' . _DB_PREFIX_ . 'ciocia_promo_start`'
+            'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'ciocia_price_history`, `' . _DB_PREFIX_ . 'ciocia_promo_start`, `'
+            . _DB_PREFIX_ . 'ciocia_promo_end`'
         );
     }
 }

@@ -4,6 +4,7 @@ import html
 import json
 import logging
 import re
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Annotated, Literal, Self
@@ -128,6 +129,9 @@ class Product(Record):
     price: Price
     regular_price: Price
     has_discount: bool
+    # When the source's promotion ends (its specific price "to"), e.g. 2026-11-14T23:59:00, in the shop's own time.
+    # Null for a product without a promotion or with one that has no end.
+    promo_end: datetime | None = None
     # field that is 0 <= x <= 100
     vat_rate: Annotated[float, Field(ge=0, le=100)] | None = None
     brand: OptionalText = None

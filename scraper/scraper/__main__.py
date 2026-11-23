@@ -8,7 +8,7 @@ from pathlib import Path
 import requests
 
 from . import config
-from .crawl import Crawler, PageCache, backfill_short_descriptions
+from .crawl import Crawler, PageCache, backfill_from_cache
 from .families import build_families
 from .http_client import HttpClient, SkippedURL, check_delay
 from .images import ImageDownloader
@@ -99,8 +99,11 @@ def main(argv: list[str] | None = None) -> int:
     images.add_argument("--limit", type=positive_int, metavar="N", help="test run: download at most N new images")
 
     # Commands for the finished results (no network)
-    commands.add_parser(
-        "backfill", help="add the short description to the saved products from the page cache (no network)"
+    backfill = commands.add_parser(
+        "backfill", help="add the short description and the promotion end to the saved products, from the page cache"
+    )
+    backfill.add_argument(
+        "--cache", type=Path, default=config.CACHE_DIR, metavar="DIR", help="page cache to read (default: cache/)"
     )
     commands.add_parser(
         "families", help="write the family blocks (titles and tile labels) to families.json from the page cache"
@@ -137,7 +140,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "verify":
         return run_verify()
     if args.command == "backfill":
-        return backfill_short_descriptions(config.PRODUCTS_FILE, PageCache(config.CACHE_DIR))
+        return backfill_from_cache(config.PRODUCTS_FILE, PageCache(args.cache))
     if args.command == "families":
         return build_families(cache=PageCache(config.CACHE_DIR))
     if args.command == "sample":
