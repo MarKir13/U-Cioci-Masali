@@ -42,6 +42,10 @@ PRODUCTS_FILE = RESULTS_DIR / "products.jsonl"
 LISTINGS_FILE = RESULTS_DIR / "listings.json"
 # Products left out of the results, each with the reason (not committed as a log, but as evidence for the report)
 REJECTED_FILE = RESULTS_DIR / "rejected.json"
+# One record per brand of the products: the text of its page on the source (see docs/adr/0014-brand-pages.md)
+BRANDS_FILE = RESULTS_DIR / "brands.json"
+# The page that links every brand page of the source shop
+BRAND_INDEX = "/producenci"
 # Family blocks of the product pages (titles and labels of the variant tiles), made from the page cache.
 # The shop image is built from shop/ only, so the module ciociafamily keeps a copy of the same file.
 FAMILIES_FILE = RESULTS_DIR / "families.json"

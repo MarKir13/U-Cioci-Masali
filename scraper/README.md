@@ -22,6 +22,8 @@ python -m scraper --help
 python -m scraper crawl                                         # full run into ../scraper-results/ (resumable)
 python -m scraper crawl --limit 5                               # test run: at most 5 new pages per stage
 python -m scraper positions                                     # only set the category order (pages of parents only)
+python -m scraper brands                                        # download the brand pages into brands.json (resumable, after crawl)
+python -m scraper brands --limit 5                              # test run: at most 5 new brand pages
 python -m scraper images                                        # download and fit the product images (resumable)
 python -m scraper images --limit 5                              # test run: at most 5 new images
 python -m scraper fetch /8-kosmetyki                            # download one page, print status and size
@@ -92,6 +94,7 @@ Other commands write these files into the same folder:
 
 | File | Written by | Committed |
 |---|---|---|
+| `brands.json` | `brands`: the text of each brand's page, see [Brands](#brands) | Yes |
 | `images/` | `images`: one JPEG per source image, and `local_path` in `products.jsonl` | No (`.gitignore`); published as the archive |
 | `image_problems.json` | `images`: source images that cannot be used | Yes |
 | `families.json` | `families`: the family block of each product page (see [Families](#families)) | Yes, also copied to `shop/modules/ciociafamily/data/` |
@@ -163,6 +166,42 @@ robots.txt, downloads the pages of the categories that have saved subcategories 
 writes `position` into `categories.json`, without the sitemap and without products. Use it when only the order is
 needed, so that products added to the source shop since the last crawl are not picked up. Running it again
 downloads nothing and changes nothing.
+
+## Brands
+
+`python -m scraper brands` (run after `crawl`) saves what the source's brand pages show above the product list, so the
+shop's manufacturers can show it too ([ADR 0014](../docs/adr/0014-brand-pages.md)). The page is
+`/brand/<id>-<slug>`, for example `/brand/3-himalaya`.
+
+1. The brands are the `brand` values of `products.jsonl` (76 of them), compared without case and spacing. A brand
+   like "Himalaya's Dreams" is a different brand from "Himalaya" and is never merged with it.
+2. The brand index `/producenci` links every brand page. It is downloaded once, and only when a brand is still to do.
+3. Each brand page is downloaded through the same polite `HttpClient` as everything else (delay, robots.txt,
+   User-Agent) and parsed by `parse_brand()`. The pages go to the page cache too.
+4. `brands.json` is written again after every brand, so Ctrl+C keeps what was saved. Brands that are in it are skipped
+   by the next run. A page that fails (HTTP error, no H1, invalid record) is logged, left out and tried again next
+   time; the exit code is then 1. Delete `brands.json` to download all the pages again.
+
+Two kinds of brand are reported at the end of the run, and both are saved: **a brand without a page** on the source
+(not on the index; a warning with its name; the record has only `name`) and **a page without a description** (an
+INFO line; the record has the title and meta tags). Most brands are of the second kind: only 9 of the 76 pages have
+any text, and only Himalaya has an FAQ.
+
+Fields of a record in `brands.json` (`Brand` in the schema; all except `name` are optional):
+
+| Field | Contents |
+|---|---|
+| `name` | the brand as written on the products |
+| `url` | the brand page, `null` if the source has none |
+| `title` | the page's H1, e.g. "Himalaya Herbals – oryginalne suplementy i kosmetyki ajurwedyjskie" |
+| `description` | HTML of the intro and the sections, without the FAQ and without the product list, sorting, pagination and breadcrumb. Only `h2`, `h3`, `p`, `ul`, `li`, `strong` and `a` (with an absolute `href`) are kept; scripts, styles, buttons, attributes and event handlers are removed ([scraper/sanitize.py](scraper/sanitize.py)). `null` when the page has no text |
+| `faq_title` | the FAQ's heading, e.g. "Najczęstsze pytania o Himalaya" |
+| `faq` | list of `{"question": text, "answer": HTML}`, from the accordion on the page |
+| `meta_title`, `meta_description` | the page's `<title>` and `<meta name="description">`; `null` when empty |
+
+The editor markup of the source's older brand pages (`<address>`, `<span>`, `<br>`, text outside any paragraph) is
+turned into paragraphs: two `<br>` end a paragraph, one is a space, empty paragraphs are dropped. Images and links
+inside the text are not kept as images; links stay only if they have an `http(s)` address.
 ### Families
 
 A product page on the source shows its family above the description (module `ndx-family`): one or more rows, each
@@ -314,6 +353,10 @@ All requests go through `HttpClient` in [scraper/http_client.py](scraper/http_cl
   for example `"2026-11-14T23:59:00"`. It is `null` for a product without a discount and for a promotion without an
   end. The source shows it on product cards as "Cena przed: 23,94 zł · do 14.11.2026".
 
+- `Brand` (see [Brands](#brands)): `name` is the only required field. `description` and the FAQ answers cannot contain
+  `<script>`, `<style>` or an `on*=` attribute (the model rejects them even if a parser lets them through), and a
+  description without visible text is saved as `null`. A record that fails validation is logged and not saved.
+
 After changing a model, run `python -m scraper schema` and commit the new `schema.json`. A test fails if it is out of date.
 
 ## Parsers
@@ -328,6 +371,12 @@ After changing a model, run `python -m scraper schema` and commit the new `schem
   and the parent from the second-to-last item of the JSON-LD `BreadcrumbList` (`None` when that item is the home
   page). A page without the name or the breadcrumb raises `ValueError` with the page URL, so the crawl can log it and
   go on. A record that fails validation is logged by `validate_record()` and returned as `None`.
+- `parse_brand_index(url, html)` returns `{brand key: (name, absolute URL)}` of the brand pages linked on `/producenci`
+  (each brand is linked twice there). `brand_key()` compares names without case and spacing.
+- `parse_brand(name, url, html, problems=None)` returns a `Brand`: the H1, the intro (`.manufacturer__lead`) and the
+  SEO text (`#manufacturer-description`) as cleaned HTML, the FAQ accordion as `faq` (taken out of the description,
+  with its heading as `faq_title`), and the `<title>` and meta description. It raises `ValueError` (with the page
+  URL) when the page has no H1.
 - `children_by_parent(categories)` returns `{parent_id: [children]}`, with top-level categories under `None`.
 - `missing_parents(categories)` returns the categories whose parent is not in the list.
 - `product_urls(url, html)` returns absolute, unique product URLs from a product list page.
@@ -363,6 +412,8 @@ with `REMOVED` before committing a new fixture.
 | `scraper/config.py` | Base URL, User-Agent, delay, timeouts |
 | `scraper/http_client.py` | Polite HTTP client |
 | `scraper/crawl.py` | Full run: stages, saving and resuming, page cache |
+| `scraper/brands.py` | Brand pages: index, one page per brand, `brands.json`, saving and resuming |
+| `scraper/sanitize.py` | HTML cleaning of brand pages: allowed tags, no scripts, styles or event handlers |
 | `scraper/images.py` | Image download, resizing and recompression (Pillow), `local_path` |
 | `scraper/verify.py` | Checks of the finished results (`verify`), writes `verification-report.md` |
 | `scraper/publish.py` | Sample images (`sample`) and the archives for the Release (`archive`, `archive --categories`) |

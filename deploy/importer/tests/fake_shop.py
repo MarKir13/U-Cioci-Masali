@@ -68,7 +68,11 @@ class FakeApi:
         records = self.all(resource)
         for field, value in (filters or {}).items():
             records = [r for r in records if str(r.get(field, "")) == str(value)]
-        return [dict(r) for r in records]
+        if display == "full":
+            return [dict(r) for r in records]
+        # Like the real API: only the fields asked for, as in display=[id,name]
+        wanted = {name.strip() for name in display.strip("[]").split(",")}
+        return [{name: value for name, value in r.items() if name in wanted} for r in records]
 
     def get(self, resource: str, record_id: int) -> dict:
         return dict(self.records[resource][record_id])

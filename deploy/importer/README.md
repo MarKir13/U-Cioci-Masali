@@ -76,7 +76,7 @@ valid JSON).
 | Record | Found by |
 |---|---|
 | Category | its name and its parent category in the shop |
-| Manufacturer | the brand name |
+| Manufacturer | the brand name (also its text, see [Brand pages](#brand-pages)) |
 | Product | `reference` = the product's ID in the source shop |
 | Stock, promotion, promotion end date | the product, or the combination |
 | Images | the number of images the product has in the shop: the same number as in the data means done |
@@ -98,6 +98,26 @@ the same fields: one extra PUT per new category, about 12 s for 160 on a clean i
 created only. A category in the shop with another position
 is updated like any other changed field, and a second run changes nothing. Data scraped before positions existed has
 no `position`, so the importer sends none and the shop keeps its own order.
+
+## Brand pages
+
+The manufacturer of each brand also gets the text of its page on the source, read from `brands.json` (ADR 0014):
+
+| Manufacturer field | From |
+|---|---|
+| `description` | `description` of the brand, then its FAQ as an `<h2>` (`faq_title`) and an `<h3>` with the answer for each question |
+| `short_description` | the first paragraph of the description, as plain text (at most 400 characters, cut at a word) |
+| `meta_title`, `meta_description` | the page's meta tags, cut to PrestaShop's limits (255 and 512 characters) |
+
+Links in the text to a source category point to the same category in our shop (`/<shop id>-<link rewrite>`, mapped
+by the source category ID); any other link to the source is replaced by its text, so no click leaves our shop.
+A brand that is not in `brands.json`, or has no text, keeps only its name and empty text fields (the update replaces
+the record). `brands.json` is optional: without it the manufacturers get only their names. An invalid record in it is
+counted as a rejected manufacturer, with the reason in the log.
+
+The report counts them in the `manufacturers` row (created, updated, unchanged, rejected). A second run finds each
+manufacturer by its name and compares the visible text of the descriptions, so it updates nothing and creates no
+duplicate. The theme shows the text (issue #107): the FAQ is the last `<h2>` and the `<h3>`/`<p>` pairs after it.
 
 ## Descriptions
 
@@ -238,7 +258,7 @@ archive with the same IDs as `SUBSET.categories`.
 | `importer/__main__.py` | options, logging, and `run()`, which calls the steps in order |
 | `importer/steps.py` | one function per step: read the shop, categories, brands, products with stock and promotion, then their images, the products with variants and their combinations, delete what is not in the data |
 | `importer/variants.py` | reads and checks `variants.json`, checks the image files of a product with variants, and makes its product record |
-| `importer/mapping.py` | pure conversion rules: net price, weight, stock, barcodes, slugs, visible text, long and short description without video players, combination price and weight |
+| `importer/mapping.py` | pure conversion rules: net price, weight, stock, barcodes, slugs, visible text, long and short description without video players, combination price and weight, the text of a manufacturer (brand description, FAQ, links, meta tags) |
 | `importer/api.py` | the only code that talks to the shop: JSON for reading, XML for writing |
 | `importer/data.py` | reads the scraped files and validates them against the schema |
 | `importer/report.py` | the counts and the `REJECTED` log lines, and the time spent per step and per kind of request |

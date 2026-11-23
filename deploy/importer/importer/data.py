@@ -58,6 +58,26 @@ def load_products(data_dir: Path, schema: dict) -> tuple[list[dict], list[tuple[
     return valid, rejected, unreadable
 
 
+def load_brands(data_dir: Path, schema: dict) -> tuple[list[dict], list[tuple[str, str]]]:
+    """Valid brand records of brands.json, and (name, reason) for the rest.
+
+    The file is optional: a results folder from before the brand pages has none, and the manufacturers then get
+    only their names. A schema without `Brand` (the same old folder) is treated the same way.
+    """
+    path = data_dir / "brands.json"
+    if not path.is_file() or "Brand" not in schema["$defs"]:
+        return [], []
+    validator = validator_for(schema, "Brand")
+    valid, rejected = [], []
+    for record in json.loads(path.read_text(encoding="utf-8")):
+        reason = problem(validator, record)
+        if reason is None:
+            valid.append(record)
+        else:
+            rejected.append((str(record.get("name", "?")), reason))
+    return valid, rejected
+
+
 def with_images(products: list[dict], data_dir: Path) -> tuple[list[dict], list[tuple[int, str]]]:
     """The products whose image files are all there, and (id, reason) for the rest.
 

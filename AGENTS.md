@@ -90,6 +90,7 @@ Run from the repository root unless noted.
 | Omnibus rule test (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociaomnibus/tests/OmnibusRuleTest.php` |
 | Family tiles rule test (Git Bash: prefix `MSYS_NO_PATHCONV=1`) | `docker run --rm -v "$PWD:/repo:ro" -w /repo php:8.1.34-cli php shop/modules/ciociafamily/tests/FamilyTilesTest.php` |
 | Rebuild `families.json` from the page cache and copy it into `shop/modules/ciociafamily/data/` (from `scraper/`, no network) | `python -m scraper families` |
+| Scrape the brand pages into `scraper-results/brands.json` (from `scraper/`; resumable, uses the network, only when a person asks, rule 7) | `python -m scraper brands` |
 | JavaScript lint (after `npm ci` once) | `npx eslint` |
 | E2E setup, once (from `tests/`) | `npm ci` and `npx playwright install chromium` |
 | E2E tests (from `tests/`; another shop: `BASE_URL=https://host:port npm test`, and `MAILPIT_URL=http://localhost:port` for its Mailpit) | `npm test` |
@@ -195,6 +196,10 @@ Documentation is in English, except `docs/AI_LOG.md`.
   blocks those and counts them apart (`DESCRIPTION_MEDIA` in `tests/support/acceptance.js`). The top menu follows `catalog.menu_categories` in `shop/config/shop-settings.php` through
   the module `ciociamenu`, which also clears the page cache after catalogue changes: PrestaShop's own cache hooks
   fire only in the back office, not for API writes.
+- Brand texts (manufacturer description, short description, meta tags and FAQ) come from
+  `scraper-results/brands.json`, not from the back office (ADR 0014): the importer overwrites them. The manufacturer's
+  meta title holds the source page's H1, because the theme prints it as the heading. `brands.json` must not contain
+  query strings of the source's links (they can carry its admin token, rule 8); `scraper/sanitize.py` removes them.
 - Data init (`deploy/importer/importer/init.py`, ADR 0010) puts the images into `scraper-results/images/` (gitignored),
   which survives `down -v`, so it downloads once per machine. It trusts only the archives whose sha256 is in `FULL`
   and `SUBSET`: a rebuilt archive has a new hash even with the same images, so change the hash there when you

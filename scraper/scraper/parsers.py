@@ -9,7 +9,8 @@ from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
-from .models import Category, Product, has_visible_text, validate_record
+from .models import Brand, Category, Product, has_visible_text, validate_record
+from .sanitize import clean_fragment
 
 log = logging.getLogger(__name__)
 
@@ -98,6 +99,104 @@ def subcategory_ids(html: str) -> list[int]:
         if category_id not in ids:
             ids.append(category_id)
     return ids
+
+
+# ---------- Brands ----------
+
+# /brand/<id>-<slug>, as linked from the brand index
+BRAND_PATH = re.compile(r"^/brand/\d+-[^/]+$")
+
+
+def collapse_spaces(text: str | None) -> str:
+    return " ".join((text or "").split())
+
+
+def brand_key(name: str) -> str:
+    """The name of a brand compared without case and spacing: `AYUSH` and `Ayush ` are the same brand."""
+    return collapse_spaces(name).casefold()
+
+
+def parse_brand_index(url: str, html: str) -> dict[str, tuple[str, str]]:
+    """The brand pages listed on the brand index (/producenci): `brand_key` -> (name, absolute URL).
+
+    The index links every brand twice (logo and name), so a brand is taken from its first link with a text.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    brands: dict[str, tuple[str, str]] = {}
+    for a_tag in soup.select('a[href*="/brand/"]'):
+        absolute = urljoin(url, a_tag.get("href", ""))
+        name = collapse_spaces(a_tag.get_text())
+        if name and BRAND_PATH.match(urlparse(absolute).path):
+            brands.setdefault(brand_key(name), (name, absolute))
+    return brands
+
+
+def faq_from_soup(body, base_url: str) -> tuple[str | None, list[dict]]:
+    """(FAQ heading, questions and answers) of a brand's SEO block. Takes the FAQ out of `body`.
+
+    The FAQ is a Bootstrap accordion (`.manufacturer__faq`) right after its own `<h2>`; the answer of each item
+    is in `.accordion-body`. Both the accordion and its heading are removed from `body`, so the description does
+    not repeat them.
+    """
+    accordion = body.select_one(".manufacturer__faq")
+    if accordion is None:
+        return None, []
+    heading = accordion.find_previous_sibling()  # the element right before it
+    if heading is not None and heading.name != "h2":
+        heading = None
+    title = collapse_spaces(heading.get_text()) if heading is not None else None
+    items = []
+    for item in accordion.select(".accordion-item"):
+        question = item.select_one(".accordion-header")
+        answer = item.select_one(".accordion-body")
+        if question is not None and answer is not None:
+            items.append(
+                {
+                    "question": collapse_spaces(question.get_text()),
+                    "answer": clean_fragment(answer.decode_contents(), base_url),
+                }
+            )
+    accordion.decompose()
+    if heading is not None:
+        heading.decompose()
+    return title, items
+
+
+def parse_brand(name: str, url: str, html: str, problems: list[str] | None = None) -> Brand | None:
+    """A `Brand` from its page. Raises ValueError (with the URL) if the page has no H1.
+
+    `description` is the intro (`.manufacturer__lead`) followed by the SEO text (`#manufacturer-description`),
+    cleaned to a few tags (see sanitize.py). The product list, sorting and breadcrumb are not part of it. A page
+    without any text (most brands) gets `description: null`. If `problems` is given, the reason for an invalid
+    record is appended to it.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    heading = soup.select_one("#js-product-list-header h1, h1.page-title-section")
+    if heading is None:
+        raise ValueError(f"{url}: no brand name (h1) on the page")
+
+    parts = []
+    lead = soup.select_one(".manufacturer__lead")
+    if lead is not None:
+        parts.append(clean_fragment(lead.decode_contents(), url))
+    faq_title, faq = None, []
+    body = soup.select_one("#manufacturer-description")
+    if body is not None:
+        faq_title, faq = faq_from_soup(body, url)
+        parts.append(clean_fragment(body.decode_contents(), url))
+
+    description_tag = soup.select_one('meta[name="description"]')
+    brand_dict = {
+        "name": name,
+        "url": url,
+        "title": collapse_spaces(heading.get_text()),
+        "description": "\n".join(part for part in parts if part),
+        "faq_title": faq_title,
+        "faq": faq,
+        "meta_title": collapse_spaces(soup.title.get_text()) if soup.title else None,
+        "meta_description": collapse_spaces(description_tag.get("content")) if description_tag else None,
+    }
+    return validate_record(model=Brand, data=brand_dict, url=url, problems=problems)
 
 
 def children_by_parent(categories: list[Category]) -> dict[int | None, list[Category]]:

@@ -168,9 +168,15 @@ class Ciociamenu extends Module
             }
             $id = (int) $db->Insert_ID();
         }
+        // Not REPLACE INTO: the table of ps_mainmenu has no unique key, so REPLACE never replaced anything and added
+        // a row on every call (rebuildMenu runs after each category and brand the importer saves), and the menu
+        // kept reading the oldest row. Delete the rows of the link first, which also removes copies made earlier.
         foreach (Language::getLanguages(false) as $language) {
-            $db->execute('REPLACE INTO ' . _DB_PREFIX_ . 'linksmenutop_lang (id_linksmenutop, id_lang, id_shop, label, link) VALUES ('
-                . $id . ', ' . (int) $language['id_lang'] . ', ' . $idShop . ', "' . pSQL($label) . '", "' . pSQL($path) . '")');
+            $idLang = (int) $language['id_lang'];
+            $db->execute('DELETE FROM ' . _DB_PREFIX_ . 'linksmenutop_lang WHERE id_linksmenutop = ' . $id
+                . ' AND id_lang = ' . $idLang . ' AND id_shop = ' . $idShop);
+            $db->execute('INSERT INTO ' . _DB_PREFIX_ . 'linksmenutop_lang (id_linksmenutop, id_lang, id_shop, label, link) VALUES ('
+                . $id . ', ' . $idLang . ', ' . $idShop . ', "' . pSQL($label) . '", "' . pSQL($path) . '")');
         }
 
         return $id;

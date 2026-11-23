@@ -3,6 +3,7 @@
 import html as html_lib
 import json
 import logging
+import re
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -15,6 +16,8 @@ from scraper.parsers import (
     children_by_parent,
     missing_parents,
     next_page_url,
+    parse_brand,
+    parse_brand_index,
     parse_category,
     parse_product,
     parse_sitemap,
@@ -571,3 +574,125 @@ def test_invalid_promotion_end_rejects_the_product():
     page = product_html(price_amount=8, has_discount=True, specific_prices={"to": "14.11.2026"})
     assert parse_product(PRODUCT_URL, page, problems) is None
     assert "promo_end" in problems[0]
+
+
+# ---------- Brand pages ----------
+
+BRAND_URL = "https://www.magiczne-indie.pl/brand/3-himalaya"
+
+
+def himalaya():
+    return parse_brand("Himalaya", BRAND_URL, read_fixture("brand_with_seo_faq.html"))
+
+
+def test_brand_page_has_its_title_and_meta_tags():
+    brand = himalaya()
+    assert brand.name == "Himalaya"
+    assert str(brand.url) == BRAND_URL
+    assert brand.title == "Himalaya Herbals – oryginalne suplementy i kosmetyki ajurwedyjskie"
+    assert brand.meta_title == "Himalaya Herbals – sklep online | Suplementy i kosmetyki | Magiczne Indie"
+    assert brand.meta_description.startswith("Oryginalne Himalaya Herbals z Indii – suplementy, pasty, kremy.")
+    assert "\n" not in brand.meta_description
+
+
+def test_brand_description_has_the_intro_and_the_sections():
+    description = himalaya().description
+    # The intro comes first, with its two paragraphs
+    assert description.startswith("<p>Szukasz sklepu z oryginalną Himalaya Herbals?")
+    assert description.count("<h2>") == 4
+    headings = [line for line in description.splitlines() if line.startswith("<h2>")]
+    assert headings == [
+        "<h2>Czym jest Himalaya Herbals</h2>",
+        "<h2>Suplementy Himalaya</h2>",
+        "<h2>Kosmetyki Himalaya</h2>",
+        "<h2>Dlaczego Himalaya w Magicznych Indiach</h2>",
+    ]
+
+
+def test_brand_description_keeps_lists_bold_text_and_the_category_link():
+    description = himalaya().description
+    assert description.count("<ul>") == 3
+    assert description.count("<li>") == 13
+    assert "<li><strong>Mentat</strong> — klasyczna formuła" in description
+    assert (
+        '<a href="https://www.magiczne-indie.pl/335-suplementy-himalaya-herbals-himalaya-herbs">'
+        "Suplementy Himalaya Herbals</a>"
+    ) in description
+
+
+def test_brand_description_has_neither_the_faq_nor_page_widgets():
+    description = himalaya().description
+    assert "Najczęstsze pytania" not in description
+    assert "accordion" not in description
+    assert "Czytaj więcej" not in description
+    assert "<button" not in description
+
+
+def test_brand_faq_has_four_questions_with_answers():
+    brand = himalaya()
+    assert brand.faq_title == "Najczęstsze pytania o Himalaya"
+    assert [item.question for item in brand.faq] == [
+        "Na co jest Himalaya?",
+        "Czy Himalaya to lek?",
+        "Jaki jest skład produktów Himalaya?",
+        "Mentat Himalaya — jak dawkować?",
+    ]
+    assert brand.faq[1].answer.startswith("<p>Większość produktów Himalaya dostępnych w sklepie")
+    assert all(item.answer.startswith("<p>") and item.answer.endswith("</p>") for item in brand.faq)
+
+
+def test_brand_html_has_no_scripts_styles_or_event_handlers():
+    brand = himalaya()
+    html = brand.description + "".join(item.answer for item in brand.faq)
+    assert not re.search(r"<\s*(script|style)", html, re.IGNORECASE)
+    assert not re.search(r"\son[a-z]+\s*=", html, re.IGNORECASE)
+
+
+def test_brand_page_with_only_a_paragraph_has_a_description_and_no_faq():
+    brand = parse_brand(
+        "Dabur", "https://www.magiczne-indie.pl/brand/4-dabur", read_fixture("brand_with_description_only.html")
+    )
+    assert brand.title == "Dabur"
+    assert brand.description.startswith("<p>W naszej ofercie znajdziesz naturalne produkty Dabur.")
+    assert brand.faq == []
+    assert brand.faq_title is None
+    assert brand.meta_description is None  # the source's tag is empty
+
+
+def test_brand_page_without_a_description():
+    brand = parse_brand(
+        "Vicco", "https://www.magiczne-indie.pl/brand/5-vicco", read_fixture("brand_without_description.html")
+    )
+    assert brand.title == "Vicco"
+    assert brand.description is None
+    assert brand.faq == []
+    assert brand.meta_title == "Vicco"
+
+
+def test_brand_page_without_h1_raises_with_the_url():
+    with pytest.raises(ValueError, match="brand/3-himalaya"):
+        parse_brand("Himalaya", BRAND_URL, "<html><body><p>Przerwa techniczna</p></body></html>")
+
+
+def test_brand_page_with_an_accordion_without_heading_has_no_faq_title():
+    html = (
+        '<div id="js-product-list-header"><h1>X</h1><div id="manufacturer-description">'
+        '<p>Tekst</p><div class="manufacturer__faq"><div class="accordion-item">'
+        '<h3 class="accordion-header"><button>Pytanie?</button></h3>'
+        '<div class="accordion-body"><p>Odpowiedź.</p></div></div></div></div></div>'
+    )
+    brand = parse_brand("X", "https://www.magiczne-indie.pl/brand/9-x", html)
+    assert brand.faq_title is None
+    assert [(i.question, i.answer) for i in brand.faq] == [("Pytanie?", "<p>Odpowiedź.</p>")]
+    assert brand.description == "<p>Tekst</p>"
+
+
+def test_brand_index_gives_each_brand_once_with_its_page():
+    index = parse_brand_index("https://www.magiczne-indie.pl/producenci", read_fixture("brand_index.html"))
+    assert index["himalaya"] == ("Himalaya", BRAND_URL)
+    # Matched without case, and an apostrophe written as an entity is the same as a plain one
+    assert index["ayush"][0] == "AYUSH"
+    assert index["himalaya's dreams"][1] == "https://www.magiczne-indie.pl/brand/199-himalaya-s-dreams"
+    assert len(index) == 7
+    # Links that are not brand pages (the cart) are left out
+    assert all("/brand/" in url for _, url in index.values())

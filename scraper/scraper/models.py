@@ -106,6 +106,47 @@ class Category(Record):
     position: PositiveInt | None = None
 
 
+def _no_active_content(value: str) -> str:
+    """Scraped HTML must hold no script, no style and no inline event handler (`onclick=` and the like)."""
+    if re.search(r"<\s*(script|style)\b", value, re.IGNORECASE):
+        raise ValueError("contains <script> or <style>")
+    if re.search(r"<[^>]*\son[a-z]+\s*=", value, re.IGNORECASE):
+        raise ValueError("contains an inline event handler (on*=)")
+    return value
+
+
+# HTML of a brand page: description or an FAQ answer, with no active content
+SafeDescription = Annotated[Description, AfterValidator(_no_active_content)]
+
+
+class FaqItem(Record):
+    """One question of a brand's FAQ. `answer` is HTML (paragraphs)."""
+
+    question: Text
+    answer: SafeDescription
+
+
+class Brand(Record):
+    """The page of a brand (`/brand/<id>-<slug>`) on the source. The result file has one record per brand of the
+    products, so a brand without a page has only `name`: everything else is optional (and reported by the crawl)."""
+
+    # The brand as written on its products (`brand` of Product)
+    name: Text
+    # Null when the source has no page for the brand
+    url: HttpUrl | None = None
+    # The H1 of the page
+    title: OptionalText = None
+    # HTML of the page's text above the product list (intro and sections), without the FAQ and with only
+    # h2, h3, p, ul, li, strong and a (see scraper/sanitize.py). Null when the page has no text.
+    description: Annotated[SafeDescription | None, BeforeValidator(_no_text_to_none)] = None
+    # Heading of the FAQ section on the page, e.g. "Najczęstsze pytania o Himalaya"
+    faq_title: OptionalText = None
+    faq: list[FaqItem] = Field(default_factory=list)
+    # The page's <title> and <meta name="description">
+    meta_title: OptionalText = None
+    meta_description: OptionalText = None
+
+
 class Image(Record):
     """A product image. `local_path` is filled in once the file has been downloaded."""
 
@@ -222,9 +263,14 @@ def validate_record[T: Record](model: type[T], data: dict, url: str, problems: l
 
 
 def json_schema() -> dict:
-    """JSON schema of the saved records: `#/$defs/Category`, `#/$defs/Product` and `#/$defs/ProductFamily`."""
+    """JSON schema of the saved records: Category, Product, Brand and ProductFamily (`#/$defs/<name>`)."""
     _, schema = models_json_schema(
-        [(Category, "serialization"), (Product, "serialization"), (ProductFamily, "serialization")],
+        [
+            (Category, "serialization"),
+            (Product, "serialization"),
+            (Brand, "serialization"),
+            (ProductFamily, "serialization"),
+        ],
         title="Scraper results",
     )
     return schema

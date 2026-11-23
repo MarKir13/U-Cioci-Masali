@@ -81,7 +81,7 @@ def read_shop(api: ShopApi) -> Shop:
         home_id=int(roots[0]["id"]),
         tax_groups=read_tax_groups(api),
         categories={(int(c["id_parent"]), text(c["name"])): c for c in categories},
-        manufacturers={text(m["name"]): m for m in api.list("manufacturers", display="[id,name,active]")},
+        manufacturers={text(m["name"]): m for m in api.list("manufacturers")},
         products={str(p.get("reference", "")): p for p in products},
         all_products=products,
         stock={_product_and_combination(s): s for s in stock_rows},
@@ -175,16 +175,44 @@ def import_categories(api: ShopApi, shop: Shop, categories: list[dict], report: 
 # --- Step 2: brands as manufacturers ----------------------------------------------------------------
 
 
-def import_manufacturers(api: ShopApi, shop: Shop, products: list[dict], report: Report) -> dict[str, int]:
-    """One manufacturer per brand name. Returns brand -> manufacturer ID."""
+def import_manufacturers(
+    api: ShopApi,
+    shop: Shop,
+    products: list[dict],
+    report: Report,
+    brands: list[dict] | None = None,
+    links: dict[int, str] | None = None,
+) -> dict[str, int]:
+    """One manufacturer per brand name. Returns brand -> manufacturer ID.
+
+    `brands` are the scraped brand pages (brands.json): the manufacturer also gets the page's text, its short
+    text and the meta tags (ADR 0014). `links` maps source category IDs to our shop's addresses, for the links in
+    that text. A brand without a record in `brands` keeps only its name.
+    """
+    pages = {mapping.brand_key(b["name"]): b for b in brands or []}
     shop_ids: dict[str, int] = {}
     for brand in sorted({p["brand"] for p in products if p.get("brand")}):
-        fields = {"name": brand, "active": 1}
+        fields = {"name": brand, "active": 1, **manufacturer_text(pages.get(mapping.brand_key(brand)), links or {})}
         try:
             shop_ids[brand] = save("manufacturers", api, shop.manufacturers.get(brand), fields, report)
         except ApiError as error:
             report.reject("manufacturers", brand, error.message)
     return shop_ids
+
+
+def manufacturer_text(page: dict | None, links: dict[int, str]) -> dict:
+    """The text fields of a manufacturer, from its brand page. All empty without a page, as PUT replaces the record.
+
+    `meta_title` gets the page's H1 (`title`), not its `<title>` (`meta_title` in brands.json): the theme prints the
+    manufacturer's meta title as the page heading, and a manufacturer has no separate H1 field (ADR 0014).
+    """
+    page = page or {}
+    return {
+        "description": Lang(mapping.brand_description(page, links)),
+        "short_description": Lang(mapping.brand_short_description(page)),
+        "meta_title": Lang(mapping.limited(page.get("title"), mapping.META_TITLE_MAX)),
+        "meta_description": Lang(mapping.limited(page.get("meta_description"), mapping.META_DESCRIPTION_MAX)),
+    }
 
 
 # --- Steps 3-6: products, each with its stock, promotion and images ----------------------------------
@@ -809,7 +837,7 @@ def differs(existing: dict, fields: dict) -> bool:
                     return True
             continue
         have = existing.get(name)
-        if name in ("description", "description_short"):
+        if name in ("description", "description_short", "short_description"):
             if mapping.visible_text(text(have)) != mapping.visible_text(str(wanted)):
                 return True
             # A removed video player leaves the visible text as it was, so a shop imported before the
