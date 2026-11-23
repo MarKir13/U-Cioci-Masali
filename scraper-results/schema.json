@@ -139,6 +139,19 @@
           "title": "Has Discount",
           "type": "boolean"
         },
+        "promo_end": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Promo End"
+        },
         "vat_rate": {
           "anyOf": [
             {

@@ -26,7 +26,7 @@ python -m scraper images --limit 5                              # test run: at m
 python -m scraper fetch /8-kosmetyki                            # download one page, print status and size
 python -m scraper fetch /8-kosmetyki -o tests/fixtures/x.html   # save it, e.g. as a test fixture
 python -m scraper schema                                        # write ../scraper-results/schema.json
-python -m scraper backfill                                      # add description_short to saved products, from the page cache
+python -m scraper backfill                                      # add description_short and promo_end to saved products, from the page cache
 python -m scraper verify                                        # check the results against the requirements, write the report
 python -m scraper sample                                        # copy 20 sample images to ../scraper-results/sample-images/
 python -m scraper archive                                       # pack all images into ../scraper-results/product-images.tar.gz
@@ -137,9 +137,10 @@ about 40 KB per page, so about 90 MB for a full run). Pages found there are not 
 `products.jsonl` and rebuild it without the network. Use `--no-cache` to turn this off, and delete the folder to
 download fresh pages.
 
-`python -m scraper backfill` adds `description_short` to the products already in `products.jsonl`, from their pages in
-the cache. It never uses the network and changes no other field, so prices, categories and the `local_path` of the
-images stay as they are. A product whose page is not in the cache keeps its record, is listed as a warning, and the
+`python -m scraper backfill` adds `description_short` and `promo_end` to the products already in `products.jsonl`,
+from their pages in the cache. It never uses the network and changes no other field, so prices, categories and the
+`local_path` of the images stay as they are. `--cache DIR` reads another copy of the cache, e.g. one unpacked from a
+teammate's archive. A product whose page is not in the cache keeps its record, is listed as a warning, and the
 command exits with 1. Running it again changes nothing.
 
 ## Images
@@ -275,6 +276,9 @@ All requests go through `HttpClient` in [scraper/http_client.py](scraper/http_cl
   short one if the long one is empty.
 - `description_short` (shown above the "Add to cart" button) is optional: one without visible text is saved as
   `null`. It is kept even when it is the same text as `description` (the importer then sends it only once).
+- `promo_end` is the end of the product's promotion in ISO 8601 without a time zone (the shop's own time, Warsaw),
+  for example `"2026-11-14T23:59:00"`. It is `null` for a product without a discount and for a promotion without an
+  end. The source shows it on product cards as "Cena przed: 23,94 zł · do 14.11.2026".
 
 After changing a model, run `python -m scraper schema` and commit the new `schema.json`. A test fails if it is out of date.
 
@@ -295,8 +299,11 @@ After changing a model, run `python -m scraper schema` and commit the new `schem
 - `product_urls(url, html)` returns absolute, unique product URLs from a product list page.
 - `next_page_url(url, html)` returns the absolute URL of the next page of results, or `None` if there is no next page.
 - `description_from(data)` returns the long description, or the short one if the long one has no visible text.
-- `product_data(url, soup)` returns the `data-product` JSON of a product page; `short_description(url, html)` returns
-  only its raw `description_short` (used by `backfill`).
+- `product_data(url, soup)` returns the `data-product` JSON of a product page; `backfill_values(url, html)` returns
+  only its raw `description_short` and `promo_end` (used by `backfill`).
+- `promo_end_from(data)` returns `to` of the product's specific price in `data-product` (`"2026-11-14 23:59:00"`
+  becomes `"2026-11-14T23:59:00"`), or `None` without a discount or with `"0000-00-00 00:00:00"` (no end). The
+  JSON-LD `priceValidUntil` is not the end of a promotion: the source sets it on every product.
 - `parse_product(url, html, problems=None)` returns a `Product` from the `data-product` JSON and the JSON-LD blocks. It raises
   `ValueError` (with the page URL) when `data-product` is missing or not valid JSON.
   - Both prices go through `round_price()`: two decimal places, halves up (`2.675` becomes `2.68`; `round(float(...), 2)`

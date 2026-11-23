@@ -210,9 +210,26 @@ def product_data(url: str, soup: BeautifulSoup) -> dict:
         raise ValueError(f"Invalid JSON in data-product at {url}") from exc
 
 
-def short_description(url: str, html: str) -> str | None:
-    """The raw short description of a product page (blank values are turned into null by the model)."""
-    return product_data(url, BeautifulSoup(html, "html.parser")).get("description_short")
+def promo_end_from(data: dict) -> str | None:
+    """The end of the product's promotion: `to` of the specific price in data-product, in ISO 8601.
+
+    "2026-11-14 23:59:00" becomes "2026-11-14T23:59:00". Null for a product without a discount and for a
+    promotion without an end ("0000-00-00 00:00:00" is PrestaShop's "no date"). The JSON-LD `priceValidUntil`
+    is not used: the source sets it on products without a discount too, and it is not the promotion's end.
+    """
+    specific_price = data.get("specific_prices")
+    if not data.get("has_discount") or not isinstance(specific_price, dict):
+        return None
+    end = specific_price.get("to")
+    if not isinstance(end, str) or not end.strip() or end.startswith("0000-00-00"):
+        return None
+    return end.strip().replace(" ", "T")
+
+
+def backfill_values(url: str, html: str) -> dict:
+    """The fields that `backfill` adds to saved products, raw from data-product (the model checks them)."""
+    data = product_data(url, BeautifulSoup(html, "html.parser"))
+    return {"description_short": data.get("description_short"), "promo_end": promo_end_from(data)}
 
 
 def parse_product(url: str, html: str, problems: list[str] | None = None) -> Product | None:
@@ -240,6 +257,7 @@ def parse_product(url: str, html: str, problems: list[str] | None = None) -> Pro
         "price": round_price(data.get("price_amount")),
         "regular_price": round_price(data.get("price_without_reduction")),
         "has_discount": bool(data.get("has_discount")),
+        "promo_end": promo_end_from(data),
         "vat_rate": data.get("rate"),
         "images": images,
         "category_ids": [data.get("id_category_default")] if data.get("id_category_default") else [],
