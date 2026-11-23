@@ -161,9 +161,10 @@ def import_categories(api: ShopApi, shop: Shop, categories: list[dict], report: 
         existing = shop.categories.get((parent, category["name"]))
         try:
             record = save_record("categories", api, existing, fields, report)
-            if existing is None and differs(record, fields):
+            if existing is None and "position" in fields:
                 # PrestaShop puts a new category last among its siblings whatever position it is sent
-                # (Category::add), so the position is set by an update. An update stores it as sent.
+                # (Category::add), and its answer still shows the position sent, so it cannot be compared.
+                # An update stores the position as sent.
                 api.update("categories", int(record["id"]), fields)
             shop_ids[category["id"]] = int(record["id"])
         except ApiError as error:

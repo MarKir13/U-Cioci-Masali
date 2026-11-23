@@ -244,9 +244,21 @@ def test_new_categories_get_the_source_position_counted_from_0():
     report = Report()
     import_categories(api, read_shop(api), kosmetyki_tree(), report)
     assert shop_positions(api) == {"Kosmetyki": "0", "Higiena i akcesoria": "2", "Do ciała": "1", "Kosmetyki BIO": "0"}
-    # The shop puts a new category last, so the ones it put elsewhere get an update right after being created.
-    # They count as created only: the update is part of creating them.
+    # The shop puts a new category last but answers with the position sent, so every new category gets an update
+    # right after being created. They count as created only: the update is part of creating them.
+    assert api.writes.count(("POST", "categories")) == 4
+    assert api.writes.count(("PUT", "categories")) == 4
     assert report.counts["categories"] == {"created": 4}
+
+
+def test_the_answer_to_a_new_category_shows_the_position_sent_not_the_stored_one():
+    """The fake copies PrestaShop here, so that the test above checks the importer against the real behaviour."""
+    api = FakeApi()
+    first = api.create("categories", {"id_parent": api.home_id, "name": Lang("Kosmetyki"), "position": 0})
+    second = api.create("categories", {"id_parent": api.home_id, "name": Lang("Zdrowie"), "position": 0})
+    assert second["position"] == "0"
+    assert api.get("categories", int(second["id"]))["position"] == "1"  # stored last, after the first one
+    assert api.get("categories", int(first["id"]))["position"] == "0"
 
 
 def test_a_wrong_position_in_the_shop_is_updated_and_a_second_run_changes_nothing():
