@@ -89,7 +89,8 @@ prices, weight, barcodes and stock are in `importer/mapping.py`, each with its r
 
 ## Category order
 
-The shop lists subcategories (on a category page and in the top menu) by their `position`, so the importer sends
+The row of subcategories on a category page lists them by their `position` (the menus have orders of their own in
+the theme, see the table in the [main README](../../README.md#loading-the-data-into-the-shop)), so the importer sends
 the one from `categories.json`: the place among its siblings on the source, from 1, minus 1 because PrestaShop
 counts from 0. An update through the API stores it exactly as sent, but a new category is always put last among its
 siblings, whatever position it is sent (`Category::add`), and the answer to the POST still shows the position sent,

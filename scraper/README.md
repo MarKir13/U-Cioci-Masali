@@ -156,9 +156,11 @@ command exits with 1. Running it again changes nothing.
 ### Category order
 
 `position` of a category is its place among its siblings on the source, read from the subcategory links on the
-parent's page (`div.subcategory__list`), not from the menu. The source's mega menu shows the same order wherever it
-lists the subcategories; it does not go below the second level. Checked on 2026-11-22 for all 27 categories that
-have subcategories.
+parent's page (`div.subcategory__list`), not from the menu. The menu is a different order on the source: its HTML
+lists the subcategories in this same order (checked on 2026-11-22 for all 27 categories that have subcategories),
+but in a browser its desktop panel re-sorts them, and its phone menu has an order of its own. The shop copies both
+menus with fixed lists in the theme, not with `position`: see the table in the
+[main README](../README.md#loading-the-data-into-the-shop).
 
 Results saved before positions were scraped have `subcategories` missing in `listings.json`. The next full crawl
 reads the pages it needs, from the cache if they are there. `python -m scraper positions` does only that: it loads

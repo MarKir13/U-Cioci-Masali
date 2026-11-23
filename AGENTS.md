@@ -195,7 +195,10 @@ Documentation is in English, except `docs/AI_LOG.md`.
   but keeps the images that 92 descriptions load from the source shop, and one YouTube video: the acceptance crawl
   blocks those and counts them apart (`DESCRIPTION_MEDIA` in `tests/support/acceptance.js`). The top menu follows `catalog.menu_categories` in `shop/config/shop-settings.php` through
   the module `ciociamenu`, which also clears the page cache after catalogue changes: PrestaShop's own cache hooks
-  fire only in the back office, not for API writes.
+  fire only in the back office, not for API writes. Category `position` orders only the row of subcategories on a
+  category page from 576 px: the menus and the phone views use fixed lists of names in `ps_mainmenu.tpl` and
+  `custom.js` (`ciociaPhoneOrder`), as the source re-sorts its menus in the browser. Check an order change on screen,
+  not in the HTML (table in README, "Loading the data into the shop").
 - Brand texts (manufacturer description, short description, meta tags and FAQ) come from
   `scraper-results/brands.json`, not from the back office (ADR 0014): the importer overwrites them. The manufacturer's
   meta title holds the source page's H1, because the theme prints it as the heading. `brands.json` must not contain
