@@ -1,5 +1,108 @@
 {
   "$defs": {
+    "Brand": {
+      "additionalProperties": false,
+      "description": "The page of a brand (`/brand/<id>-<slug>`) on the source. The result file has one record per brand of the\nproducts, so a brand without a page has only `name`: everything else is optional (and reported by the crawl).",
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "maxLength": 2083,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "faq_title": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Faq Title"
+        },
+        "faq": {
+          "items": {
+            "$ref": "#/$defs/FaqItem"
+          },
+          "title": "Faq",
+          "type": "array"
+        },
+        "meta_title": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Meta Title"
+        },
+        "meta_description": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Meta Description"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Brand",
+      "type": "object"
+    },
     "Category": {
       "additionalProperties": false,
       "description": "A category or subcategory. `parent_id` is null for top-level categories.",
@@ -117,6 +220,28 @@
         "label"
       ],
       "title": "FamilyOption",
+      "type": "object"
+    },
+    "FaqItem": {
+      "additionalProperties": false,
+      "description": "One question of a brand's FAQ. `answer` is HTML (paragraphs).",
+      "properties": {
+        "question": {
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "answer": {
+          "minLength": 1,
+          "title": "Answer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question",
+        "answer"
+      ],
+      "title": "FaqItem",
       "type": "object"
     },
     "Image": {
