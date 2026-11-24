@@ -91,4 +91,19 @@ Zasady:
 
 ## Refleksja zespołu
 
-_Uzupełniana na koniec etapu: gdzie AI realnie przyspieszyło pracę, gdzie wprowadziło w błąd i czego zespół musiał nauczyć się sam._
+W etapie 1 każda z pięciu osób korzystała z AI, głównie z Claude Code z modelem Claude Opus 5.5.
+
+**Gdzie AI realnie przyspieszyło pracę.** Najwięcej AI pomogło przy rzeczach, które mają dobrze znany kształt i dają się od razu przetestować: stos z Docker Compose,workflowy i lintery, klient HTTP scrapera z testami na atrapach, parsery testowane na zapisanych stronach, szkielet Playwrighta, skrypty konfiguracji sklepu, backup i restore oraz importer przez Webservice API. AI dobrze sprawdzało się też jako drugi recenzent (skill `/review-prs`), przy mierzeniu wymiarów i kolorów na stronie źródłowej oraz przy pisaniu dokumentacji i ADR-ów. Bez niego nie zmieścilibyśmy w 8 tygodniach odtworzenia wyglądu sklepu źródłowego obok wszystkich wymagań obowiązkowych.
+
+**Gdzie AI wprowadziło w błąd.** Błędy powtarzały się w kilku wzorcach:
+
+1. *Założenia zamiast sprawdzenia.* Selektory motywu Classic na sklepie, który ich nie ma; `/` przekierowuje na `/pl/`; PUT nie zmieni pozycji kategorii; teksty sklepu i CSS pisane z pamięci, bez podglądu strony.
+2. *Testy, które przechodzą, ale niczego nie dowodzą.* Atrapa zegara, w której czas nie płynie; zielony pipeline, który pomijał testy; test na starym kontenerze.
+3. *Działa na istniejącym sklepie, pada na czystej instalacji.* Nowa kategoria ustawiana na koniec mimo wysłanej pozycji. Wychodziło to dopiero w osobnym stacku od zera.
+4. *Ryzykowne polecenia.* `rm -rf` z wzorcem, który usunął zatwierdzony `schema.json`, `git checkout` całego pliku zamiast jednej zmiany, propozycja ponownego pobrania ok. 1210 stron ze sklepu źródłowego.
+
+Znaczną część tych błędów wyłapalśmy my, ale także: porównanie zrzutu ekranu ze sklepem źródłowym albo gitleaks i ruff w CI. Pomocny okazali się również agenci AI ze skillem `/review-prs`.
+
+**Czego musieliśmy nauczyć się sami.** Działania PrestaShopa pod spodem: wolumen `/var/www/html` wypełniany z obrazu tylko raz, cache szablonów, zachowanie Webservice API. Oceny wyglądu własnymi oczami, bo AI źle odczytywało zrzuty i kontrast. Weryfikacji na czystej instalacji, a nie tylko sprawdzenia, czy build przechodzi. Pilnowania integracji równoległych gałęzi (np. dwa różne pliki ustawień sklepu w trakcie rozwijania projektu). Wszystkie te lekcje trafiały do `AGENTS.md` (reguły i „Known pitfalls”), więc kolejne sesje AI zaczynały od nich, a nie od zera.
+
+**Wnioski na etap 2.** AI traktujemy jak szybkiego, ale pewnego siebie młodszego programistę: każdy kolejne wymaganie planujemy i sprawdzamy plan przed budową, każdą tezę o zachowaniu systemu sprawdzamy pomiarem, zmiany w sklepie próbujemy na czystej instalacji, a przed commitem autor przechodzi każdy zmieniony plik.
